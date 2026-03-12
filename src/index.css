@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,31 +8,96 @@ body {
   font-family: 'Inter', system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: #f0ece4;
 }
 
 @layer utilities {
   .animate-fade-in {
     animation: fadeIn 0.5s ease-in-out;
   }
+
   .animate-slide-up {
     animation: slideUp 0.5s ease-out;
   }
+
   .animate-slide-down {
     animation: slideDown 0.3s ease-out;
+  }
+
+  .animate-marquee {
+    animation: marquee 25s linear infinite;
+  }
+
+  .animate-marquee:hover {
+    animation-play-state: paused;
+  }
+
+  .section-title {
+    @apply text-2xl font-bold text-gray-900 relative pl-4;
+    font-family: 'Montserrat', 'Inter', system-ui, sans-serif;
+  }
+
+  .section-title::before {
+    content: '';
+    @apply absolute left-0 top-0 bottom-0 w-1 rounded-full;
+    background-color: #1e3a5f;
   }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(100%);
+  }
+
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+/* Scrollbar styling for event overlay */
+.events-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.events-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.events-scrollbar::-webkit-scrollbar-thumb {
+  background: #800000;
+  border-radius: 4px;
 }

@@ -31,10 +31,10 @@ const legendItems = [
 
 const AcademicCalendar = () => (
     <div className="animate-fade-in">
-        <div className="bg-gradient-to-r from-primary to-accent py-16">
+        <div className="bg-gradient-to-r from-primary-700 to-primary py-16">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                 <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">Academic Calendar 2026</h1>
-                <p className="text-blue-100 max-w-2xl mx-auto">Complete schedule of academic activities, examinations, holidays, and events.</p>
+                <p className="text-primary-200 max-w-2xl mx-auto">Complete schedule of academic activities, examinations, holidays, and events.</p>
             </div>
         </div>
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">

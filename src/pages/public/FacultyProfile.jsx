@@ -53,7 +53,7 @@ const FacultyProfile = () => {
 
     return (
         <div className="animate-fade-in">
-            <div className="bg-gradient-to-r from-primary to-accent py-16">
+            <div className="bg-gradient-to-r from-primary-700 to-primary py-16">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col md:flex-row items-center gap-6">
                         <div className="w-28 h-28 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-xl">
@@ -61,9 +61,9 @@ const FacultyProfile = () => {
                         </div>
                         <div className="text-center md:text-left">
                             <h1 className="text-3xl font-bold text-white">{faculty.name}</h1>
-                            <p className="text-blue-200 font-medium mt-1">{faculty.designation}</p>
-                            <p className="text-blue-100 text-sm mt-1">{faculty.department}</p>
-                            <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-3 text-sm text-blue-100">
+                            <p className="text-primary-200 font-medium mt-1">{faculty.designation}</p>
+                            <p className="text-primary-100 text-sm mt-1">{faculty.department}</p>
+                            <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-3 text-sm text-primary-100">
                                 <span className="flex items-center space-x-1">
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
                                     <span>{faculty.email}</span>

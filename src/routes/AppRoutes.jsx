@@ -3,8 +3,8 @@ import ProtectedRoute from '../components/ProtectedRoute';
 
 // Public
 import Home from '../pages/public/Home';
-import Departments from '../pages/public/Departments';
-import DepartmentDetail from '../pages/public/DepartmentDetail';
+// import Departments from '../pages/public/Departments'; // temporarily removed
+// import DepartmentDetail from '../pages/public/DepartmentDetail'; // temporarily removed
 import FacultyDirectory from '../pages/public/FacultyDirectory';
 import FacultyProfile from '../pages/public/FacultyProfile';
 import NoticeBoard from '../pages/public/NoticeBoard';
@@ -34,7 +34,7 @@ import Reports from '../pages/hod/Reports';
 
 // Admin
 import SuperAdminDashboard from '../pages/admin/SuperAdminDashboard';
-import ManageDepartments from '../pages/admin/ManageDepartments';
+// import ManageDepartments from '../pages/admin/ManageDepartments'; // temporarily removed
 import SiteSettings from '../pages/admin/SiteSettings';
 
 // Layouts
@@ -46,8 +46,8 @@ const AppRoutes = () => (
         {/* Public Routes */}
         <Route element={<PublicLayout />}>
             <Route path="/" element={<Home />} />
-            <Route path="/departments" element={<Departments />} />
-            <Route path="/departments/:id" element={<DepartmentDetail />} />
+            {/* <Route path="/departments" element={<Departments />} /> temporarily removed */}
+            {/* <Route path="/departments/:id" element={<DepartmentDetail />} /> temporarily removed */}
             <Route path="/faculty" element={<FacultyDirectory />} />
             <Route path="/faculty/:id" element={<FacultyProfile />} />
             <Route path="/notices" element={<NoticeBoard />} />
@@ -83,7 +83,7 @@ const AppRoutes = () => (
         {/* Admin Portal */}
         <Route path="/admin" element={<ProtectedRoute allowedRoles={['super_admin']}><PortalLayout role="super_admin" /></ProtectedRoute>}>
             <Route path="dashboard" element={<SuperAdminDashboard />} />
-            <Route path="departments" element={<ManageDepartments />} />
+            {/* <Route path="departments" element={<ManageDepartments />} /> temporarily removed */}
             <Route path="settings" element={<SiteSettings />} />
         </Route>
 

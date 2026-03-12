@@ -15,9 +15,9 @@ const FacultyDashboard = () => {
     return (
         <div className="animate-fade-in space-y-8">
             {/* Welcome */}
-            <div className="bg-gradient-to-r from-primary to-accent rounded-2xl p-8 text-white">
+            <div className="bg-gradient-to-r from-primary-700 to-primary rounded-2xl p-8 text-white">
                 <h1 className="text-2xl font-bold">Welcome back, {user?.name || 'Faculty'}! 👋</h1>
-                <p className="text-blue-100 mt-1 text-sm">Here's your academic overview for today.</p>
+                <p className="text-primary-100 mt-1 text-sm">Here's your academic overview for today.</p>
             </div>
 
             {/* Profile Completion */}

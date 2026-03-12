@@ -62,9 +62,9 @@ const DepartmentDetail = () => {
 
     return (
         <div className="animate-fade-in">
-            <div className="bg-gradient-to-r from-primary to-accent py-16">
+            <div className="bg-gradient-to-r from-primary-700 to-primary py-16">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center space-x-2 text-blue-200 text-sm mb-4">
+                    <div className="flex items-center space-x-2 text-primary-200 text-sm mb-4">
                         <a href="/departments" className="hover:text-white transition">Departments</a>
                         <span>/</span>
                         <span className="text-white">{dept.name}</span>

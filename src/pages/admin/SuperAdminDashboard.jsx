@@ -12,9 +12,9 @@ const deptStats = [
 
 const SuperAdminDashboard = () => (
     <div className="animate-fade-in space-y-8">
-        <div className="bg-gradient-to-r from-primary to-accent rounded-2xl p-8 text-white">
+        <div className="bg-gradient-to-r from-primary-700 to-primary rounded-2xl p-8 text-white">
             <h1 className="text-2xl font-bold">Super Admin Dashboard</h1>
-            <p className="text-blue-100 mt-1 text-sm">Cross-department overview and institutional management.</p>
+            <p className="text-primary-100 mt-1 text-sm">Cross-department overview and institutional management.</p>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

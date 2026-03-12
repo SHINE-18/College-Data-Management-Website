@@ -38,10 +38,10 @@ const NoticeBoard = () => {
 
     return (
         <div className="animate-fade-in">
-            <div className="bg-gradient-to-r from-primary to-accent py-16">
+            <div className="bg-gradient-to-r from-primary-700 to-primary py-16">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                     <h1 className="text-3xl sm:text-4xl font-bold text-white mb-4">Notice Board</h1>
-                    <p className="text-blue-100 max-w-2xl mx-auto">Stay updated with the latest announcements, circulars, and important notices.</p>
+                    <p className="text-primary-200 max-w-2xl mx-auto">Stay updated with the latest announcements, circulars, and important notices.</p>
                 </div>
             </div>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
