@@ -1,19 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
-import TimetableGrid from '../../components/TimetableGrid';
-
-const timetableData = {
-    CSE: {
-        1: {
-            Monday: { '9:00-10:00': { subject: 'Maths I', faculty: 'Dr. Sharma' }, '10:00-11:00': { subject: 'Physics', faculty: 'Prof. Singh' }, '11:00-12:00': { subject: 'C Programming', faculty: 'Prof. Joshi' }, '2:00-3:00': { subject: 'Workshop', faculty: 'Mr. Rao' }, '3:00-4:00': { subject: 'English', faculty: 'Ms. Priya' } },
-            Tuesday: { '9:00-10:00': { subject: 'Physics Lab', faculty: 'Prof. Singh' }, '10:00-11:00': { subject: 'Physics Lab', faculty: 'Prof. Singh' }, '11:00-12:00': { subject: 'Maths I', faculty: 'Dr. Sharma' }, '2:00-3:00': { subject: 'Electronics', faculty: 'Dr. Nair' }, '3:00-4:00': { subject: 'C Programming', faculty: 'Prof. Joshi' } },
-            Wednesday: { '9:00-10:00': { subject: 'English', faculty: 'Ms. Priya' }, '10:00-11:00': { subject: 'Electronics', faculty: 'Dr. Nair' }, '11:00-12:00': { subject: 'Maths I', faculty: 'Dr. Sharma' }, '2:00-3:00': { subject: 'C Lab', faculty: 'Prof. Joshi' }, '3:00-4:00': { subject: 'C Lab', faculty: 'Prof. Joshi' } },
-            Thursday: { '9:00-10:00': { subject: 'Physics', faculty: 'Prof. Singh' }, '10:00-11:00': { subject: 'C Programming', faculty: 'Prof. Joshi' }, '11:00-12:00': { subject: 'English', faculty: 'Ms. Priya' }, '2:00-3:00': { subject: 'Maths I', faculty: 'Dr. Sharma' }, '3:00-4:00': { subject: 'Workshop', faculty: 'Mr. Rao' } },
-            Friday: { '9:00-10:00': { subject: 'Electronics', faculty: 'Dr. Nair' }, '10:00-11:00': { subject: 'Maths I', faculty: 'Dr. Sharma' }, '11:00-12:00': { subject: 'Physics', faculty: 'Prof. Singh' }, '2:00-3:00': { subject: 'English', faculty: 'Ms. Priya' }, '3:00-4:00': { subject: 'C Programming', faculty: 'Prof. Joshi' } },
-            Saturday: { '9:00-10:00': { subject: 'Workshop', faculty: 'Mr. Rao' }, '10:00-11:00': { subject: 'Workshop', faculty: 'Mr. Rao' }, '11:00-12:00': { subject: 'Library', faculty: '—' } },
-        },
-    },
-};
+import api, { getAssetUrl } from '../../utils/axios';
 
 const departments = ['CSE', 'ECE', 'ME', 'CE', 'EE', 'IT'];
 const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -21,7 +8,37 @@ const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
 const TimetableViewer = () => {
     const [dept, setDept] = useState('CSE');
     const [sem, setSem] = useState(1);
-    const tt = timetableData[dept]?.[sem] || {};
+    const [timetables, setTimetables] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [selectedTimetable, setSelectedTimetable] = useState(null);
+
+    // Fetch timetables when department or semester changes
+    useEffect(() => {
+        fetchTimetables();
+    }, [dept, sem]);
+
+    const fetchTimetables = async () => {
+        setLoading(true);
+        try {
+            const response = await api.get(`/timetables?department=${dept}&semester=${sem}`);
+            setTimetables(response.data);
+            
+            // Auto-select first timetable if available
+            if (response.data.length > 0 && !selectedTimetable) {
+                setSelectedTimetable(response.data[0]);
+            }
+        } catch (error) {
+            console.error('Error fetching timetables:', error);
+            // Fallback to demo data if API fails
+            setTimetables([]);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDownload = (timetable) => {
+        window.open(getAssetUrl(timetable.pdfUrl), '_blank');
+    };
 
     return (
         <div className="animate-fade-in">
@@ -31,27 +48,146 @@ const TimetableViewer = () => {
                     <p className="text-primary-200 max-w-2xl mx-auto">View class schedules for any department and semester.</p>
                 </div>
             </div>
+            
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {/* Filters */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-8 flex flex-col sm:flex-row gap-4 items-end">
                     <div className="flex-1">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                        <select id="tt-dept" value={dept} onChange={e => setDept(e.target.value)} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none bg-white">{departments.map(d => <option key={d} value={d}>{d}</option>)}</select>
+                        <select 
+                            id="tt-dept" 
+                            value={dept} 
+                            onChange={e => { setDept(e.target.value); setSelectedTimetable(null); }}
+                            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none bg-white"
+                        >
+                            {departments.map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
                     </div>
                     <div className="flex-1">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Semester</label>
-                        <select id="tt-sem" value={sem} onChange={e => setSem(Number(e.target.value))} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none bg-white">{semesters.map(s => <option key={s} value={s}>Semester {s}</option>)}</select>
+                        <select 
+                            id="tt-sem" 
+                            value={sem} 
+                            onChange={e => { setSem(Number(e.target.value)); setSelectedTimetable(null); }}
+                            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none bg-white"
+                        >
+                            {semesters.map(s => <option key={s} value={s}>Semester {s}</option>)}
+                        </select>
                     </div>
-                    <button onClick={() => toast.success('PDF download will be available when connected to backend.')} className="bg-primary text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-primary-700 transition shadow-md whitespace-nowrap">
-                        Download PDF
-                    </button>
                 </div>
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 overflow-hidden">
-                    <TimetableGrid timetable={tt} />
-                    {Object.keys(tt).length === 0 && <div className="text-center py-12 text-gray-400"><p>No timetable available for this selection. Only CSE Sem 1 has demo data.</p></div>}
-                </div>
+
+                {/* Loading State */}
+                {loading && (
+                    <div className="flex items-center justify-center py-12">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                    </div>
+                )}
+
+                {/* Timetable List */}
+                {!loading && (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        {/* Timetable Cards */}
+                        <div className="lg:col-span-1 space-y-4">
+                            <h3 className="text-lg font-semibold text-gray-900">Available Timetables</h3>
+                            
+                            {timetables.length === 0 ? (
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center">
+                                    <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    <p className="text-gray-500 text-sm">
+                                        No timetable available for {dept} Semester {sem}.
+                                    </p>
+                                    <p className="text-gray-400 text-xs mt-2">
+                                        Please contact your HOD to upload the timetable.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {timetables.map(timetable => (
+                                        <div 
+                                            key={timetable._id}
+                                            onClick={() => setSelectedTimetable(timetable)}
+                                            className={`bg-white rounded-xl shadow-sm border p-4 cursor-pointer transition-all hover:shadow-md ${
+                                                selectedTimetable?._id === timetable._id 
+                                                    ? 'border-accent ring-2 ring-accent/20' 
+                                                    : 'border-gray-100'
+                                            }`}
+                                        >
+                                            <div className="flex items-start justify-between">
+                                                <div>
+                                                    <h4 className="font-medium text-gray-900">{timetable.title}</h4>
+                                                    <p className="text-sm text-gray-500 mt-1">
+                                                        Division: {timetable.division}
+                                                    </p>
+                                                    <p className="text-xs text-gray-400 mt-1">
+                                                        Uploaded: {new Date(timetable.createdAt).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                                <button 
+                                                    onClick={(e) => { e.stopPropagation(); handleDownload(timetable); }}
+                                                    className="p-2 text-accent hover:bg-accent/10 rounded-lg transition"
+                                                    title="Download PDF"
+                                                >
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* PDF Viewer */}
+                        <div className="lg:col-span-2">
+                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Preview</h3>
+                            
+                            {selectedTimetable ? (
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                                    <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                                        <div>
+                                            <h4 className="font-medium text-gray-900">{selectedTimetable.title}</h4>
+                                            <p className="text-sm text-gray-500">
+                                                {selectedTimetable.department} - Semester {selectedTimetable.semester} - Division {selectedTimetable.division}
+                                            </p>
+                                        </div>
+                                        <button 
+                                            onClick={() => handleDownload(selectedTimetable)}
+                                            className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition flex items-center space-x-2"
+                                        >
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                            </svg>
+                                            <span>Download PDF</span>
+                                        </button>
+                                    </div>
+                                    <div className="h-[600px] bg-gray-50">
+                                        <iframe
+                                            src={getAssetUrl(selectedTimetable.pdfUrl)}
+                                            className="w-full h-full"
+                                            title="Timetable PDF"
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="bg-white rounded-xl shadow-sm border border-gray-100 h-[600px] flex items-center justify-center">
+                                    <div className="text-center text-gray-400">
+                                        <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        <p>Select a timetable to preview</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );
 };
 
 export default TimetableViewer;
+

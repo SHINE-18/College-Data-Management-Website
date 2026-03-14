@@ -1,0 +1,14 @@
+# Robots.txt for VGEC CE Department Portal
+
+User-agent: *
+Allow: /
+
+# Disallow admin and backend routes
+Disallow: /api/
+Disallow: /admin/
+Disallow: /hod/
+Disallow: /faculty-portal/
+
+# Sitemap location
+Sitemap: https://vgec-ce.example.com/sitemap.xml
+

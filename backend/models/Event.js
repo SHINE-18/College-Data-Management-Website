@@ -30,10 +30,27 @@ const eventSchema = new mongoose.Schema({
     venue: {
         type: String,
     },
+    // Image URL for event banner/thumbnail
+    image: {
+        type: String,
+        default: null,
+    },
     isActive: {
         type: Boolean,
         default: true,
     },
 }, { timestamps: true });
 
+// ============================================
+// INDEXES — For improved query performance
+// ============================================
+eventSchema.index({ title: 'text', description: 'text' }); // Text index for search
+eventSchema.index({ date: 1 });
+eventSchema.index({ type: 1 });
+eventSchema.index({ department: 1 });
+eventSchema.index({ isActive: 1 });
+// Compound index for common query patterns
+eventSchema.index({ isActive: 1, date: 1 });
+
 module.exports = mongoose.model('Event', eventSchema);
+

@@ -3,8 +3,8 @@ import ProtectedRoute from '../components/ProtectedRoute';
 
 // Public
 import Home from '../pages/public/Home';
-// import Departments from '../pages/public/Departments'; // temporarily removed
-// import DepartmentDetail from '../pages/public/DepartmentDetail'; // temporarily removed
+import Departments from '../pages/public/Departments'; // temporarily removed
+import DepartmentDetail from '../pages/public/DepartmentDetail'; // temporarily removed
 import FacultyDirectory from '../pages/public/FacultyDirectory';
 import FacultyProfile from '../pages/public/FacultyProfile';
 import NoticeBoard from '../pages/public/NoticeBoard';
@@ -28,6 +28,7 @@ import WorkloadSheet from '../pages/faculty/WorkloadSheet';
 import HODDashboard from '../pages/hod/HODDashboard';
 import ManageFaculty from '../pages/hod/ManageFaculty';
 import TimetableBuilder from '../pages/hod/TimetableBuilder';
+import TimetableUpload from '../pages/hod/TimetableUpload';
 import LeaveApprovals from '../pages/hod/LeaveApprovals';
 import PostCircular from '../pages/hod/PostCircular';
 import Reports from '../pages/hod/Reports';
@@ -75,6 +76,7 @@ const AppRoutes = () => (
             <Route path="dashboard" element={<HODDashboard />} />
             <Route path="faculty" element={<ManageFaculty />} />
             <Route path="timetable" element={<TimetableBuilder />} />
+            <Route path="timetable-upload" element={<TimetableUpload />} />
             <Route path="leave" element={<LeaveApprovals />} />
             <Route path="circular" element={<PostCircular />} />
             <Route path="reports" element={<Reports />} />
@@ -83,6 +85,8 @@ const AppRoutes = () => (
         {/* Admin Portal */}
         <Route path="/admin" element={<ProtectedRoute allowedRoles={['super_admin']}><PortalLayout role="super_admin" /></ProtectedRoute>}>
             <Route path="dashboard" element={<SuperAdminDashboard />} />
+            <Route path="faculty" element={<ManageFaculty />} />
+            <Route path="circular" element={<PostCircular />} />
             {/* <Route path="departments" element={<ManageDepartments />} /> temporarily removed */}
             <Route path="settings" element={<SiteSettings />} />
         </Route>

@@ -40,4 +40,15 @@ const noticeSchema = new mongoose.Schema({
 }, { timestamps: true });
 // timestamps: true → MongoDB automatically tracks createdAt & updatedAt
 
+// ============================================
+// INDEXES — For improved query performance
+// ============================================
+noticeSchema.index({ title: 'text', content: 'text' }); // Text index for search
+noticeSchema.index({ category: 1 });
+noticeSchema.index({ department: 1 });
+noticeSchema.index({ isActive: 1 });
+noticeSchema.index({ createdAt: -1 });
+// Compound index for common query patterns
+noticeSchema.index({ isActive: 1, category: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Notice', noticeSchema);

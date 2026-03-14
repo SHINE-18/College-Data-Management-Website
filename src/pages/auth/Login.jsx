@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import vgec_logo from '../../assets/vgec_hd.png';
 
 const mockUsers = {
-    'faculty@college.edu': { password: 'faculty123', token: 'mock-jwt-faculty', user: { id: 1, name: 'Dr. Rajesh Kumar', email: 'faculty@college.edu', role: 'faculty', department: 'CSE' } },
-    'hod@college.edu': { password: 'hod123', token: 'mock-jwt-hod', user: { id: 2, name: 'Dr. Priya Sharma', email: 'hod@college.edu', role: 'hod', department: 'ECE' } },
-    'admin@college.edu': { password: 'admin123', token: 'mock-jwt-admin', user: { id: 3, name: 'Admin User', email: 'admin@college.edu', role: 'super_admin', department: 'Administration' } },
+
 };
+import api from '../../utils/axios';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -24,20 +24,30 @@ const Login = () => {
         if (!/\S+@\S+\.\S+/.test(email)) { setError('Please enter a valid email address.'); return; }
 
         setLoading(true);
-        // Simulate API call
-        setTimeout(() => {
-            const mockUser = mockUsers[email];
-            if (mockUser && mockUser.password === password) {
-                login(mockUser.token, mockUser.user);
-                toast.success(`Welcome, ${mockUser.user.name}!`);
-                const redirectMap = { faculty: '/faculty-portal/dashboard', hod: '/hod/dashboard', super_admin: '/admin/dashboard' };
-                navigate(redirectMap[mockUser.user.role] || '/');
-            } else {
-                setError('Invalid email or password.');
-                toast.error('Login failed. Please check your credentials.');
-            }
+        try {
+            // Call the real backend API
+            const response = await api.post('/auth/login', { email, password });
+            const userData = response.data;
+
+            // Extract token and user info
+            const token = userData.token;
+            delete userData.token; // Remove token from user object before storing
+
+            // Save to AuthContext/localStorage
+            login(token, userData);
+
+            toast.success(`Welcome, ${userData.name}!`);
+
+            // Redirect based on role
+            const redirectMap = { faculty: '/faculty-portal/dashboard', hod: '/hod/dashboard', super_admin: '/admin/dashboard' };
+            navigate(redirectMap[userData.role] || '/');
+        } catch (err) {
+            console.error('Login error:', err);
+            setError(err.response?.data?.message || 'Invalid email or password.');
+            toast.error('Login failed. Please check your credentials.');
+        } finally {
             setLoading(false);
-        }, 800);
+        }
     };
 
     return (
@@ -47,11 +57,12 @@ const Login = () => {
             <div className="w-full max-w-md relative">
                 {/* Logo */}
                 <div className="text-center mb-8">
-                    <Link to="/" className="inline-flex items-center space-x-3">
-                        <div className="w-12 h-12 bg-white/20 backdrop-blur-sm rounded-xl flex items-center justify-center">
-                            <span className="text-white font-bold text-xl">CP</span>
+                    <Link to="/" className="inline-flex flex-col items-center space-y-3">
+                        <img src={vgec_logo} alt="VGEC Logo" className="w-20 h-20 object-contain drop-shadow-lg" />
+                        <div>
+                            <h1 className="text-white font-bold text-xl">Vishwakarma Government Engineering College</h1>
+                            <p className="text-blue-200 text-sm mt-1">Department of Computer Engineering</p>
                         </div>
-                        <span className="text-white font-bold text-2xl">College Portal</span>
                     </Link>
                 </div>
 
@@ -84,7 +95,7 @@ const Login = () => {
                     </form>
 
                     {/* Demo Credentials */}
-                    <div className="mt-6 pt-6 border-t border-gray-100">
+                    {/* <div className="mt-6 pt-6 border-t border-gray-100">
                         <p className="text-xs text-gray-400 text-center mb-3">Demo Credentials</p>
                         <div className="space-y-2">
                             {[
@@ -99,7 +110,7 @@ const Login = () => {
                                 </button>
                             ))}
                         </div>
-                    </div>
+                    </div> */}
                 </div>
 
                 <p className="text-center text-blue-200 text-sm mt-6">

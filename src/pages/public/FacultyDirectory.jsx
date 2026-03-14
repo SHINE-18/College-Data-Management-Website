@@ -1,30 +1,67 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import FacultyCard from '../../components/FacultyCard';
+import api from '../../utils/axios';
 
-const allFaculty = [
-    { id: 'f1', name: 'Prof. Kajal S. Patel', designation: 'Associate Professor & HOD', qualification: 'Ph.D.', specialization: 'Artificial Intelligence', email: 'kajalpatel@vgecg.ac.in', department: 'CE' },
-    { id: 'f2', name: 'Prof. Hetal A. Joshiara', designation: 'Associate Professor', qualification: 'Ph.D.', specialization: 'Machine Learning', email: 'hetaljoshiyara@vgecg.ac.in', department: 'CE' },
-    { id: 'f3', name: 'Prof. Viral Borisagar', designation: 'Associate Professor', qualification: 'Ph.D.', specialization: 'Data Science', email: 'vhborisagar@vgecg.ac.in', department: 'CE' },
-    { id: 'f4', name: 'Prof. Jalpa M. Ramavat', designation: 'Assistant Professor', qualification: 'Ph.D.', specialization: 'Cybersecurity', email: 'jalpa.ramavat.2012@vgecg.ac.in', department: 'CE' },
-    { id: 'f5', name: 'Prof. Nakul R. Dave', designation: 'Assistant Professor', qualification: 'Ph.D.', specialization: 'Cloud Computing', email: '', department: 'CE' },
-    { id: 'f6', name: 'Prof. Amit H. Rathod', designation: 'Assistant Professor', qualification: 'Ph.D.', specialization: 'Artificial Intelligence', email: '', department: 'CE' },
-    { id: 'f7', name: 'Prof. Nirav B. Suthar', designation: 'Assistant Professor', qualification: 'M.E.', specialization: 'Computer Vision', email: '', department: 'CE' },
-    { id: 'f8', name: 'Prof. Jaimin M. Shroff', designation: 'Assistant Professor', qualification: 'M. Tech', specialization: 'Cloud Computing', email: '', department: 'CE' },
-    { id: 'f9', name: 'Prof. Rahul K. Shah', designation: 'Assistant Professor', qualification: 'M. Tech', specialization: 'Information Security', email: 'rkshah@vgecg.ac.in', department: 'CE' },
-    { id: 'f10', name: 'Prof. Bhavinkumar N. Patel', designation: 'Assistant Professor', qualification: 'M.E.', specialization: 'Embedded Systems', email: 'bnpatel@vgecg.ac.in', department: 'CE' },
-];
-
-const designations = ['All', 'Associate Professor & HOD', 'Associate Professor', 'Assistant Professor'];
+const designations = ['All', 'HOD', 'Professor', 'Associate Professor', 'Assistant Professor', 'Lecturer'];
 
 const FacultyDirectory = () => {
     const [search, setSearch] = useState('');
     const [desigFilter, setDesigFilter] = useState('All');
-
-    const filtered = allFaculty.filter(f => {
-        const matchSearch = f.name.toLowerCase().includes(search.toLowerCase()) || f.specialization.toLowerCase().includes(search.toLowerCase());
-        const matchDesig = desigFilter === 'All' || f.designation === desigFilter;
-        return matchSearch && matchDesig;
+    const [faculty, setFaculty] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [pagination, setPagination] = useState({
+        page: 1,
+        limit: 12,
+        pages: 1,
+        total: 0,
+        hasNext: false,
+        hasPrev: false
     });
+
+    // Fetch faculty from API
+    useEffect(() => {
+        const fetchFaculty = async () => {
+            setLoading(true);
+            try {
+                const params = new URLSearchParams();
+                params.append('page', pagination.page);
+                params.append('limit', pagination.limit);
+                
+                if (search) {
+                    params.append('search', search);
+                }
+                if (desigFilter !== 'All') {
+                    params.append('designation', desigFilter);
+                }
+
+                const response = await api.get(`/faculty?${params.toString()}`);
+                setFaculty(response.data.data);
+                setPagination(prev => ({
+                    ...prev,
+                    ...response.data.pagination
+                }));
+            } catch (error) {
+                console.error('Error fetching faculty:', error);
+                // Fallback to empty array on error
+                setFaculty([]);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        // Debounce search
+        const timeoutId = setTimeout(() => {
+            fetchFaculty();
+        }, 300);
+
+        return () => clearTimeout(timeoutId);
+    }, [search, desigFilter, pagination.page]);
+
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= pagination.pages) {
+            setPagination(prev => ({ ...prev, page: newPage }));
+        }
+    };
 
     return (
         <div className="animate-fade-in">
@@ -50,7 +87,10 @@ const FacultyDirectory = () => {
                                     type="text"
                                     placeholder="Search name..."
                                     value={search}
-                                    onChange={e => setSearch(e.target.value)}
+                                    onChange={e => {
+                                        setSearch(e.target.value);
+                                        setPagination(prev => ({ ...prev, page: 1 }));
+                                    }}
                                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition"
                                 />
                             </div>
@@ -61,26 +101,67 @@ const FacultyDirectory = () => {
                                 <select
                                     id="desig-filter"
                                     value={desigFilter}
-                                    onChange={e => setDesigFilter(e.target.value)}
+                                    onChange={e => {
+                                        setDesigFilter(e.target.value);
+                                        setPagination(prev => ({ ...prev, page: 1 }));
+                                    }}
                                     className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition bg-white"
                                 >
                                     {designations.map(d => <option key={d} value={d}>{d === 'All' ? 'All Designations' : d}</option>)}
                                 </select>
                             </div>
 
-                            <p className="text-xs text-gray-400 mt-4">{filtered.length} faculty found</p>
+                            <p className="text-xs text-gray-400 mt-4">{pagination.total} faculty found</p>
                         </div>
                     </div>
 
                     {/* Faculty Grid */}
                     <div className="flex-1">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-                            {filtered.map(f => <FacultyCard key={f.id} faculty={f} />)}
-                        </div>
-                        {filtered.length === 0 && (
-                            <div className="text-center py-16 text-gray-400">
-                                <p className="text-lg">No faculty found matching your criteria.</p>
+                        {loading ? (
+                            <div className="flex items-center justify-center py-16">
+                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
                             </div>
+                        ) : (
+                            <>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                                    {faculty.map(f => <FacultyCard key={f._id} faculty={f} />)}
+                                </div>
+                                
+                                {faculty.length === 0 && (
+                                    <div className="text-center py-16 text-gray-400">
+                                        <p className="text-lg">No faculty found matching your criteria.</p>
+                                    </div>
+                                )}
+
+                                {/* Pagination */}
+                                {pagination.pages > 1 && (
+                                    <div className="flex justify-center items-center space-x-2 mt-8">
+                                        <button 
+                                            onClick={() => handlePageChange(pagination.page - 1)} 
+                                            disabled={!pagination.hasPrev}
+                                            className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 disabled:opacity-50 hover:bg-gray-50 transition"
+                                        >
+                                            Prev
+                                        </button>
+                                        {Array.from({ length: pagination.pages }, (_, i) => (
+                                            <button 
+                                                key={i} 
+                                                onClick={() => handlePageChange(i + 1)}
+                                                className={`w-10 h-10 rounded-lg text-sm font-medium transition ${pagination.page === i + 1 ? 'bg-primary text-white' : 'border border-gray-200 hover:bg-gray-50'}`}
+                                            >
+                                                {i + 1}
+                                            </button>
+                                        ))}
+                                        <button 
+                                            onClick={() => handlePageChange(pagination.page + 1)} 
+                                            disabled={!pagination.hasNext}
+                                            className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 disabled:opacity-50 hover:bg-gray-50 transition"
+                                        >
+                                            Next
+                                        </button>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
@@ -90,3 +171,4 @@ const FacultyDirectory = () => {
 };
 
 export default FacultyDirectory;
+

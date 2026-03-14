@@ -8,6 +8,11 @@ const express = require('express');   // The web framework (creates the server)
 const cors = require('cors');         // Allows React frontend to talk to this backend
 const dotenv = require('dotenv');     // Loads secret config from .env file
 const connectDB = require('./config/database'); // Our MongoDB connection function
+const path = require('path');         // For file path handling
+const fs = require('fs');             // For file system operations
+
+// Import error handling middleware
+const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 
 // Step 2: Load environment variables from .env file
 // This is where we'll store database URL, secrets, etc.
@@ -31,7 +36,10 @@ const PORT = process.env.PORT || 5000;
 // Without this, your React app (localhost:5173) would be BLOCKED from
 // calling your backend (localhost:5000) — it's a browser security feature.
 // cors() tells the browser: "It's okay, let the frontend talk to me"
-app.use(cors());
+app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    credentials: true
+}));
 
 // Middleware 2: JSON Parser
 // When React sends data (like a new notice), it sends it as JSON.
@@ -65,6 +73,46 @@ app.get('/', (req, res) => {
 app.use('/api/faculty', require('./routes/facultyRoutes'));
 app.use('/api/notices', require('./routes/noticeRoutes'));
 app.use('/api/events', require('./routes/eventRoutes'));
+app.use('/api/timetables', require('./routes/timetableRoutes'));
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/leaves', require('./routes/leaveRoutes'));
+app.use('/api/publications', require('./routes/publicationRoutes'));
+app.use('/api/achievements', require('./routes/achievementRoutes'));
+app.use('/api/qualifications', require('./routes/qualificationRoutes'));
+app.use('/api/circulars', require('./routes/circularRoutes'));
+
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+const timetablesDir = path.join(uploadsDir, 'timetables');
+if (!fs.existsSync(timetablesDir)) {
+    fs.mkdirSync(timetablesDir, { recursive: true });
+}
+
+const eventsDir = path.join(uploadsDir, 'events');
+if (!fs.existsSync(eventsDir)) {
+    fs.mkdirSync(eventsDir, { recursive: true });
+}
+
+const facultyDir = path.join(uploadsDir, 'faculty');
+if (!fs.existsSync(facultyDir)) {
+    fs.mkdirSync(facultyDir, { recursive: true });
+}
+
+const circularsDir = path.join(uploadsDir, 'circulars');
+if (!fs.existsSync(circularsDir)) {
+    fs.mkdirSync(circularsDir, { recursive: true });
+}
+
+// Serve uploaded timetable PDFs statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Error handling middleware (must be after all routes)
+app.use(notFound);
+app.use(errorHandler);
 
 // ============================================
 // START THE SERVER
