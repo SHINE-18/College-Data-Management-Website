@@ -11,9 +11,17 @@ import NoticeBoard from '../pages/public/NoticeBoard';
 import TimetableViewer from '../pages/public/TimetableViewer';
 import Events from '../pages/public/Events';
 import AcademicCalendar from '../pages/public/AcademicCalendar';
+import SyllabusArchive from '../pages/public/SyllabusArchive';
 
 // Auth
 import Login from '../pages/auth/Login';
+
+// Student
+import StudentDashboard from '../pages/student/StudentDashboard';
+import AttendanceViewer from '../pages/student/AttendanceViewer';
+import GradesViewer from '../pages/student/GradesViewer';
+import AssignmentUploader from '../pages/student/AssignmentUploader';
+import ResourceLibrary from '../pages/common/ResourceLibrary';
 
 // Faculty
 import FacultyDashboard from '../pages/faculty/FacultyDashboard';
@@ -23,6 +31,10 @@ import Publications from '../pages/faculty/Publications';
 import Achievements from '../pages/faculty/Achievements';
 import LeaveApplication from '../pages/faculty/LeaveApplication';
 import WorkloadSheet from '../pages/faculty/WorkloadSheet';
+import AttendanceManager from '../pages/faculty/AttendanceManager';
+import ResultUploader from '../pages/faculty/ResultUploader';
+import AssignmentPoster from '../pages/faculty/AssignmentPoster';
+import AcademicsManager from '../pages/faculty/AcademicsManager';
 
 // HOD
 import HODDashboard from '../pages/hod/HODDashboard';
@@ -35,6 +47,7 @@ import Reports from '../pages/hod/Reports';
 
 // Admin
 import SuperAdminDashboard from '../pages/admin/SuperAdminDashboard';
+import UserManagement from '../pages/admin/UserManagement';
 // import ManageDepartments from '../pages/admin/ManageDepartments'; // temporarily removed
 import SiteSettings from '../pages/admin/SiteSettings';
 
@@ -55,10 +68,21 @@ const AppRoutes = () => (
             <Route path="/timetable" element={<TimetableViewer />} />
             <Route path="/events" element={<Events />} />
             <Route path="/calendar" element={<AcademicCalendar />} />
+            <Route path="/syllabi" element={<SyllabusArchive />} />
         </Route>
 
         {/* Auth */}
         <Route path="/login" element={<Login />} />
+
+        {/* Student Portal */}
+        <Route path="/student-portal" element={<ProtectedRoute allowedRoles={['student']}><PortalLayout role="student" /></ProtectedRoute>}>
+            <Route path="dashboard" element={<StudentDashboard />} />
+            <Route path="attendance" element={<AttendanceViewer />} />
+            <Route path="results" element={<GradesViewer />} />
+            <Route path="assignments" element={<AssignmentUploader />} />
+            <Route path="resources" element={<ResourceLibrary />} />
+            {/* Additional student routes will be added here later */}
+        </Route>
 
         {/* Faculty Portal */}
         <Route path="/faculty-portal" element={<ProtectedRoute allowedRoles={['faculty', 'hod']}><PortalLayout role="faculty" /></ProtectedRoute>}>
@@ -69,6 +93,11 @@ const AppRoutes = () => (
             <Route path="achievements" element={<Achievements />} />
             <Route path="leave" element={<LeaveApplication />} />
             <Route path="workload" element={<WorkloadSheet />} />
+            <Route path="attendance-manager" element={<AttendanceManager />} />
+            <Route path="result-uploader" element={<ResultUploader />} />
+            <Route path="assignments" element={<AssignmentPoster />} />
+            <Route path="resources" element={<ResourceLibrary />} />
+            <Route path="academics" element={<AcademicsManager />} />
         </Route>
 
         {/* HOD Portal */}
@@ -80,11 +109,16 @@ const AppRoutes = () => (
             <Route path="leave" element={<LeaveApprovals />} />
             <Route path="circular" element={<PostCircular />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="attendance-manager" element={<AttendanceManager />} />
+            <Route path="result-uploader" element={<ResultUploader />} />
+            <Route path="assignments" element={<AssignmentPoster />} />
+            <Route path="academics" element={<AcademicsManager />} />
         </Route>
 
         {/* Admin Portal */}
         <Route path="/admin" element={<ProtectedRoute allowedRoles={['super_admin']}><PortalLayout role="super_admin" /></ProtectedRoute>}>
             <Route path="dashboard" element={<SuperAdminDashboard />} />
+            <Route path="users" element={<UserManagement />} />
             <Route path="faculty" element={<ManageFaculty />} />
             <Route path="circular" element={<PostCircular />} />
             {/* <Route path="departments" element={<ManageDepartments />} /> temporarily removed */}

@@ -181,6 +181,14 @@ const ManageFaculty = () => {
                                 )}
                             </div>
                             <div><label className="block text-sm font-medium text-gray-700 mb-1">Joining Date</label><input type="date" value={form.joiningDate} onChange={(e) => setForm({ ...form, joiningDate: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none" /></div>
+
+                            {!editId && (
+                                <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                                    <p className="text-xs text-blue-700 leading-relaxed">
+                                        <strong>Note:</strong> Creating a faculty profile will automatically generate a login account with the default password: <code className="bg-blue-100 px-1 rounded">Faculty@VGEC123</code>
+                                    </p>
+                                </div>
+                            )}
                         </div>
                         <div className="flex justify-end space-x-3 mt-6">
                             <button onClick={closeModal} className="px-5 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50">Cancel</button>

@@ -28,7 +28,7 @@ const Navbar = () => {
 
     return (
         <header className="sticky top-0 z-50 shadow-lg">
-            
+
             <div className="bg-primary-700 text-white">
                 <div className="max-w-9xl px-4 sm:px-6 lg:px-8 flex justify-between items-center h-7 text-xs">
                     <span className="font-medium tracking-wide">Vishwakarma Government Engineering College, Ahmedabad</span>
@@ -49,7 +49,7 @@ const Navbar = () => {
                 </div>
             </div>
 
-           
+
             <div className="bg-white border-b border-gray-200">
                 <div className="max-w-8xl px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
                     <Link to="/" className="flex items-center space-x-4">
@@ -132,6 +132,7 @@ const Navbar = () => {
                                 <div className="absolute top-full left-0 mt-0 bg-white shadow-xl rounded-b-lg border border-gray-200 min-w-[200px] z-50 animate-slide-down">
                                     <Link to="/timetable" onClick={() => setAcademicsOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-primary hover:text-white transition">Timetable</Link>
                                     <Link to="/calendar" onClick={() => setAcademicsOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-primary hover:text-white transition">Academic Calendar</Link>
+                                    <Link to="/syllabi" onClick={() => setAcademicsOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-primary hover:text-white transition">Syllabus Archive</Link>
                                 </div>
                             )}
                         </div>

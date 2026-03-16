@@ -21,6 +21,9 @@ const MyProfile = () => {
         profilePhoto: ''
     });
 
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState('');
+
     useEffect(() => {
         const fetchMyProfile = async () => {
             if (!user?.email) return;
@@ -48,6 +51,9 @@ const MyProfile = () => {
                             bio: myProfile.bio || '',
                             profilePhoto: myProfile.profilePhoto || ''
                         });
+                        if (myProfile.profilePhoto) {
+                            setPreviewUrl(getAssetUrl(myProfile.profilePhoto));
+                        }
                     }
                 }
             } catch (error) {
@@ -63,6 +69,18 @@ const MyProfile = () => {
 
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 5 * 1024 * 1024) {
+                toast.error('File size too large (max 5MB)');
+                return;
+            }
+            setSelectedFile(file);
+            setPreviewUrl(URL.createObjectURL(file));
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!form.name || !form.email) { toast.error('Name and Email are required.'); return; }
@@ -74,7 +92,28 @@ const MyProfile = () => {
 
         try {
             setSaving(true);
-            await api.put(`/faculty/${facultyId}`, form);
+            const formData = new FormData();
+
+            // Append all form fields to FormData
+            Object.keys(form).forEach(key => {
+                if (key !== 'profilePhoto') {
+                    formData.append(key, form[key]);
+                }
+            });
+
+            // Append selected file if exists
+            if (selectedFile) {
+                formData.append('profilePhoto', selectedFile);
+            }
+
+            const response = await api.put(`/faculty/${facultyId}`, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
+
+            setForm(prev => ({ ...prev, profilePhoto: response.data.profilePhoto }));
+            setPreviewUrl(getAssetUrl(response.data.profilePhoto));
+            setSelectedFile(null);
+
             toast.success('Profile updated successfully!');
         } catch (error) {
             console.error("Failed to update profile", error);
@@ -108,17 +147,26 @@ const MyProfile = () => {
             <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:p-8">
                 {/* Photo */}
                 <div className="flex items-center space-x-6 mb-8 pb-8 border-b border-gray-100">
-                    <div className="w-24 h-24 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center shadow-lg overflow-hidden">
-                        {form.profilePhoto ? (
-                            <img src={getAssetUrl(form.profilePhoto)} alt={form.name} className="w-full h-full object-cover" />
-                        ) : (
-                            <span className="text-white font-bold text-3xl">{form.name?.[0] || 'U'}</span>
-                        )}
+                    <div className="relative group">
+                        <div className="w-24 h-24 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center shadow-lg overflow-hidden border-2 border-white">
+                            {previewUrl ? (
+                                <img src={previewUrl} alt={form.name} className="w-full h-full object-cover" />
+                            ) : (
+                                <span className="text-white font-bold text-3xl">{form.name?.[0] || 'U'}</span>
+                            )}
+                        </div>
+                        <label className="absolute -bottom-2 -right-2 bg-white text-primary p-2 rounded-lg shadow-md cursor-pointer hover:bg-gray-50 transition border border-gray-100">
+                            <input type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                        </label>
                     </div>
                     <div>
                         <h3 className="font-semibold text-gray-900">{form.name || 'Your Name'}</h3>
                         <p className="text-sm text-gray-500">{form.designation || 'Your Designation'}</p>
-                        <button type="button" className="mt-2 text-sm text-accent font-medium hover:text-accent-600 transition">Change Photo</button>
+                        <p className="text-[10px] text-gray-400 mt-1 uppercase tracking-wider">Accepted: JPG, PNG, GIF (Max 5MB)</p>
                     </div>
                 </div>
 

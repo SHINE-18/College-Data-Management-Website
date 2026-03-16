@@ -20,7 +20,7 @@ const storage = multer.diskStorage({
     }
 });
 
-const upload = multer({ 
+const upload = multer({
     storage: storage,
     limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
 });
@@ -52,7 +52,7 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const circular = await Circular.findById(req.params.id);
-        
+
         if (!circular) {
             return res.status(404).json({ message: 'Circular not found' });
         }
@@ -66,6 +66,10 @@ router.get('/:id', async (req, res) => {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
+
+const Student = require('../models/Student');
+const Faculty = require('../models/Faculty');
+const { notifyNewPost } = require('../utils/emailService');
 
 // POST /api/circulars - Create circular (HOD only)
 router.post('/', [
@@ -89,8 +93,27 @@ router.post('/', [
             attachmentName: req.file ? req.file.originalname : null
         });
 
-        await circular.save();
-        res.status(201).json(circular);
+        const saved = await circular.save();
+
+        // Broadcast email notification (asynchronously)
+        (async () => {
+            try {
+                const students = await Student.find({ isActive: true }).select('email');
+                const facultyArr = await Faculty.find({ isActive: true }).select('email');
+                const emails = [...new Set([
+                    ...students.map(s => s.email),
+                    ...facultyArr.map(f => f.email)
+                ])].filter(Boolean);
+
+                if (emails.length > 0) {
+                    await notifyNewPost(saved, 'Circular', emails);
+                }
+            } catch (err) {
+                console.error("Delayed broadcast failed:", err);
+            }
+        })();
+
+        res.status(201).json(saved);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -100,7 +123,7 @@ router.post('/', [
 router.put('/:id', protect, authorize('hod', 'super_admin'), async (req, res) => {
     try {
         const circular = await Circular.findById(req.params.id);
-        
+
         if (!circular) {
             return res.status(404).json({ message: 'Circular not found' });
         }
@@ -117,15 +140,15 @@ router.put('/:id', protect, authorize('hod', 'super_admin'), async (req, res) =>
 router.put('/:id/toggle', protect, authorize('hod', 'super_admin'), async (req, res) => {
     try {
         const circular = await Circular.findById(req.params.id);
-        
+
         if (!circular) {
             return res.status(404).json({ message: 'Circular not found' });
         }
 
         circular.isActive = !circular.isActive;
         await circular.save();
-        
-        res.json({ 
+
+        res.json({
             message: `Circular ${circular.isActive ? 'activated' : 'deactivated'} successfully`,
             isActive: circular.isActive
         });
@@ -138,7 +161,7 @@ router.put('/:id/toggle', protect, authorize('hod', 'super_admin'), async (req, 
 router.delete('/:id', protect, authorize('hod', 'super_admin'), async (req, res) => {
     try {
         const circular = await Circular.findById(req.params.id);
-        
+
         if (!circular) {
             return res.status(404).json({ message: 'Circular not found' });
         }

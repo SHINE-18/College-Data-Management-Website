@@ -11,8 +11,9 @@ const path = require('path');
 const router = express.Router();
 // Router is like a mini-app that handles a group of related routes
 
-// Import the Faculty model (our data structure)
+// Import models
 const Faculty = require('../models/Faculty');
+const User = require('../models/User');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 // Configure Multer for profile photo upload
@@ -166,27 +167,35 @@ router.post('/', protect, authorize('hod', 'super_admin'), uploadPhoto.single('p
     body('experience').optional().trim(),
 ], validate, async (req, res) => {
     try {
-        // req.body contains the JSON data sent by the frontend
-        // Example: { name: "Dr. Patel", designation: "Professor", email: "..." }
-
         const facultyData = { ...req.body };
 
         if (req.user.role === 'hod') {
             facultyData.department = req.user.department;
         }
 
-        // Add profile photo URL if uploaded
         if (req.file) {
             facultyData.profilePhoto = `/uploads/faculty/${req.file.filename}`;
         }
 
+        // 1. Create Faculty Profile
         const newFaculty = new Faculty(facultyData);
+        const savedFaculty = await newFaculty.save();
 
-        // .save() inserts the document into MongoDB
-        const saved = await newFaculty.save();
+        // 2. Automatically create User Account (if not exists)
+        const userExists = await User.findOne({ email: facultyData.email.toLowerCase() });
+        if (!userExists) {
+            await User.create({
+                name: facultyData.name,
+                email: facultyData.email,
+                password: 'Faculty@VGEC123', // Default password
+                role: 'faculty',
+                department: facultyData.department,
+                designation: facultyData.designation,
+                facultyId: savedFaculty._id
+            });
+        }
 
-        // 201 = Created (successfully created a new resource)
-        res.status(201).json(saved);
+        res.status(201).json(savedFaculty);
     } catch (error) {
         // 400 = Bad Request (client sent invalid data, like missing required field)
         // Check for duplicate email

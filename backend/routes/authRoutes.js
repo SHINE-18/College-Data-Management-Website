@@ -17,19 +17,34 @@ const validate = (req, res, next) => {
     next();
 };
 
-// POST /api/auth/register - Register a new user (admin only)
+// POST /api/auth/register - Register a new user (admin/hod hierarchical)
 router.post('/register', [
     protect,
-    authorize('super_admin'),
+    authorize('super_admin', 'hod'),
     body('name').trim().notEmpty().withMessage('Name is required'),
     body('email').isEmail().withMessage('Please enter a valid email'),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-    body('role').isIn(['faculty', 'hod', 'super_admin']).withMessage('Invalid role'),
+    body('role').isIn(['faculty', 'hod']).withMessage('Invalid role'),
     body('department').optional().isIn(['CSE', 'ECE', 'ME', 'CE', 'EE', 'IT', 'All']),
     validate
 ], async (req, res) => {
     try {
         const { name, email, password, role, department, designation } = req.body;
+
+        // Eforce Hierarchy
+        if (req.user.role === 'super_admin') {
+            if (role !== 'hod') {
+                return res.status(403).json({ message: 'Super Admin can only register HODs' });
+            }
+        } else if (req.user.role === 'hod') {
+            if (role !== 'faculty') {
+                return res.status(403).json({ message: 'HOD can only register Faculty' });
+            }
+            // Ensure HOD only registers faculty for their own department
+            if (department && department !== req.user.department) {
+                return res.status(403).json({ message: 'HOD can only register faculty for their own department' });
+            }
+        }
 
         // Check if user already exists
         const existingUser = await User.findOne({ email });
@@ -43,7 +58,7 @@ router.post('/register', [
             email,
             password,
             role,
-            department: department || 'All',
+            department: req.user.role === 'hod' ? req.user.department : (department || 'All'),
             designation
         });
 
@@ -72,7 +87,7 @@ router.post('/login', [
 
         // Find user and include password for comparison
         const user = await User.findOne({ email }).select('+password');
-        
+
         if (!user) {
             return res.status(401).json({ message: 'Invalid email or password' });
         }
@@ -134,9 +149,9 @@ router.put('/profile', [
 ], async (req, res) => {
     try {
         const { name, department, designation } = req.body;
-        
+
         const user = await User.findById(req.user._id);
-        
+
         if (name) user.name = name;
         if (department) user.department = department;
         if (designation) user.designation = designation;
@@ -197,7 +212,7 @@ router.get('/users', protect, authorize('super_admin'), async (req, res) => {
 router.delete('/users/:id', protect, authorize('super_admin'), async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
-        
+
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -218,7 +233,7 @@ router.delete('/users/:id', protect, authorize('super_admin'), async (req, res) 
 router.put('/users/:id/toggle', protect, authorize('super_admin'), async (req, res) => {
     try {
         const user = await User.findById(req.params.id);
-        
+
         if (!user) {
             return res.status(404).json({ message: 'User not found' });
         }
@@ -226,7 +241,7 @@ router.put('/users/:id/toggle', protect, authorize('super_admin'), async (req, r
         user.isActive = !user.isActive;
         await user.save();
 
-        res.json({ 
+        res.json({
             message: `User ${user.isActive ? 'activated' : 'deactivated'} successfully`,
             isActive: user.isActive
         });

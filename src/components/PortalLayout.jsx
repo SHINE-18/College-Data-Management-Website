@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import vgec_hd from '../assets/vgec_hd.png';
 
 const PortalLayout = ({ role }) => {
     const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -9,24 +10,24 @@ const PortalLayout = ({ role }) => {
         <div className="min-h-screen flex bg-gray-50">
             {/* Mobile Overlay */}
             {sidebarOpen && (
-                <div 
+                <div
                     className="fixed inset-0 bg-black/50 z-40 lg:hidden"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
-            
+
             {/* Sidebar */}
-            <Sidebar 
-                role={role} 
-                isOpen={sidebarOpen} 
-                onClose={() => setSidebarOpen(false)} 
+            <Sidebar
+                role={role}
+                isOpen={sidebarOpen}
+                onClose={() => setSidebarOpen(false)}
             />
-            
+
             {/* Main Content */}
             <main className="flex-1 overflow-auto lg:ml-64">
                 {/* Mobile Header */}
                 <div className="lg:hidden bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between sticky top-0 z-30">
-                    <button 
+                    <button
                         onClick={() => setSidebarOpen(true)}
                         className="p-2 -ml-2 rounded-lg hover:bg-gray-100 transition"
                     >
@@ -34,10 +35,13 @@ const PortalLayout = ({ role }) => {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
-                    <span className="font-semibold text-gray-900 text-sm">College Portal</span>
+                    <Link to="/" className="flex items-center space-x-2">
+                        <img src={vgec_hd} alt="Logo" className="w-8 h-8 object-contain" />
+                        <span className="font-bold text-primary text-xs uppercase tracking-tight">VGEC Portal</span>
+                    </Link>
                     <div className="w-10"></div>
                 </div>
-                
+
                 <div className="p-4 md:p-6 lg:p-8">
                     <Outlet />
                 </div>

@@ -10,6 +10,14 @@ const socialIcons = {
     youtube: <FaYoutube size={14} />,
 };
 
+const socialLinks = {
+    facebook: "https://www.facebook.com/Official.Vgec",
+    twitter: "https://x.com/OfficialVgec",
+    linkedin: "https://www.linkedin.com/school/vishwakarma-government-engineering-college-chandkheda-gandhinagar-017",
+    instagram: "https://www.instagram.com/vgec.official?utm_source=ig_web_button_share_sheet&igsh=ZDNlZDc0MzIxNw==",
+    youtube: "https://youtube.com/@vgecchandkhedaofficial6895?si=zcy6J52a3hbvT4jO"
+};
+
 const Footer = () => (
     <footer className="bg-primary-900 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -76,8 +84,15 @@ const Footer = () => (
                         <li><a href="https://www.aicte-india.org" target="_blank" rel="noreferrer" className="hover:text-white transition text-xs">AICTE ↗</a></li>
                     </ul>
                     <div className="flex space-x-2 mt-4">
-                        {['facebook', 'twitter', 'linkedin', 'instagram', 'youtube'].map(social => (
-                            <a key={social} href="#" className="w-7 h-7 bg-primary-800 rounded-full flex items-center justify-center hover:bg-primary-600 transition text-primary-200 hover:text-white" aria-label={social}>
+                        {Object.entries(socialLinks).map(([social, url]) => (
+                            <a
+                                key={social}
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-7 h-7 bg-primary-800 rounded-full flex items-center justify-center hover:bg-primary-600 transition text-primary-200 hover:text-white"
+                                aria-label={social}
+                            >
                                 {socialIcons[social]}
                             </a>
                         ))}
@@ -87,7 +102,12 @@ const Footer = () => (
 
             <div className="border-t border-primary-800 mt-8 pt-6 flex flex-col md:flex-row justify-between items-center text-xs text-primary-300">
                 <p>© {new Date().getFullYear()} Department of Computer Engineering, Vishwakarma Government Engineering College, Ahmedabad</p>
-                <p className="mt-2 md:mt-0">GTU Affiliated · AICTE Approved · Estd. 2001</p>
+                <div className="flex flex-col items-center md:items-end mt-4 md:mt-0 space-y-2">
+                    <p>GTU Affiliated · AICTE Approved · Estd. 2001</p>
+                    <a href="https://visitorbadge.io/status?path=vgec.ce.department" target="_blank" rel="noreferrer" title="Visitor Count">
+                        <img src="https://api.visitorbadge.io/api/visitors?path=vgec.ce.department&label=VISITORS&labelColor=%231e293b&countColor=%233b82f6" alt="Visitor Count" className="h-7 rounded-sm shadow-sm opacity-90 hover:opacity-100 transition-opacity" />
+                    </a>
+                </div>
             </div>
         </div>
     </footer>

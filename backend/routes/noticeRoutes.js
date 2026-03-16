@@ -1,13 +1,15 @@
 // ============================================
 // routes/noticeRoutes.js — Notice API Endpoints
 // ============================================
-// Same pattern as Faculty routes: GET, POST, PUT, DELETE
 
 const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
 const router = express.Router();
 const Notice = require('../models/Notice');
+const Student = require('../models/Student');
+const Faculty = require('../models/Faculty');
 const { protect, authorize } = require('../middleware/authMiddleware');
+const { notifyNewPost } = require('../utils/emailService');
 
 // Validation middleware
 const validate = (req, res, next) => {
@@ -18,7 +20,7 @@ const validate = (req, res, next) => {
     next();
 };
 
-// GET /api/notices — Get all notices (with pagination & search)
+// GET /api/notices — Get all notices
 router.get('/', [
     query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
     query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
@@ -27,16 +29,13 @@ router.get('/', [
     query('department').optional().trim(),
 ], validate, async (req, res) => {
     try {
-        // Parse pagination params
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        // Build search query
         const searchQuery = { isActive: true };
 
         if (req.query.search) {
-            // Use text search for better performance
             searchQuery.$text = { $search: req.query.search };
         }
         if (req.query.category) {
@@ -49,13 +48,7 @@ router.get('/', [
             ];
         }
 
-        // Execute query with pagination
-        const notices = await Notice.find(searchQuery)
-            .sort({ createdAt: -1 })
-            .skip(skip)
-            .limit(limit);
-
-        // Get total count for pagination
+        const notices = await Notice.find(searchQuery).sort({ createdAt: -1 }).skip(skip).limit(limit);
         const total = await Notice.countDocuments(searchQuery);
 
         res.json({
@@ -105,6 +98,25 @@ router.post('/', [
             postedBy: req.user.name,
         });
         const saved = await notice.save();
+
+        // Broadcast email notification (asynchronously)
+        (async () => {
+            try {
+                const students = await Student.find({ isActive: true }).select('email');
+                const facultyArr = await Faculty.find({ isActive: true }).select('email');
+                const emails = [...new Set([
+                    ...students.map(s => s.email),
+                    ...facultyArr.map(f => f.email)
+                ])].filter(Boolean);
+
+                if (emails.length > 0) {
+                    await notifyNewPost(saved, 'Notice', emails);
+                }
+            } catch (err) {
+                console.error("Delayed broadcast failed:", err);
+            }
+        })();
+
         res.status(201).json(saved);
     } catch (error) {
         res.status(400).json({ message: 'Invalid data', error: error.message });
@@ -122,26 +134,16 @@ router.put('/:id', [
 ], validate, async (req, res) => {
     try {
         const existingNotice = await Notice.findById(req.params.id);
-
-        if (!existingNotice) {
-            return res.status(404).json({ message: 'Notice not found' });
-        }
+        if (!existingNotice) return res.status(404).json({ message: 'Notice not found' });
 
         if (req.user.role === 'hod' && existingNotice.department !== req.user.department) {
             return res.status(403).json({ message: 'Not authorized to update notices outside your department' });
         }
 
-        const updateData = {
-            ...req.body,
-            postedBy: existingNotice.postedBy,
-        };
-
-        if (req.user.role === 'hod') {
-            updateData.department = req.user.department;
-        }
+        const updateData = { ...req.body, postedBy: existingNotice.postedBy };
+        if (req.user.role === 'hod') updateData.department = req.user.department;
 
         const updated = await Notice.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
-        if (!updated) return res.status(404).json({ message: 'Notice not found' });
         res.json(updated);
     } catch (error) {
         res.status(400).json({ message: 'Update failed', error: error.message });
@@ -157,11 +159,9 @@ router.delete('/:id', [
     try {
         const deleted = await Notice.findById(req.params.id);
         if (!deleted) return res.status(404).json({ message: 'Notice not found' });
-
         if (req.user.role === 'hod' && deleted.department !== req.user.department) {
             return res.status(403).json({ message: 'Not authorized to delete notices outside your department' });
         }
-
         await deleted.deleteOne();
         res.json({ message: `Notice "${deleted.title}" has been removed` });
     } catch (error) {
@@ -170,4 +170,3 @@ router.delete('/:id', [
 });
 
 module.exports = router;
-

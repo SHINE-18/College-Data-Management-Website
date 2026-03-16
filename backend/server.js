@@ -80,6 +80,10 @@ app.use('/api/publications', require('./routes/publicationRoutes'));
 app.use('/api/achievements', require('./routes/achievementRoutes'));
 app.use('/api/qualifications', require('./routes/qualificationRoutes'));
 app.use('/api/circulars', require('./routes/circularRoutes'));
+app.use('/api/student-auth', require('./routes/studentAuthRoutes'));
+app.use('/api/student', require('./routes/studentRoutes'));
+app.use('/api/faculty', require('./routes/facultyStudentRoutes')); // Specialized faculty-student portal routes
+app.use('/api/academics', require('./routes/academicRoutes')); // Syllabi and Resources
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -105,6 +109,26 @@ if (!fs.existsSync(facultyDir)) {
 const circularsDir = path.join(uploadsDir, 'circulars');
 if (!fs.existsSync(circularsDir)) {
     fs.mkdirSync(circularsDir, { recursive: true });
+}
+
+const assignmentsDir = path.join(uploadsDir, 'assignments');
+if (!fs.existsSync(assignmentsDir)) {
+    fs.mkdirSync(assignmentsDir, { recursive: true });
+}
+
+const submissionsDir = path.join(uploadsDir, 'submissions');
+if (!fs.existsSync(submissionsDir)) {
+    fs.mkdirSync(submissionsDir, { recursive: true });
+}
+
+const syllabiDir = path.join(uploadsDir, 'syllabi');
+if (!fs.existsSync(syllabiDir)) {
+    fs.mkdirSync(syllabiDir, { recursive: true });
+}
+
+const resourcesDir = path.join(uploadsDir, 'resources');
+if (!fs.existsSync(resourcesDir)) {
+    fs.mkdirSync(resourcesDir, { recursive: true });
 }
 
 // Serve uploaded timetable PDFs statically

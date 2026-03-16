@@ -1,0 +1,45 @@
+const mongoose = require('mongoose');
+
+const syllabusSchema = new mongoose.Schema({
+    courseTitle: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    courseCode: {
+        type: String,
+        required: true,
+        unique: true,
+        trim: true
+    },
+    semester: {
+        type: Number,
+        required: true,
+        min: 1,
+        max: 8
+    },
+    department: {
+        type: String,
+        default: 'Computer Engineering',
+        required: true
+    },
+    credits: {
+        type: Number,
+        required: true
+    },
+    syllabusUrl: {
+        type: String,
+        required: true
+    },
+    uploadedBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true
+    },
+    isActive: {
+        type: Boolean,
+        default: true
+    }
+}, { timestamps: true });
+
+module.exports = mongoose.model('Syllabus', syllabusSchema);
