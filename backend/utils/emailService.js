@@ -68,4 +68,26 @@ const notifyNewPost = async (item, type, emails) => {
     return sendBroadcastEmail(subject, text, html, emails);
 };
 
-module.exports = { notifyNewPost, sendBroadcastEmail };
+/**
+ * Send a single email (e.g., for password reset)
+ * @param {Object} options - { to, subject, html }
+ */
+const sendEmail = async ({ to, subject, html }) => {
+    const mailOptions = {
+        from: `"VGEC CE Department" <${process.env.EMAIL_USER}>`,
+        to,
+        subject,
+        html,
+    };
+
+    try {
+        const info = await transporter.sendMail(mailOptions);
+        console.log('Email sent:', info.messageId);
+        return info;
+    } catch (error) {
+        console.error('Email send failed:', error);
+        throw error;
+    }
+};
+
+module.exports = { notifyNewPost, sendBroadcastEmail, sendEmail };

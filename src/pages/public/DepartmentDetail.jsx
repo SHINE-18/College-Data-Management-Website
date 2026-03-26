@@ -1,193 +1,263 @@
-import { useParams } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import FacultyCard from '../../components/FacultyCard';
-
-const deptData = {
-    cse: {
-        name: 'Computer Science & Engineering', code: 'CSE',
-        hod: { name: 'Dr. Rajesh Kumar', message: 'Welcome to the Department of Computer Science & Engineering. We are committed to producing industry-ready professionals who can lead technological innovations. Our curriculum is designed to keep pace with the rapidly evolving tech landscape.' },
-        vision: 'To be a globally recognized center of excellence in computing education and research, producing technocrats who make a difference.',
-        mission: 'To provide quality education in computer science, foster innovation through research, and develop professionals with strong ethical values and social responsibility.',
-        faculty: [
-            { id: 'f1', name: 'Dr. Rajesh Kumar', designation: 'Professor & HOD', qualification: 'Ph.D. (IIT Delhi)', specialization: 'Artificial Intelligence', email: 'rajesh.k@college.edu' },
-            { id: 'f2', name: 'Dr. Sneha Verma', designation: 'Associate Professor', qualification: 'Ph.D. (IISC)', specialization: 'Machine Learning', email: 'sneha.v@college.edu' },
-            { id: 'f3', name: 'Prof. Amit Joshi', designation: 'Assistant Professor', qualification: 'M.Tech (NIT)', specialization: 'Data Science', email: 'amit.j@college.edu' },
-            { id: 'f4', name: 'Dr. Kavita Nair', designation: 'Associate Professor', qualification: 'Ph.D. (IIT Madras)', specialization: 'Cybersecurity', email: 'kavita.n@college.edu' },
-            { id: 'f5', name: 'Prof. Deepak Rao', designation: 'Assistant Professor', qualification: 'M.Tech (IIIT)', specialization: 'Cloud Computing', email: 'deepak.r@college.edu' },
-            { id: 'f6', name: 'Dr. Pooja Mehta', designation: 'Professor', qualification: 'Ph.D. (IIT Bombay)', specialization: 'Computer Vision', email: 'pooja.m@college.edu' },
-        ],
-        labs: [
-            { name: 'AI & ML Lab', capacity: 60, inCharge: 'Dr. Sneha Verma' },
-            { name: 'Network Security Lab', capacity: 40, inCharge: 'Dr. Kavita Nair' },
-            { name: 'Software Engineering Lab', capacity: 60, inCharge: 'Prof. Amit Joshi' },
-            { name: 'Cloud Computing Lab', capacity: 40, inCharge: 'Prof. Deepak Rao' },
-            { name: 'Programming Lab', capacity: 80, inCharge: 'Prof. Amit Joshi' },
-        ],
-        courses: [
-            { sem: 1, subjects: ['Engineering Mathematics I', 'Physics', 'Basic Electronics', 'Programming in C', 'Workshop Practice'] },
-            { sem: 2, subjects: ['Mathematics II', 'Chemistry', 'Data Structures', 'Digital Logic', 'English Communication'] },
-            { sem: 3, subjects: ['Discrete Mathematics', 'OOP with Java', 'Computer Architecture', 'Database Systems', 'OS Concepts'] },
-            { sem: 4, subjects: ['Design & Analysis of Algorithms', 'Computer Networks', 'Software Engineering', 'Theory of Computation', 'Web Technologies'] },
-            { sem: 5, subjects: ['Artificial Intelligence', 'Compiler Design', 'Cloud Computing', 'Information Security', 'Elective I'] },
-            { sem: 6, subjects: ['Machine Learning', 'Distributed Systems', 'Mobile Computing', 'Elective II', 'Mini Project'] },
-            { sem: 7, subjects: ['Deep Learning', 'Big Data Analytics', 'Elective III', 'Elective IV', 'Major Project I'] },
-            { sem: 8, subjects: ['Major Project II', 'Internship', 'Elective V', 'Seminar'] },
-        ],
-        achievements: [
-            'Best Department Award — University Level 2025',
-            '12 Scopus-indexed publications in Q1 journals this year',
-            'Students won 1st prize at Smart India Hackathon 2025',
-            'NBA Accredited for 5 years',
-            'MoU signed with Google, Microsoft, and Amazon for research collaboration',
-        ],
-    },
-};
-
-// Fallback for other department IDs
-const fallbackDept = {
-    name: 'Department Details', code: 'DEPT',
-    hod: { name: 'Dr. Faculty Head', message: 'Welcome to our department. We strive for excellence in education and research.' },
-    vision: 'To be a leading center of academic and research excellence.',
-    mission: 'To nurture talent and foster innovation for societal benefit.',
-    faculty: [
-        { id: 'f1', name: 'Dr. Faculty Member', designation: 'Professor & HOD', qualification: 'Ph.D.', specialization: 'Core Subject', email: 'faculty@college.edu' },
-    ],
-    labs: [{ name: 'Department Lab', capacity: 60, inCharge: 'Dr. Faculty Member' }],
-    courses: [{ sem: 1, subjects: ['Subject 1', 'Subject 2', 'Subject 3'] }],
-    achievements: ['Department Achievement 1', 'Department Achievement 2'],
-};
+import { DEPARTMENT_DETAILS } from '../../constants/departments';
+import api from '../../utils/axios';
+import { useState } from 'react';
 
 const DepartmentDetail = () => {
     const { id } = useParams();
-    const dept = deptData[id] || { ...fallbackDept, name: `${id?.toUpperCase()} Department` };
+    const [faculty, setFaculty] = useState([]);
+    const [loading, setLoading] = useState(true);
+
+    const dept = DEPARTMENT_DETAILS.find(d => d.id === id) || DEPARTMENT_DETAILS[0];
+
+    useEffect(() => {
+        const fetchDeptFaculty = async () => {
+            setLoading(true);
+            try {
+                // Fetch only faculty for this department
+                const response = await api.get(`/faculty?department=${encodeURIComponent(dept.name)}&limit=6`);
+                setFaculty(response.data.data);
+            } catch (error) {
+                console.error('Error fetching department faculty:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchDeptFaculty();
+        window.scrollTo(0, 0);
+    }, [id, dept.name]);
 
     return (
-        <div className="animate-fade-in">
-            <div className="bg-gradient-to-r from-primary-700 to-primary py-16">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center space-x-2 text-primary-200 text-sm mb-4">
-                        <a href="/departments" className="hover:text-white transition">Departments</a>
+        <div className="animate-fade-in pb-20 bg-slate-50/50">
+            {/* ═══════ HERO SECTION ═══════ */}
+            <div className="bg-primary-700 relative overflow-hidden py-24">
+                {/* Decorative Background Elements */}
+                <div className="absolute top-0 right-0 w-1/3 h-full bg-accent/10 skew-x-[-15deg] translate-x-1/2"></div>
+                <div className="absolute bottom-0 left-0 w-64 h-64 bg-white/5 rounded-full -translate-x-1/2 translate-y-1/2"></div>
+
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div className="flex items-center space-x-3 text-primary-200 text-xs font-bold uppercase tracking-widest mb-6">
+                        <Link to="/" className="hover:text-white transition">VGEC</Link>
                         <span>/</span>
-                        <span className="text-white">{dept.name}</span>
+                        <span className="text-white">Department Hub</span>
                     </div>
-                    <h1 className="text-3xl sm:text-4xl font-bold text-white">{dept.name}</h1>
+                    <h1 className="text-4xl md:text-6xl font-black text-white leading-tight mb-4">
+                        Department of <br />
+                        <span className="text-accent">{dept.name}</span>
+                    </h1>
+                    <p className="text-primary-100/80 text-lg max-w-2xl font-medium leading-relaxed">
+                        {dept.description}
+                    </p>
+
+                    <div className="mt-10 flex flex-wrap gap-4">
+                        <Link to={`/notices?dept=${encodeURIComponent(dept.name)}`} className="bg-white text-primary px-8 py-3 rounded-xl font-bold hover:bg-primary-50 transition shadow-xl flex items-center">
+                            Notice Board
+                            <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                        </Link>
+                        <Link to={`/faculty?dept=${encodeURIComponent(dept.name)}`} className="bg-primary-600/50 backdrop-blur-md text-white border border-white/20 px-8 py-3 rounded-xl font-bold hover:bg-primary-600 transition">
+                            Meet Faculty
+                        </Link>
+                    </div>
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-12">
-                {/* HOD Section */}
-                <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
-                    <div className="flex flex-col md:flex-row items-start gap-6">
-                        <div className="w-24 h-24 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                            <span className="text-white font-bold text-3xl">{dept.hod.name[0]}</span>
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-gray-900">{dept.hod.name}</h2>
-                            <p className="text-accent font-medium text-sm mb-3">Head of Department</p>
-                            <p className="text-gray-600 leading-relaxed">{dept.hod.message}</p>
-                        </div>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-12 relative z-20">
+                {/* Stats Bar if available */}
+                {dept.stats && (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                        {dept.stats.map((stat, i) => (
+                            <div key={i} className="bg-white rounded-2xl shadow-lg p-6 text-center border border-slate-100 flex flex-col justify-center">
+                                <p className="text-3xl font-black text-primary">{stat.val}</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{stat.label}</p>
+                            </div>
+                        ))}
                     </div>
-                </section>
+                )}
 
-                {/* Vision & Mission */}
-                <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                        <h3 className="text-lg font-bold text-primary mb-3 flex items-center space-x-2">
-                            <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                            <span>Vision</span>
-                        </h3>
-                        <p className="text-gray-600 leading-relaxed">{dept.vision}</p>
-                    </div>
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-                        <h3 className="text-lg font-bold text-primary mb-3 flex items-center space-x-2">
-                            <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-                            <span>Mission</span>
-                        </h3>
-                        <p className="text-gray-600 leading-relaxed">{dept.mission}</p>
-                    </div>
-                </section>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* ═══════ LEFT COLUMN ═══════ */}
+                    <div className="lg:col-span-2 space-y-8">
+                        {/* About Section if available */}
+                        {dept.detailAbout && (
+                            <section className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 md:p-10">
+                                <h2 className="text-2xl font-black text-slate-800 tracking-tight mb-6 flex items-center">
+                                    <span className="w-1.5 h-6 bg-primary rounded-full mr-3"></span>
+                                    About the Department
+                                </h2>
+                                <p className="text-slate-600 leading-relaxed font-medium">
+                                    {dept.detailAbout}
+                                </p>
+                            </section>
+                        )}
 
-                {/* Faculty */}
-                <section>
-                    <h2 className="text-xl font-bold text-gray-900 mb-6">Faculty Members</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-                        {dept.faculty.map(f => <FacultyCard key={f.id} faculty={f} />)}
-                    </div>
-                </section>
+                        {/* HOD Message Card */}
+                        <section className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 md:p-10 relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-8 text-primary/5 group-hover:text-primary/10 transition">
+                                <svg className="w-24 h-24" fill="currentColor" viewBox="0 0 24 24"><path d="M14.017 21L14.017 18C14.017 16.8954 14.9124 16 16.017 16H19.017C19.5693 16 20.017 15.5523 20.017 15V9C20.017 8.44772 19.5693 8 19.017 8H15.017C14.4647 8 14.017 8.44772 14.017 9V11.5L13.017 11.5L13.017 9C13.017 7.89543 13.9124 7 15.017 7H19.017C20.1216 7 21.017 7.89543 21.017 9V15C21.017 18.3137 18.3307 21 15.017 21L14.017 21ZM5.017 21L5.017 18C5.017 16.8954 5.91243 16 7.017 16H10.017C10.5693 16 11.017 15.5523 11.017 15V9C11.017 8.44772 10.5693 8 10.017 8H6.017C5.46472 8 5.017 8.44772 5.017 9V11.5L4.017 11.5L4.017 9C4.017 7.89543 4.91243 7 6.017 7H10.017C11.1216 7 12.017 7.89543 12.017 9V15C12.017 18.3137 9.33071 21 6.017 21L5.017 21Z" /></svg>
+                            </div>
 
-                {/* Labs */}
-                <section>
-                    <h2 className="text-xl font-bold text-gray-900 mb-6">Laboratories</h2>
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="bg-primary text-white">
-                                    <th className="text-left px-6 py-3 text-sm font-semibold">Lab Name</th>
-                                    <th className="text-left px-6 py-3 text-sm font-semibold">Capacity</th>
-                                    <th className="text-left px-6 py-3 text-sm font-semibold">In-Charge</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {dept.labs.map((lab, i) => (
-                                    <tr key={i} className={`${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition`}>
-                                        <td className="px-6 py-3 text-sm font-medium text-gray-900">{lab.name}</td>
-                                        <td className="px-6 py-3 text-sm text-gray-600">{lab.capacity}</td>
-                                        <td className="px-6 py-3 text-sm text-gray-600">{lab.inCharge}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-
-                {/* Courses */}
-                <section>
-                    <h2 className="text-xl font-bold text-gray-900 mb-6">Courses Offered</h2>
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                        <table className="w-full">
-                            <thead>
-                                <tr className="bg-primary text-white">
-                                    <th className="text-left px-6 py-3 text-sm font-semibold w-32">Semester</th>
-                                    <th className="text-left px-6 py-3 text-sm font-semibold">Subjects</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {dept.courses.map((c, i) => (
-                                    <tr key={i} className={`${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition`}>
-                                        <td className="px-6 py-3 text-sm font-semibold text-primary">Semester {c.sem}</td>
-                                        <td className="px-6 py-3 text-sm text-gray-600">{c.subjects.join(' • ')}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
-
-                {/* Achievements */}
-                <section>
-                    <h2 className="text-xl font-bold text-gray-900 mb-6">Recent Achievements</h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {dept.achievements.map((a, i) => (
-                            <div key={i} className="flex items-start space-x-3 bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:shadow-md transition">
-                                <div className="w-8 h-8 bg-accent/10 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                                    <svg className="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
+                            <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
+                                <div className="w-48 h-56 shrink-0 relative">
+                                    <div className="absolute inset-0 bg-primary/10 rounded-2xl rotate-3"></div>
+                                    <div className="absolute inset-0 bg-accent/20 rounded-2xl -rotate-3"></div>
+                                    <div className="relative w-full h-full bg-gradient-to-br from-slate-200 to-slate-300 rounded-2xl flex items-center justify-center overflow-hidden shadow-lg border-4 border-white text-4xl text-white font-black">
+                                        {dept.hod.name[0]}
+                                    </div>
                                 </div>
-                                <p className="text-sm text-gray-700">{a}</p>
+                                <div className="space-y-4">
+                                    <div>
+                                        <h2 className="text-2xl font-black text-slate-800 tracking-tight">{dept.hod.name}</h2>
+                                        <p className="text-accent font-bold text-xs uppercase tracking-widest">Head of Department</p>
+                                    </div>
+                                    <p className="text-slate-600 leading-relaxed italic text-lg font-medium">
+                                        "{dept.hod.message}"
+                                    </p>
+                                    <div className="pt-4 flex items-center space-x-3">
+                                        <div className="w-10 h-[2px] bg-slate-200"></div>
+                                        <span className="text-xs text-slate-400 font-bold uppercase">Visionary Leadership</span>
+                                    </div>
+                                </div>
                             </div>
-                        ))}
-                    </div>
-                </section>
+                        </section>
 
-                {/* Gallery Placeholder */}
-                <section>
-                    <h2 className="text-xl font-bold text-gray-900 mb-6">Department Gallery</h2>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                            <div key={i} className="aspect-square bg-gradient-to-br from-primary/10 to-accent/10 rounded-xl flex items-center justify-center hover:from-primary/20 hover:to-accent/20 transition group">
-                                <svg className="w-8 h-8 text-primary/30 group-hover:text-primary/50 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        {/* Research Areas if available */}
+                        {dept.researchAreas && (
+                            <section className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 md:p-10">
+                                <h2 className="text-2xl font-black text-slate-800 tracking-tight mb-8 flex items-center">
+                                    <span className="w-1.5 h-6 bg-accent rounded-full mr-3"></span>
+                                    Research Horizons
+                                </h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {dept.researchAreas.map((area, i) => (
+                                        <div key={i} className="group p-6 rounded-2xl border border-slate-100 bg-slate-50 hover:bg-white hover:border-primary/20 hover:shadow-xl transition-all duration-300">
+                                            <h4 className="font-bold text-primary mb-4 group-hover:text-accent transition">{area.title}</h4>
+                                            <div className="flex justify-between items-center text-[10px] font-black tracking-widest text-slate-400">
+                                                <span>{area.faculty} FACULTY</span>
+                                                <span>{area.projects} PROJECTS</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {/* Vision & Mission Grid */}
+                        <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div className="bg-primary text-white rounded-3xl p-8 shadow-xl shadow-primary/20 relative overflow-hidden">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-x-1/2 -translate-y-1/2"></div>
+                                <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center mb-6">
+                                    <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                </div>
+                                <h3 className="text-xl font-black mb-3 flex items-center">
+                                    <span>Vision</span>
+                                </h3>
+                                <p className="text-primary-100 font-medium leading-relaxed">{dept.vision}</p>
                             </div>
-                        ))}
+                            <div className="bg-white text-slate-800 border border-slate-100 rounded-3xl p-8 shadow-xl shadow-slate-200/50">
+                                <div className="w-12 h-12 bg-accent/10 rounded-xl flex items-center justify-center mb-6">
+                                    <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                                </div>
+                                <h3 className="text-xl font-black text-primary mb-3">Mission</h3>
+                                <p className="text-slate-500 font-medium leading-relaxed">{dept.mission}</p>
+                            </div>
+                        </section>
+
+                        {/* Placement Section if available */}
+                        {dept.placementStats && (
+                            <section className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-3xl p-8 md:p-10 shadow-2xl">
+                                <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10">
+                                    <div>
+                                        <h2 className="text-2xl font-black text-white tracking-tight">Placement Statistics</h2>
+                                        <p className="text-slate-400 text-sm mt-1">Class of 2026 Recruitment Highlights</p>
+                                    </div>
+                                    <div className="bg-accent text-slate-900 px-6 py-2 rounded-full font-black text-xs uppercase tracking-widest">
+                                        Top Recruiters
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    {dept.placementStats.map((p, i) => (
+                                        <div key={i} className="bg-white/5 border border-white/10 rounded-2xl p-6 text-center hover:bg-white/10 transition">
+                                            <p className="text-3xl font-black text-white">{p.count}</p>
+                                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-2">{p.name}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {/* Achievements Highlights */}
+                        <section className="bg-slate-50 rounded-3xl p-8 border border-slate-200/60">
+                            <h2 className="text-xl font-black text-slate-800 mb-6 flex items-center">
+                                <span className="w-1.5 h-6 bg-accent rounded-full mr-3"></span>
+                                Departmental Milestones
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {dept.achievements.map((a, i) => (
+                                    <div key={i} className="flex items-center space-x-4 bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                                        <div className="w-10 h-10 bg-primary/5 rounded-full flex items-center justify-center shrink-0">
+                                            <svg className="w-5 h-5 text-primary" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" /></svg>
+                                        </div>
+                                        <p className="text-sm font-bold text-slate-600">{a}</p>
+                                    </div>
+                                ))}
+                            </div>
+                        </section>
                     </div>
-                </section>
+
+                    {/* ═══════ RIGHT COLUMN: QUICK STATS & FACULTY ═══════ */}
+                    <div className="space-y-8">
+                        {/* Quick Access List */}
+                        <section className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-6">
+                            <h3 className="text-sm font-black text-slate-400 uppercase tracking-widest mb-6 text-center">Resources</h3>
+                            <div className="space-y-2">
+                                {[
+                                    { name: 'Syllabus Archive', path: `/syllabi?dept=${encodeURIComponent(dept.name)}`, icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
+                                    { name: 'Branch Timetable', path: `/timetable?dept=${encodeURIComponent(dept.name)}`, icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z' },
+                                    { name: 'Faculty Directory', path: `/faculty?dept=${encodeURIComponent(dept.name)}`, icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z' },
+                                    { name: 'Branch Events', path: `/events?dept=${encodeURIComponent(dept.name)}`, icon: 'M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z' },
+                                ].map((item, id) => (
+                                    <Link key={id} to={item.path} className="flex items-center p-4 rounded-2xl hover:bg-slate-50 transition border border-transparent hover:border-slate-100 group">
+                                        <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 group-hover:bg-primary group-hover:text-white transition">
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} /></svg>
+                                        </div>
+                                        <span className="ml-4 font-bold text-slate-600 transition group-hover:text-primary">{item.name}</span>
+                                    </Link>
+                                ))}
+                            </div>
+                        </section>
+
+                        {/* Recent Faculty (Small Grid) */}
+                        <section className="bg-white rounded-3xl p-6 shadow-xl shadow-slate-200/50 border border-slate-100">
+                            <div className="flex items-center justify-between mb-6">
+                                <h3 className="text-lg font-black text-slate-800 tracking-tight">Department Faculty</h3>
+                                <Link to={`/faculty?dept=${encodeURIComponent(dept.name)}`} className="text-xs font-bold text-accent hover:underline">See All</Link>
+                            </div>
+
+                            {loading ? (
+                                <div className="space-y-4">
+                                    {[1, 2, 3].map(i => <div key={i} className="h-16 bg-slate-100 animate-pulse rounded-2xl"></div>)}
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {faculty.slice(0, 3).map(f => (
+                                        <div key={f._id} className="flex items-center space-x-4 p-2">
+                                            <div className="w-12 h-12 bg-primary/5 rounded-full flex items-center justify-center shrink-0 border border-primary/10">
+                                                <span className="text-primary font-bold text-xs">{f.name[0]}</span>
+                                            </div>
+                                            <div className="min-w-0">
+                                                <h4 className="text-sm font-bold text-slate-800 truncate">{f.name}</h4>
+                                                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{f.designation}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {faculty.length === 0 && <p className="text-xs text-slate-400 text-center italic py-4">No faculty profiles available yet.</p>}
+                                </div>
+                            )}
+                        </section>
+                    </div>
+                </div>
             </div>
         </div>
     );

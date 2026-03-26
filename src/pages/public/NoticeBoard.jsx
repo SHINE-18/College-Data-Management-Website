@@ -1,13 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import NoticeCard from '../../components/NoticeCard';
 import api from '../../utils/axios';
+import { ALL_DEPARTMENTS } from '../../constants/departments';
+import { useState, useEffect } from 'react';
+import usePageTitle from '../../utils/usePageTitle';
 
 const categories = ['All', 'General', 'Exam', 'Admission', 'Events'];
-const departments = ['All', 'CSE', 'ECE', 'ME', 'CE', 'EE', 'IT'];
+const departments = ALL_DEPARTMENTS;
 
 const NoticeBoard = () => {
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const initialDept = queryParams.get('dept') || 'All';
+    usePageTitle('Notice Board');
+
     const [tab, setTab] = useState('All');
-    const [dept, setDept] = useState('All');
+    const [dept, setDept] = useState(initialDept);
     const [search, setSearch] = useState('');
     const [notices, setNotices] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -28,7 +36,7 @@ const NoticeBoard = () => {
                 const params = new URLSearchParams();
                 params.append('page', pagination.page);
                 params.append('limit', pagination.limit);
-                
+
                 if (search) {
                     params.append('search', search);
                 }
@@ -94,9 +102,9 @@ const NoticeBoard = () => {
                 {/* Tabs */}
                 <div className="flex flex-wrap gap-2 mb-6">
                     {categories.map(cat => (
-                        <button 
-                            key={cat} 
-                            onClick={() => handleTabChange(cat)} 
+                        <button
+                            key={cat}
+                            onClick={() => handleTabChange(cat)}
                             className={`px-4 py-2 rounded-lg text-sm font-medium transition ${tab === cat ? 'bg-primary text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
                         >
                             {cat}
@@ -105,27 +113,27 @@ const NoticeBoard = () => {
                 </div>
                 {/* Filters */}
                 <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                    <select 
-                        id="notice-dept" 
-                        value={dept} 
-                        onChange={e => handleDeptChange(e.target.value)} 
+                    <select
+                        id="notice-dept"
+                        value={dept}
+                        onChange={e => handleDeptChange(e.target.value)}
                         className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none bg-white"
                     >
                         {departments.map(d => <option key={d} value={d}>{d === 'All' ? 'All Departments' : d}</option>)}
                     </select>
                     <div className="flex-1 relative">
                         <svg className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                        <input 
-                            id="notice-search" 
-                            type="text" 
-                            placeholder="Search notices..." 
-                            value={search} 
-                            onChange={e => handleSearchChange(e.target.value)} 
-                            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none transition" 
+                        <input
+                            id="notice-search"
+                            type="text"
+                            placeholder="Search notices..."
+                            value={search}
+                            onChange={e => handleSearchChange(e.target.value)}
+                            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none transition"
                         />
                     </div>
                 </div>
-                
+
                 {loading ? (
                     <div className="flex items-center justify-center py-16">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -135,7 +143,7 @@ const NoticeBoard = () => {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-8">
                             {notices.map(n => <NoticeCard key={n._id} notice={n} />)}
                         </div>
-                        
+
                         {notices.length === 0 && (
                             <div className="text-center py-12 text-gray-400">
                                 <p>No notices found.</p>
@@ -145,24 +153,24 @@ const NoticeBoard = () => {
                         {/* Pagination */}
                         {pagination.pages > 1 && (
                             <div className="flex justify-center items-center space-x-2">
-                                <button 
-                                    onClick={() => handlePageChange(pagination.page - 1)} 
+                                <button
+                                    onClick={() => handlePageChange(pagination.page - 1)}
                                     disabled={!pagination.hasPrev}
                                     className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 disabled:opacity-50 hover:bg-gray-50 transition"
                                 >
                                     Prev
                                 </button>
                                 {Array.from({ length: pagination.pages }, (_, i) => (
-                                    <button 
-                                        key={i} 
+                                    <button
+                                        key={i}
                                         onClick={() => handlePageChange(i + 1)}
                                         className={`w-10 h-10 rounded-lg text-sm font-medium transition ${pagination.page === i + 1 ? 'bg-primary text-white' : 'border border-gray-200 hover:bg-gray-50'}`}
                                     >
                                         {i + 1}
                                     </button>
                                 ))}
-                                <button 
-                                    onClick={() => handlePageChange(pagination.page + 1)} 
+                                <button
+                                    onClick={() => handlePageChange(pagination.page + 1)}
                                     disabled={!pagination.hasNext}
                                     className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 disabled:opacity-50 hover:bg-gray-50 transition"
                                 >

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import vgec_hd from '../assets/vgec_hd.png';
+import { DEPARTMENT_DETAILS } from '../constants/departments';
 
 const Navbar = () => {
     const [open, setOpen] = useState(false);
@@ -9,10 +10,32 @@ const Navbar = () => {
     const [academicsOpen, setAcademicsOpen] = useState(false);
     const { isAuthenticated, role, logout } = useAuth();
     const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+
+    // Detect department from either query param (?dept=...) or path (/department/:id)
+    const getActiveDept = () => {
+        const deptParam = queryParams.get('dept');
+        if (deptParam) return deptParam;
+
+        if (location.pathname.startsWith('/department/')) {
+            const deptId = location.pathname.split('/').pop();
+            const deptObj = DEPARTMENT_DETAILS.find(d => d.id === deptId);
+            return deptObj ? deptObj.name : null;
+        }
+        return null;
+    };
+
+    const activeDept = getActiveDept();
+
     const peopleRef = useRef(null);
     const academicsRef = useRef(null);
 
     const portalLink = role === 'super_admin' ? '/admin/dashboard' : role === 'hod' ? '/hod/dashboard' : '/faculty-portal/dashboard';
+
+    // Helper to generate links with current department context
+    const getDeptLink = (path) => activeDept ? `${path}?dept=${encodeURIComponent(activeDept)}` : path;
+
+    // ... (rest of the file)
 
     // Close dropdowns when clicking outside
     useEffect(() => {
@@ -36,15 +59,8 @@ const Navbar = () => {
                         <span>GTU Affiliated</span>
                         <span>•</span>
                         <span>AICTE Approved</span>
-                        <span>•</span>
-                        {isAuthenticated ? (
-                            <>
-                                <Link to={portalLink} className="hover:text-white transition">Dashboard</Link>
-                                <button onClick={logout} className="hover:text-white transition">Logout</button>
-                            </>
-                        ) : (
-                            <Link to="/login" className="hover:text-white transition font-medium">Faculty Login</Link>
-                        )}
+                        {/* <span>•</span> */}
+
                     </div>
                 </div>
             </div>
@@ -56,26 +72,24 @@ const Navbar = () => {
                         <img src={vgec_hd} alt="VGEC Logo" className="w-14 h-14 object-contain" />
                         <div>
                             <h1 className="font-heading font-bold text-lg md:text-xl text-gray-900 uppercase tracking-wide leading-tight">
-                                Department of Computer Engineering
+                                {activeDept ? `VGEC - ${activeDept}` : 'VGEC Department Portal  '}
                             </h1>
                             <p className="text-xs md:text-sm text-gray-500 font-medium tracking-wider uppercase">
-                                Vishwakarma Government Engineering College
+                                {activeDept ? 'Building the Future Together' : 'Vishwakarma Government Engineering College'}
                             </p>
                         </div>
                     </Link>
-                    {/* Search bar  */}
-                    <div className="hidden lg:flex items-center">
+                    {/* LOGIN  */}
+                    <div className="hidden lg:flex item-center">
                         <div className="relative">
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                                className="w-52 pl-4 pr-10 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition"
-                            />
-                            <button className="absolute right-0 top-0 bottom-0 bg-primary text-white px-3 rounded-r-lg hover:bg-primary-700 transition">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                </svg>
-                            </button>
+                            {isAuthenticated ? (
+                                <>
+                                    <Link to={portalLink} className="bg-primary text-white text-sm font-semibold px-7 py-2 mr-7 rounded-lg hover:bg-blue-900 transition ">Dashboard</Link>
+                                    <button onClick={logout} className="bg-primary text-white text-sm font-semibold px-7 py-2 rounded-lg hover:bg-blue-900 transition ">Logout</button>
+                                </>
+                            ) : (
+                                <Link to="/login" className="bg-primary text-white text-sm font-semibold px-5 py-2 rounded-lg hover:bg-blue-900 transition block text-center">Faculty Login</Link>
+                            )}
                         </div>
                     </div>
                     {/* Mobile menu button */}
@@ -112,7 +126,7 @@ const Navbar = () => {
                             </button>
                             {peopleOpen && (
                                 <div className="absolute top-full left-0 mt-0 bg-white shadow-xl rounded-b-lg border border-gray-200 min-w-[180px] z-50 animate-slide-down">
-                                    <Link to="/faculty" onClick={() => setPeopleOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-primary hover:text-white transition">Faculty</Link>
+                                    <Link to={getDeptLink("/faculty")} onClick={() => setPeopleOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-primary hover:text-white transition">Faculty</Link>
                                 </div>
                             )}
                         </div>
@@ -130,17 +144,17 @@ const Navbar = () => {
                             </button>
                             {academicsOpen && (
                                 <div className="absolute top-full left-0 mt-0 bg-white shadow-xl rounded-b-lg border border-gray-200 min-w-[200px] z-50 animate-slide-down">
-                                    <Link to="/timetable" onClick={() => setAcademicsOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-primary hover:text-white transition">Timetable</Link>
-                                    <Link to="/calendar" onClick={() => setAcademicsOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-primary hover:text-white transition">Academic Calendar</Link>
-                                    <Link to="/syllabi" onClick={() => setAcademicsOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-primary hover:text-white transition">Syllabus Archive</Link>
+                                    <Link to={getDeptLink("/timetable")} onClick={() => setAcademicsOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-primary hover:text-white transition">Timetable</Link>
+                                    <Link to={getDeptLink("/calendar")} onClick={() => setAcademicsOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-primary hover:text-white transition">Academic Calendar</Link>
+                                    <Link to={getDeptLink("/syllabi")} onClick={() => setAcademicsOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-primary hover:text-white transition">Syllabus Archive</Link>
                                 </div>
                             )}
                         </div>
 
-                        <Link to="/events" className={`px-4 py-2 text-sm font-semibold uppercase tracking-wider transition ${isActive('/events') ? 'bg-white/20 text-white' : 'text-primary-100 hover:bg-white/10 hover:text-white'}`}>
+                        <Link to={getDeptLink("/events")} className={`px-4 py-2 text-sm font-semibold uppercase tracking-wider transition ${isActive('/events') ? 'bg-white/20 text-white' : 'text-primary-100 hover:bg-white/10 hover:text-white'}`}>
                             Events
                         </Link>
-                        <Link to="/notices" className={`px-4 py-2 text-sm font-semibold uppercase tracking-wider transition ${isActive('/notices') ? 'bg-white/20 text-white' : 'text-primary-100 hover:bg-white/10 hover:text-white'}`}>
+                        <Link to={getDeptLink("/notices")} className={`px-4 py-2 text-sm font-semibold uppercase tracking-wider transition ${isActive('/notices') ? 'bg-white/20 text-white' : 'text-primary-100 hover:bg-white/10 hover:text-white'}`}>
                             Notices
                         </Link>
 
@@ -158,11 +172,11 @@ const Navbar = () => {
                 <div className="lg:hidden bg-white border-t border-gray-200 animate-slide-down shadow-xl">
                     <div className="px-4 py-3 space-y-1">
                         <Link to="/" onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Home</Link>
-                        <Link to="/faculty" onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/faculty') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Faculty</Link>
-                        <Link to="/notices" onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/notices') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Notices</Link>
-                        <Link to="/timetable" onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/timetable') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Timetable</Link>
-                        <Link to="/events" onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/events') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Events</Link>
-                        <Link to="/calendar" onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/calendar') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Calendar</Link>
+                        <Link to={getDeptLink("/faculty")} onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/faculty') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Faculty</Link>
+                        <Link to={getDeptLink("/notices")} onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/notices') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Notices</Link>
+                        <Link to={getDeptLink("/timetable")} onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/timetable') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Timetable</Link>
+                        <Link to={getDeptLink("/events")} onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/events') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Events</Link>
+                        <Link to={getDeptLink("/calendar")} onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/calendar') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Calendar</Link>
                         <div className="pt-3 border-t border-gray-200">
                             {isAuthenticated ? (
                                 <>

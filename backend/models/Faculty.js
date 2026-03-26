@@ -23,6 +23,20 @@ const facultySchema = new mongoose.Schema({
     },
     department: {
         type: String,
+        enum: [
+            'Chemical Engineering',
+            'Computer Engineering',
+            'Civil Engineering',
+            'Electrical Engineering',
+            'Electronics & Communication Engineering',
+            'Information Technology',
+            'Instrumentation & Control Engineering',
+            'Mechanical Engineering',
+            'Power Electronics Engineering',
+            'Computer Science and Engineering (Data Science)',
+            'Electronics And Instrumentation Engineering',
+            'Information and Communication Technology'
+        ],
         default: 'Computer Engineering',
     },
     email: {
@@ -92,7 +106,7 @@ const facultySchema = new mongoose.Schema({
 // INDEXES — For improved query performance
 // ============================================
 facultySchema.index({ name: 1 });
-facultySchema.index({ email: 1 }, { unique: true });
+
 facultySchema.index({ designation: 1 });
 facultySchema.index({ department: 1 });
 facultySchema.index({ isActive: 1 });

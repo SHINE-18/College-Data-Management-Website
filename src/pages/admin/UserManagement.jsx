@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../utils/axios';
 import toast from 'react-hot-toast';
 import { FaTrash, FaUserShield, FaChalkboardTeacher, FaUserTie, FaCheckCircle, FaTimesCircle, FaPlus } from 'react-icons/fa';
+import { ALL_DEPARTMENTS } from '../../constants/departments';
 
 const roleIcons = {
     super_admin: <FaUserShield className="text-purple-500" title="Super Admin" />,
@@ -14,7 +15,7 @@ const UserManagement = () => {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [formData, setFormData] = useState({
-        name: '', email: '', password: '', role: 'hod', department: 'CSE', designation: ''
+        name: '', email: '', password: '', role: 'hod', department: 'Computer Engineering', designation: ''
     });
 
     useEffect(() => {
@@ -38,7 +39,7 @@ const UserManagement = () => {
             await api.post('/auth/register', formData);
             toast.success('User registered successfully');
             setIsModalOpen(false);
-            setFormData({ name: '', email: '', password: '', role: 'faculty', department: 'CSE', designation: '' });
+            setFormData({ name: '', email: '', password: '', role: 'faculty', department: 'Computer Engineering', designation: '' });
             fetchUsers();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to register user');
@@ -176,13 +177,9 @@ const UserManagement = () => {
                                     <label className="block text-xs font-medium text-gray-700 mb-1">Department</label>
                                     <select value={formData.department} onChange={e => setFormData({ ...formData, department: e.target.value })}
                                         className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none">
-                                        <option value="CSE">CSE</option>
-                                        <option value="IT">IT</option>
-                                        <option value="ECE">ECE</option>
-                                        <option value="EE">EE</option>
-                                        <option value="ME">ME</option>
-                                        <option value="CE">CE</option>
-                                        <option value="All">All (Admin)</option>
+                                        {ALL_DEPARTMENTS.map(dept => (
+                                            <option key={dept} value={dept}>{dept}</option>
+                                        ))}
                                     </select>
                                 </div>
                             </div>

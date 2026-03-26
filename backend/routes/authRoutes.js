@@ -250,5 +250,91 @@ router.put('/users/:id/toggle', protect, authorize('super_admin'), async (req, r
     }
 });
 
-module.exports = router;
+// POST /api/auth/forgot-password - Send reset link to email
+router.post('/forgot-password', [
+    body('email').isEmail().withMessage('Please enter a valid email'),
+    validate
+], async (req, res) => {
+    try {
+        const { email } = req.body;
+        const user = await User.findOne({ email }).select('+resetPasswordToken +resetPasswordExpire');
 
+        if (!user) {
+            // Return success even if user not found (security best practice)
+            return res.json({ message: 'If that email is registered, a reset link has been sent.' });
+        }
+
+        // Generate a random token
+        const crypto = require('crypto');
+        const resetToken = crypto.randomBytes(32).toString('hex');
+
+        // Hash and store the token
+        user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+        user.resetPasswordExpire = Date.now() + 30 * 60 * 1000; // 30 minutes
+        await user.save({ validateBeforeSave: false });
+
+        // Send email
+        const resetUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password/${resetToken}`;
+
+        const html = `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden;">
+                <div style="background: #1e3a5f; color: white; padding: 24px; text-align: center;">
+                    <h2 style="margin: 0;">VGEC CE Department</h2>
+                </div>
+                <div style="padding: 24px;">
+                    <h3>Password Reset Request</h3>
+                    <p>Hello <strong>${user.name}</strong>,</p>
+                    <p>You requested a password reset. Click the button below to set a new password. This link expires in <strong>30 minutes</strong>.</p>
+                    <a href="${resetUrl}" style="display: inline-block; margin: 20px 0; background: #2563eb; color: white; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: bold;">Reset Password</a>
+                    <p style="color: #6b7280; font-size: 13px;">If you did not request this, ignore this email. Your password will not change.</p>
+                </div>
+            </div>
+        `;
+
+        try {
+            const { sendEmail } = require('../utils/emailService');
+            await sendEmail({ to: user.email, subject: 'VGEC CE Portal — Password Reset', html });
+            res.json({ message: 'If that email is registered, a reset link has been sent.' });
+        } catch (emailError) {
+            // If email fails, clean up the token so user can retry
+            user.resetPasswordToken = undefined;
+            user.resetPasswordExpire = undefined;
+            await user.save({ validateBeforeSave: false });
+            return res.status(500).json({ message: 'Email could not be sent. Please try again later.' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+// POST /api/auth/reset-password/:token - Reset password using token
+router.post('/reset-password/:token', [
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    validate
+], async (req, res) => {
+    try {
+        const crypto = require('crypto');
+        const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
+
+        const user = await User.findOne({
+            resetPasswordToken: hashedToken,
+            resetPasswordExpire: { $gt: Date.now() }
+        }).select('+resetPasswordToken +resetPasswordExpire');
+
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid or expired reset token. Please request a new one.' });
+        }
+
+        // Set new password and clear reset fields
+        user.password = req.body.password;
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpire = undefined;
+        await user.save();
+
+        res.json({ message: 'Password reset successfully. You can now log in.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+module.exports = router;

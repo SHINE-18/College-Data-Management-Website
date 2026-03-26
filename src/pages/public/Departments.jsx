@@ -1,13 +1,12 @@
 import DepartmentCard from '../../components/DepartmentCard';
+import { DEPARTMENT_DETAILS } from '../../constants/departments';
 
-const departments = [
-    { id: 'cse', name: 'Computer Science & Engineering', code: 'CSE', description: 'Leading the way in computing, artificial intelligence, machine learning, and software development. Our department is at the forefront of technological innovation.', hodName: 'Dr. Rajesh Kumar', studentCount: 820 },
-    { id: 'ece', name: 'Electronics & Communication Engineering', code: 'ECE', description: 'Excellence in electronics, VLSI design, embedded systems, and communication systems. Producing industry-ready engineers since 1985.', hodName: 'Dr. Priya Sharma', studentCount: 680 },
-    { id: 'me', name: 'Mechanical Engineering', code: 'ME', description: 'Innovation in design, manufacturing, thermal engineering, and robotics. Our workshops and labs feature state-of-the-art equipment.', hodName: 'Dr. Suresh Patel', studentCount: 720 },
-    { id: 'ce', name: 'Civil Engineering', code: 'CE', description: 'Building the future with sustainable infrastructure, structural design, environmental engineering, and urban planning.', hodName: 'Dr. Anita Singh', studentCount: 540 },
-    { id: 'ee', name: 'Electrical Engineering', code: 'EE', description: 'Powering innovation in electrical systems, power electronics, renewable energy, and smart grid technologies.', hodName: 'Dr. Vikram Reddy', studentCount: 620 },
-    { id: 'it', name: 'Information Technology', code: 'IT', description: 'Shaping the digital world with cutting-edge solutions in web technologies, cybersecurity, cloud computing, and data analytics.', hodName: 'Dr. Meena Gupta', studentCount: 780 },
-];
+const departments = DEPARTMENT_DETAILS.map(dept => ({
+    ...dept,
+    // Add default values for missing fields to maintain UI consistency
+    hodName: 'Dr. TBD',
+    studentCount: 0
+}));
 
 const Departments = () => (
     <div className="animate-fade-in">

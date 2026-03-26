@@ -36,7 +36,20 @@ const studentSchema = new mongoose.Schema({
     department: {
         type: String,
         required: [true, 'Please add a department'],
-        enum: ['CSE', 'ECE', 'ME', 'CE', 'EE', 'IT']
+        enum: [
+            'Chemical Engineering',
+            'Computer Engineering',
+            'Civil Engineering',
+            'Electrical Engineering',
+            'Electronics & Communication Engineering',
+            'Information Technology',
+            'Instrumentation & Control Engineering',
+            'Mechanical Engineering',
+            'Power Electronics Engineering',
+            'Computer Science and Engineering (Data Science)',
+            'Electronics And Instrumentation Engineering',
+            'Information and Communication Technology'
+        ]
     },
     batch: {
         type: String, // e.g. "2023-2027"
@@ -54,9 +67,9 @@ const studentSchema = new mongoose.Schema({
 });
 
 // Encrypt password using bcrypt
-studentSchema.pre('save', async function (next) {
+studentSchema.pre('save', async function () {
     if (!this.isModified('password')) {
-        next();
+        return;
     }
 
     const salt = await bcrypt.genSalt(10);

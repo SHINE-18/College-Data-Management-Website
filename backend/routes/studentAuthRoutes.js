@@ -18,20 +18,25 @@ router.post('/login', [
 ], async (req, res) => {
     try {
         const { enrollmentNumber, password } = req.body;
+        console.log('Login attempt for:', enrollmentNumber);
 
         const student = await Student.findOne({ enrollmentNumber }).select('+password');
 
         if (!student || !student.isActive) {
+            console.log('Student not found or inactive');
             return res.status(401).json({ message: 'Invalid credentials or inactive account' });
         }
 
         const isMatch = await student.comparePassword(password);
         if (!isMatch) {
+            console.log('Password mismatch');
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
         student.lastLogin = new Date();
         await student.save({ validateBeforeSave: false });
+
+        const token = generateToken(student._id);
 
         res.json({
             _id: student._id,
@@ -40,11 +45,16 @@ router.post('/login', [
             email: student.email,
             semester: student.semester,
             department: student.department,
-            role: 'student', // Provide role for frontend router
-            token: generateToken(student._id)
+            role: 'student',
+            token: token
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        console.error('CRITICAL LOGIN ERROR:', error);
+        res.status(500).json({
+            message: 'Server error',
+            error: error.message,
+            stack: error.stack
+        });
     }
 });
 
@@ -62,6 +72,7 @@ router.get('/me', protectStudent, async (req, res) => {
             role: 'student'
         });
     } catch (error) {
+        console.error('Get Me Error:', error);
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });

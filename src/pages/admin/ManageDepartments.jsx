@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 
-const initialDepts = [
-    { id: 1, name: 'Computer Science & Engineering', code: 'CSE', established: 1998, hod: 'Dr. Rajesh Kumar' },
-    { id: 2, name: 'Electronics & Communication Engineering', code: 'ECE', established: 1985, hod: 'Dr. Priya Sharma' },
-    { id: 3, name: 'Mechanical Engineering', code: 'ME', established: 1980, hod: 'Dr. Suresh Patel' },
-    { id: 4, name: 'Civil Engineering', code: 'CE', established: 1975, hod: 'Dr. Anita Singh' },
-    { id: 5, name: 'Electrical Engineering', code: 'EE', established: 1978, hod: 'Dr. Vikram Reddy' },
-    { id: 6, name: 'Information Technology', code: 'IT', established: 2002, hod: 'Dr. Meena Gupta' },
-];
+import { DEPARTMENT_DETAILS } from '../../constants/departments';
+
+const initialDepts = DEPARTMENT_DETAILS.map((dept, index) => ({
+    id: index + 1,
+    name: dept.name,
+    code: dept.code,
+    established: 1948 + (index * 5), // Mock established years for variety
+    hod: 'Unassigned'
+}));
 
 const hodOptions = ['Dr. Rajesh Kumar', 'Dr. Priya Sharma', 'Dr. Suresh Patel', 'Dr. Anita Singh', 'Dr. Vikram Reddy', 'Dr. Meena Gupta', 'Dr. Sneha Verma', 'Dr. Pooja Mehta'];
 const emptyForm = { name: '', code: '', established: '' };

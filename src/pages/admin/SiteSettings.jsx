@@ -1,22 +1,64 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import api from '../../utils/axios';
 
 const SiteSettings = () => {
     const [form, setForm] = useState({
-        collegeName: 'College of Engineering & Technology',
-        email: 'info@collegeportal.edu',
-        phone: '+91 80 1234 5678',
-        address: '123 College Avenue, Education City, State - 560001',
-        website: 'https://www.collegeportal.edu',
+        collegeName: '',
+        email: '',
+        phone: '',
+        address: '',
+        website: '',
     });
+    const [loading, setLoading] = useState(true);
+    const [saving, setSaving] = useState(false);
+
+    // Load existing settings on mount
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const { data } = await api.get('/settings');
+                setForm({
+                    collegeName: data.collegeName || '',
+                    email: data.email || '',
+                    phone: data.phone || '',
+                    address: data.address || '',
+                    website: data.website || '',
+                });
+            } catch (err) {
+                console.error('Failed to load settings:', err);
+                toast.error('Failed to load settings.');
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchSettings();
+    }, []);
 
     const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!form.collegeName || !form.email) { toast.error('College name and email are required.'); return; }
-        toast.success('Settings saved successfully!');
+        setSaving(true);
+        try {
+            await api.put('/settings', form);
+            toast.success('Settings saved successfully!');
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to save settings.');
+        } finally {
+            setSaving(false);
+        }
     };
+
+    if (loading) {
+        return (
+            <div className="animate-pulse space-y-4">
+                <div className="h-8 bg-gray-200 rounded w-48"></div>
+                <div className="h-64 bg-gray-200 rounded-xl"></div>
+            </div>
+        );
+    }
 
     return (
         <div className="animate-fade-in space-y-6">
@@ -27,10 +69,10 @@ const SiteSettings = () => {
 
             <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:p-8">
                 <div className="space-y-6">
-                    {/* Logo */}
+                    {/* Logo placeholder */}
                     <div className="flex items-center space-x-6 pb-6 border-b border-gray-100">
                         <div className="w-20 h-20 bg-gradient-to-br from-primary to-accent rounded-2xl flex items-center justify-center shadow-lg">
-                            <span className="text-white font-bold text-2xl">CP</span>
+                            <span className="text-white font-bold text-2xl">VG</span>
                         </div>
                         <div>
                             <h3 className="font-semibold text-gray-900">College Logo</h3>
@@ -64,7 +106,14 @@ const SiteSettings = () => {
                 </div>
 
                 <div className="mt-8 flex justify-end">
-                    <button type="submit" className="bg-primary text-white px-8 py-2.5 rounded-lg text-sm font-semibold hover:bg-primary-700 transition shadow-lg shadow-primary/25">Save Settings</button>
+                    <button
+                        type="submit"
+                        disabled={saving}
+                        className="bg-primary text-white px-8 py-2.5 rounded-lg text-sm font-semibold hover:bg-primary-700 transition shadow-lg shadow-primary/25 disabled:opacity-50 flex items-center gap-2"
+                    >
+                        {saving ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : null}
+                        {saving ? 'Saving...' : 'Save Settings'}
+                    </button>
                 </div>
             </form>
         </div>

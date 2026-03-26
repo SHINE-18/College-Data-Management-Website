@@ -3,8 +3,8 @@ import ProtectedRoute from '../components/ProtectedRoute';
 
 // Public
 import Home from '../pages/public/Home';
-import Departments from '../pages/public/Departments'; // temporarily removed
-import DepartmentDetail from '../pages/public/DepartmentDetail'; // temporarily removed
+import Departments from '../pages/public/Departments';
+import DepartmentDetail from '../pages/public/DepartmentDetail';
 import FacultyDirectory from '../pages/public/FacultyDirectory';
 import FacultyProfile from '../pages/public/FacultyProfile';
 import NoticeBoard from '../pages/public/NoticeBoard';
@@ -15,6 +15,11 @@ import SyllabusArchive from '../pages/public/SyllabusArchive';
 
 // Auth
 import Login from '../pages/auth/Login';
+import ForgotPassword from '../pages/auth/ForgotPassword';
+import ResetPassword from '../pages/auth/ResetPassword';
+
+// Common
+import NotFound from '../pages/common/NotFound';
 
 // Student
 import StudentDashboard from '../pages/student/StudentDashboard';
@@ -61,7 +66,7 @@ const AppRoutes = () => (
         <Route element={<PublicLayout />}>
             <Route path="/" element={<Home />} />
             {/* <Route path="/departments" element={<Departments />} /> temporarily removed */}
-            {/* <Route path="/departments/:id" element={<DepartmentDetail />} /> temporarily removed */}
+            <Route path="/department/:id" element={<DepartmentDetail />} />
             <Route path="/faculty" element={<FacultyDirectory />} />
             <Route path="/faculty/:id" element={<FacultyProfile />} />
             <Route path="/notices" element={<NoticeBoard />} />
@@ -73,6 +78,8 @@ const AppRoutes = () => (
 
         {/* Auth */}
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password/:token" element={<ResetPassword />} />
 
         {/* Student Portal */}
         <Route path="/student-portal" element={<ProtectedRoute allowedRoles={['student']}><PortalLayout role="student" /></ProtectedRoute>}>
@@ -125,16 +132,8 @@ const AppRoutes = () => (
             <Route path="settings" element={<SiteSettings />} />
         </Route>
 
-        {/* 404 */}
-        <Route path="*" element={
-            <div className="min-h-screen flex items-center justify-center bg-gray-50">
-                <div className="text-center">
-                    <h1 className="text-8xl font-bold text-primary">404</h1>
-                    <p className="text-xl text-gray-600 mt-4">Page Not Found</p>
-                    <a href="/" className="mt-6 inline-block bg-accent text-white px-6 py-3 rounded-lg hover:bg-accent-500 transition">Go Home</a>
-                </div>
-            </div>
-        } />
+        {/* 404 — catches all unmatched routes */}
+        <Route path="*" element={<NotFound />} />
     </Routes>
 );
 

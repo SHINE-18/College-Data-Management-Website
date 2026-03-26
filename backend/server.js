@@ -13,6 +13,8 @@ const fs = require('fs');             // For file system operations
 
 // Import error handling middleware
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
+// Import rate limiting middleware
+const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
 
 // Step 2: Load environment variables from .env file
 // This is where we'll store database URL, secrets, etc.
@@ -36,8 +38,20 @@ const PORT = process.env.PORT || 5000;
 // Without this, your React app (localhost:5173) would be BLOCKED from
 // calling your backend (localhost:5000) — it's a browser security feature.
 // cors() tells the browser: "It's okay, let the frontend talk to me"
+const allowedOrigins = [
+    process.env.FRONTEND_URL || 'http://localhost:5173',
+    process.env.PRODUCTION_URL
+].filter(Boolean);
+
 app.use(cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: function (origin, callback) {
+        // Allow requests with no origin (mobile apps, curl, etc.)
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+        return callback(new Error('Not allowed by CORS'));
+    },
     credentials: true
 }));
 
@@ -70,6 +84,13 @@ app.get('/', (req, res) => {
 // app.use('/api/faculty', ...) means:
 //   "Any request starting with /api/faculty → send it to facultyRoutes.js"
 // Inside facultyRoutes.js, '/' means '/api/faculty' and '/:id' means '/api/faculty/:id'
+
+// Apply general rate limiter to all API routes
+app.use('/api', apiLimiter);
+// Apply stricter rate limiter to auth endpoints (prevent brute-force)
+app.use('/api/auth', authLimiter);
+app.use('/api/student-auth', authLimiter);
+
 app.use('/api/faculty', require('./routes/facultyRoutes'));
 app.use('/api/notices', require('./routes/noticeRoutes'));
 app.use('/api/events', require('./routes/eventRoutes'));
@@ -84,6 +105,8 @@ app.use('/api/student-auth', require('./routes/studentAuthRoutes'));
 app.use('/api/student', require('./routes/studentRoutes'));
 app.use('/api/faculty', require('./routes/facultyStudentRoutes')); // Specialized faculty-student portal routes
 app.use('/api/academics', require('./routes/academicRoutes')); // Syllabi and Resources
+app.use('/api/admin', require('./routes/adminRoutes'));           // Admin dashboard stats
+app.use('/api/settings', require('./routes/siteSettingRoutes'));  // Site settings
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, 'uploads');
@@ -134,6 +157,19 @@ if (!fs.existsSync(resourcesDir)) {
 // Serve uploaded timetable PDFs statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+// ── Production: Serve React Frontend ──
+// In production, Express serves the built React app from dist/
+if (process.env.NODE_ENV === 'production') {
+    const distPath = path.join(__dirname, '..', 'dist');
+    app.use(express.static(distPath));
+
+    // Any route that is NOT an /api or /uploads route → serve React's index.html
+    // This lets React Router handle client-side routing
+    app.get('*', (req, res) => {
+        res.sendFile(path.resolve(distPath, 'index.html'));
+    });
+}
+
 // Error handling middleware (must be after all routes)
 app.use(notFound);
 app.use(errorHandler);
@@ -143,11 +179,15 @@ app.use(errorHandler);
 // ============================================
 // We connect to MongoDB FIRST, then start the server
 // This ensures the database is ready before we accept any requests
-connectDB().then(() => {
-    app.listen(PORT, () => {
-        console.log(`\n🚀 Backend server is running!`);
-        console.log(`📍 Local: http://localhost:${PORT}`);
-        console.log(`📍 API:   http://localhost:${PORT}/api/faculty`);
-        console.log(`\nPress Ctrl+C to stop the server\n`);
+if (process.env.NODE_ENV !== 'test') {
+    connectDB().then(() => {
+        app.listen(PORT, () => {
+            console.log(`\n🚀 Backend server is running!`);
+            console.log(`📍 Local: http://localhost:${PORT}`);
+            console.log(`📍 API:   http://localhost:${PORT}/api/faculty`);
+            console.log(`\nPress Ctrl+C to stop the server\n`);
+        });
     });
-});
+}
+
+module.exports = app;

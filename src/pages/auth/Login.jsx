@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import vgec_logo from '../../assets/vgec_hd.png';
+import usePageTitle from '../../utils/usePageTitle';
 
 const mockUsers = {
 
@@ -12,13 +13,14 @@ import api from '../../utils/axios';
 
 const Login = () => {
     const [isStudentLogin, setIsStudentLogin] = useState(true);
-    const [identifier, setIdentifier] = useState(''); // Stores email OR enrollment number
+    const [identifier, setIdentifier] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const { login } = useAuth();
     const navigate = useNavigate();
+    usePageTitle('Login');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -67,7 +69,7 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-primary via-primary-800 to-accent flex items-center justify-center p-4">
+        <div className="min-h-screen bg-gradient-to-br from-primary via-primary-800 to-black flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSA2MCAwIEwgMCAwIDAgNjAiIGZpbGw9Im5vbmUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')] opacity-30"></div>
 
             <div className="w-full max-w-md relative">
@@ -89,20 +91,34 @@ const Login = () => {
                         <p className="text-gray-500 text-sm mt-1">Sign in to access your portal</p>
                     </div>
 
-                    <div className="flex bg-gray-100 p-1 rounded-xl mb-6">
+                    {/* ── Portal Toggle ── */}
+                    <div className="relative flex bg-gray-100 p-1 rounded-2xl mb-6 gap-1">
+                        {/* Sliding active indicator */}
+                        <div
+                            className={`absolute top-1 bottom-1 w-[calc(50%-6px)] rounded-xl bg-white shadow-md transition-all duration-300 ease-in-out ${isStudentLogin ? 'left-1' : 'left-[calc(50%+2px)]'}`}
+                        />
                         <button
+                            id="toggle-student"
                             onClick={() => { setIsStudentLogin(true); setIdentifier(''); setError(''); }}
-                            className={`flex-1 py-2 text-sm font-medium rounded-lg transition ${isStudentLogin ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            className={`relative flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-xl transition-colors duration-300 z-10 ${isStudentLogin ? 'text-primary' : 'text-gray-400 hover:text-gray-600'}`}
                         >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197" />
+                            </svg>
                             Student
                         </button>
                         <button
+                            id="toggle-staff"
                             onClick={() => { setIsStudentLogin(false); setIdentifier(''); setError(''); }}
-                            className={`flex-1 py-2 text-sm font-medium rounded-lg transition ${!isStudentLogin ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            className={`relative flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-xl transition-colors duration-300 z-10 ${!isStudentLogin ? 'text-primary' : 'text-gray-400 hover:text-gray-600'}`}
                         >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
                             Staff
                         </button>
                     </div>
+
 
                     {error && (
                         <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3 mb-4 flex items-center space-x-2">
@@ -137,6 +153,11 @@ const Login = () => {
                                 {showPassword ? <FaEye size={18} /> : <FaEyeSlash size={18} />}
                             </button>
                         </div>
+                        {!isStudentLogin && (
+                            <div className="text-right -mt-2">
+                                <Link to="/forgot-password" className="text-xs text-primary hover:underline font-medium">Forgot Password?</Link>
+                            </div>
+                        )}
                         <button id="login-btn" type="submit" disabled={loading} className="w-full bg-primary text-white py-3 rounded-xl text-sm font-semibold hover:bg-primary-700 transition shadow-lg shadow-primary/25 disabled:opacity-50 flex items-center justify-center space-x-2">
                             {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <span>Sign In</span>}
                         </button>

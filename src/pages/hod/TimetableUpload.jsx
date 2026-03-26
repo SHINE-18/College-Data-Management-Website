@@ -1,15 +1,13 @@
-import { useState } from 'react';
-import toast from 'react-hot-toast';
-import api from '../../utils/axios';
+import { DEPARTMENTS } from '../../constants/departments';
 
-const departments = ['CSE', 'ECE', 'ME', 'CE', 'EE', 'IT'];
+const departments = DEPARTMENTS;
 const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
 const divisions = ['A', 'B', 'C', 'D'];
 
 const TimetableUpload = () => {
     const [formData, setFormData] = useState({
         title: '',
-        department: 'CSE',
+        department: 'Computer Engineering',
         semester: 1,
         division: 'A'
     });
@@ -49,14 +47,14 @@ const TimetableUpload = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
+
         if (!file) {
             toast.error('Please select a PDF file');
             return;
         }
 
         setLoading(true);
-        
+
         try {
             const data = new FormData();
             data.append('title', formData.title || `Timetable - ${formData.department} - Sem ${formData.semester} - ${formData.division}`);
@@ -76,7 +74,7 @@ const TimetableUpload = () => {
             // Reset form
             setFormData({
                 title: '',
-                department: 'CSE',
+                department: 'Computer Engineering',
                 semester: 1,
                 division: 'A'
             });

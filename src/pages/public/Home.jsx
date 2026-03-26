@@ -1,29 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import NoticeCard from '../../components/NoticeCard';
+import InteractiveMap from '../../components/InteractiveMap';
+import collegemain from '../../assets/collegemain.jpg';
 import api from '../../utils/axios';
-import heroBanner from '../../assets/hero_banner.png';
-import campusBuilding from '../../assets/campus_building.png';
-import hodPortrait from '../../assets/hod_portrait.png';
-import researchAiMl from '../../assets/research_ai_ml.png';
-import researchNetworks from '../../assets/research_networks.png';
-import researchSoftware from '../../assets/research_software.png';
+import usePageTitle from '../../utils/usePageTitle';
 
-/* ── Real VGEC / GTU Events — Scraped 09-Mar-2026 ── */
-const upcomingEvents = [
-    { title: 'TECHNIX 2026 — Institute Technical Festival', date: '04-Feb-26 9:00 AM', department: 'VGEC' },
-    { title: 'International Experience Program (IEP) 2026 — Australia', date: 'Apply by 07-Apr-26', department: 'GTU / CE' },
-    { title: 'Expert Session: Career Paths for Engineers', date: '22-Mar-26 11:00 AM', department: 'CE' },
-    { title: 'B-Plan Pitch Event: Showcase Your Startup Idea', date: '28-Mar-26 10:00 AM', department: 'CE / IIC' },
-    { title: 'IP UTSAV & World Creativity Day Celebration', date: '21-Apr-26 10:00 AM', department: 'VGEC' },
-];
-
-const researchAreas = [
-    { title: 'Artificial Intelligence & Machine Learning', image: researchAiMl, faculty: 4, projects: 12, courses: 6, color: 'bg-red-50 border-red-200' },
-    { title: 'Computer Networks & Security', image: researchNetworks, faculty: 3, projects: 8, courses: 5, color: 'bg-teal-50 border-teal-200' },
-    { title: 'Software Engineering & Web Technologies', image: researchSoftware, faculty: 3, projects: 10, courses: 7, color: 'bg-amber-50 border-amber-200' },
-];
-
+/* ── Global Campus Bulletin Data ── */
 const talkEvents = [
     { day: '04', month: 'Feb', time: '09:00 AM', title: 'TECHNIX 2026 — Institute Technical Festival', speaker: 'Technical Committee, VGEC' },
     { day: '07', month: 'Apr', time: 'Deadline', title: 'International Experience Program (IEP) 2026 — Australia', speaker: 'GTU / Adelaide Campus' },
@@ -38,36 +21,19 @@ const newsItems = [
     { icon: '🏗️', title: 'Network Operation Center upgraded with new fiber connectivity at VGEC' },
 ];
 
-const placementCompanies = [
-    { name: 'Bacancy Technology', count: 20 },
-    { name: 'Simform Solutions', count: 14 },
-    { name: 'einfochips Ltd', count: 14 },
-    { name: 'eSparkBiz', count: 10 },
-    { name: 'Tatva Soft', count: 7 },
-    { name: 'TCS', count: 4 },
-];
-
 const Home = () => {
     const [notices, setNotices] = useState([]);
-    const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
+    usePageTitle('Home');
 
-    // Fetch notices and events from API
     useEffect(() => {
         const fetchData = async () => {
             try {
-                // Fetch notices (3 most recent)
                 const noticesRes = await api.get('/notices?page=1&limit=3');
                 setNotices(noticesRes.data.data || []);
-
-                // Fetch upcoming events
-                const eventsRes = await api.get('/events?page=1&limit=5');
-                setEvents(eventsRes.data.data || []);
             } catch (error) {
                 console.error('Error fetching home data:', error);
-                // Fallback to empty arrays - static data will show in events overlay
                 setNotices([]);
-                setEvents([]);
             } finally {
                 setLoading(false);
             }
@@ -75,278 +41,197 @@ const Home = () => {
         fetchData();
     }, []);
 
-    // Format event date for display
-    const formatEventDate = (dateString) => {
-        if (!dateString) return '';
-        const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    };
-
     return (
-        <div className="animate-fade-in">
-            {/* ═══════ SECTION 1: Hero Banner (IIT Bombay + IIT Madras) ═══════ */}
+        <div className="animate-fade-in bg-slate-50/30">
+            {/* ═══════ HERO BANNER ═══════ */}
             <section className="relative">
-                <div className="w-full h-[400px] md:h-[480px] overflow-hidden">
-                    <img src={heroBanner} alt="VGEC Computer Engineering Department" className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/30 to-transparent"></div>
+                <div className="w-full h-[500px] md:h-[650px] overflow-hidden">
+                    <img src={collegemain} alt="Vishwakarma Government Engineering College" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent"></div>
                 </div>
-                {/* Events Overlay (IIT Madras-inspired) */}
-                <div className="absolute top-4 right-4 md:top-8 md:right-8 bg-white/95 backdrop-blur-sm rounded-xl shadow-2xl w-80 md:w-96 max-h-[380px] overflow-hidden hidden md:block">
-                    <div className="p-4 border-b border-gray-100">
-                        <h3 className="font-heading font-bold text-primary text-lg">Upcoming Events & Seminars</h3>
-                    </div>
-                    <div className="divide-y divide-gray-100 max-h-[260px] overflow-y-auto events-scrollbar">
-                        {events.length > 0 ? (
-                            events.map((e, i) => (
-                                <div key={e._id || i} className="p-4 hover:bg-cream transition">
-                                    <p className="font-semibold text-gray-900 text-sm leading-snug">{e.title}</p>
-                                    <div className="flex items-center mt-2 text-xs text-gray-500">
-                                        <svg className="w-3.5 h-3.5 mr-1 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                        {formatEventDate(e.date)}
-                                    </div>
-                                </div>
-                            ))
-                        ) : (
-                            upcomingEvents.map((e, i) => (
-                                <div key={i} className="p-4 hover:bg-cream transition">
-                                    <p className="font-semibold text-gray-900 text-sm leading-snug">{e.title}</p>
-                                    <div className="flex items-center mt-2 text-xs text-gray-500">
-                                        <svg className="w-3.5 h-3.5 mr-1 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                        </svg>
-                                        {e.date}
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-                    <div className="p-3 border-t border-gray-100 bg-gray-50">
-                        <Link to="/events" className="bg-primary text-white text-sm font-semibold px-4 py-2 rounded-lg hover:bg-primary-700 transition block text-center">
-                            View More
-                        </Link>
-                    </div>
-                </div>
-            </section>
 
-            {/* ═══════ SECTION 2: Quick Access Cards () ═══════ */}
-            <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 relative z-10">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-                    {[
-                        { icon: '🎓', label: 'Academics', to: '/timetable', desc: 'Timetable & Syllabus' },
-                        { icon: '🔬', label: 'Research', to: '/faculty', desc: 'Faculty & Projects' },
-                        { icon: '📋', label: 'Notices', to: '/notices', desc: 'Circulars & Updates' },
-                        { icon: '📅', label: 'Calendar', to: '/calendar', desc: 'Academic Schedule' },
-                    ].map((card, i) => (
-                        <Link key={i} to={card.to} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-4 text-center group hover:-translate-y-1 border border-gray-100">
-                            <span className="text-2xl block mb-2">{card.icon}</span>
-                            <span className="font-heading font-bold text-gray-900 text-sm group-hover:text-primary transition">{card.label}</span>
-                            <p className="text-xs text-gray-400 mt-1">{card.desc}</p>
-                        </Link>
-                    ))}
-                </div>
-            </section>
-
-            {/* ═══════ SECTION 3: About the Department ═══════ */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-                    <div className="rounded-2xl overflow-hidden shadow-lg">
-                        <img src={campusBuilding} alt="VGEC Computer Engineering Department Building" className="w-full h-72 md:h-80 object-cover" />
-                    </div>
-                    <div>
-                        <h2 className="section-title mb-6">About the Department</h2>
-                        <p className="text-gray-700 leading-relaxed mb-4">
-                            The Department of Computer Engineering at Vishwakarma Government Engineering College was established in <strong>2001</strong> with an annual intake of <strong>120 students</strong>. The department is committed to creating an environment for providing value-based education through innovation, teamwork, and ethical practices.
+                {/* Hero Text */}
+                <div className="absolute min-h-full inset-0 flex flex-col justify-center px-4 md:px-12 pointer-events-none">
+                    <div className="max-w-3xl pointer-events-auto">
+                        <span className="bg-accent text-slate-900 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.3em] mb-6 inline-block shadow-xl">Chandkheda, Ahmedabad</span>
+                        <h1 className="text-5xl md:text-7xl font-black text-white leading-[1.1] mb-6 drop-shadow-2xl">
+                            Vishwakarma <br />
+                            <span className="text-accent underline decoration-8 underline-offset-[12px] decoration-white/10">Government</span> Engineering
+                        </h1>
+                        <p className="text-white/70 text-lg md:text-xl font-medium max-w-xl mb-10 drop-shadow-md">
+                            Empowering the next generation of engineers through innovation, research, and technical excellence since 1994.
                         </p>
-                        <p className="text-gray-700 leading-relaxed mb-4">
-                            Affiliated to Gujarat Technological University (GTU) and approved by AICTE, the department offers a rigorous B.E. program that prepares students to meet the demands of industry, government, society, and the scientific community.
-                        </p>
-                        <p className="text-gray-700 leading-relaxed">
-                            With state-of-the-art computing facilities including specialized labs for Programming, Networking, OOP, Advance Computing, and a Network Operation Center, the department provides hands-on learning experiences that bridge theory and practice.
-                        </p>
-                    </div>
-                </div>
-            </section>
 
-            {/* ═══════ SECTION 4: HOD's Message  ═══════ */}
-            <section className="bg-white py-16">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-                        <div>
-                            <h2 className="section-title mb-6">Message from the Head of Department</h2>
-                            <p className="text-gray-700 leading-relaxed mb-4">
-                                Welcome to the Department of Computer Engineering at VGEC. Our department is dedicated to producing computer engineering graduates who are equipped to meet the demands of industry, government, and society.
-                            </p>
-                            <p className="text-gray-700 leading-relaxed mb-4">
-                                We focus on developing state-of-the-art computing facilities and academic infrastructure while building partnerships with industries, government agencies, and R&D organizations for knowledge sharing and overall development.
-                            </p>
-                            <p className="text-gray-700 leading-relaxed mb-6">
-                                Our vision is to create an environment for providing value-based education in Computer Engineering through innovation, teamwork, and ethical practices. I invite you to explore our department and discover the opportunities we offer.
-                            </p>
-                            <div className="flex items-center space-x-3">
-                                <div className="w-1 h-12 bg-primary rounded-full"></div>
-                                <div>
-                                    <p className="font-heading font-bold text-gray-900">Prof. Kajal S. Patel</p>
-                                    <p className="text-sm text-primary font-medium">Associate Professor & HOD</p>
-                                    <p className="text-xs text-gray-500">Ph.D. — kajalpatel@vgecg.ac.in</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex justify-center lg:justify-end">
-                            <div className="relative">
-                                <div className="absolute -inset-3 bg-primary/10 rounded-2xl rotate-3"></div>
-                                <img src={hodPortrait} alt="Prof. Kajal S. Patel — HOD, Computer Engineering" className="relative w-64 h-80 md:w-72 md:h-96 object-cover rounded-2xl shadow-xl" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* ═══════ SECTION 5: Research Areas  ═══════ */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                <h2 className="section-title mb-10">Research Areas</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {researchAreas.map((area, i) => (
-                        <div key={i} className={`rounded-2xl border overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 ${area.color}`}>
-                            <div className="h-44 overflow-hidden">
-                                <img src={area.image} alt={area.title} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
-                            </div>
-                            <div className="p-5">
-                                <h3 className="font-heading font-bold text-primary text-center mb-4">{area.title}</h3>
-                                <div className="grid grid-cols-3 gap-2">
-                                    {[
-                                        { val: area.faculty, label: 'Faculty' },
-                                        { val: area.projects, label: 'Projects' },
-                                        { val: area.courses, label: 'Courses' },
-                                    ].map((stat, j) => (
-                                        <div key={j} className="text-center">
-                                            <span className="font-heading font-bold text-2xl text-primary">{stat.val}</span>
-                                            <p className="text-xs text-gray-500 uppercase tracking-wide mt-1">{stat.label}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </section>
-
-            {/* ═══════ SECTION 6: Events & News  ═══════ */}
-            <section className="bg-white py-16">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                        {/* Talks & Events — */}
-                        <div>
-                            <h2 className="section-title mb-6">Talks & Events</h2>
-                            <div className="space-y-4">
-                                {events.length > 0 ? (
-                                    events.slice(0, 3).map((event, i) => (
-                                        <div key={event._id || i} className="flex rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition group">
-                                            <div className="bg-primary text-white w-20 shrink-0 flex flex-col items-center justify-center py-3">
-                                                <span className="text-2xl font-bold leading-none">{new Date(event.date).getDate()}</span>
-                                                <span className="text-xs uppercase mt-1">{new Date(event.date).toLocaleString('default', { month: 'short' })}</span>
-                                            </div>
-                                            <div className="p-4 flex-1">
-                                                <h4 className="font-semibold text-gray-900 text-sm group-hover:text-primary transition leading-snug">{event.title}</h4>
-                                                <p className="text-xs text-gray-500 mt-2">Type: <span className="font-medium text-accent">{event.type}</span></p>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    talkEvents.map((event, i) => (
-                                        <div key={i} className="flex rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg transition group">
-                                            <div className="bg-primary text-white w-20 shrink-0 flex flex-col items-center justify-center py-3">
-                                                <span className="text-2xl font-bold leading-none">{event.day}</span>
-                                                <span className="text-xs uppercase mt-1">{event.month}</span>
-                                                <span className="text-[10px] text-primary-200 mt-1">{event.time}</span>
-                                            </div>
-                                            <div className="p-4 flex-1">
-                                                <h4 className="font-semibold text-gray-900 text-sm group-hover:text-primary transition leading-snug">{event.title}</h4>
-                                                <p className="text-xs text-gray-500 mt-2">Speaker: <span className="font-medium text-accent">{event.speaker}</span></p>
-                                            </div>
-                                        </div>
-                                    ))
-                                )}
-                            </div>
-                            <Link to="/events" className="inline-flex items-center mt-4 text-sm text-primary font-semibold hover:text-primary-700 transition">
-                                more →
+                        <div className="flex flex-wrap gap-4">
+                            <Link to="/notices" className="bg-white text-slate-900 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-accent transition transform hover:-translate-y-1 shadow-2xl">
+                                Admission 2026
                             </Link>
-                        </div>
-
-                        {/* News — */}
-                        <div>
-                            <h2 className="section-title mb-6">News & Highlights</h2>
-                            <div className="space-y-3">
-                                {newsItems.map((news, i) => (
-                                    <div key={i} className="flex items-start space-x-3 p-3 rounded-xl border border-gray-200 hover:shadow-md hover:border-primary/20 transition">
-                                        <span className="text-xl shrink-0 mt-0.5">{news.icon}</span>
-                                        <p className="text-sm text-gray-700 leading-relaxed">{news.title}</p>
-                                    </div>
-                                ))}
-                            </div>
-                            <Link to="/notices" className="inline-flex items-center mt-4 text-sm text-primary font-semibold hover:text-primary-700 transition">
-                                more →
+                            <Link to="/about" className="bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/20 transition transform hover:-translate-y-1">
+                                Discover VGEC
                             </Link>
                         </div>
                     </div>
                 </div>
             </section>
 
-            {/* ═══════ SECTION 7: Latest Notices ═══════ */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-                <div className="flex items-center justify-between mb-8">
-                    <h2 className="section-title">Latest Notices</h2>
-                    <Link to="/notices" className="text-primary font-medium text-sm hover:text-primary-700 transition flex items-center space-x-1">
-                        <span>View All</span>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-                    </Link>
+            {/* ═══════ INTERACTIVE CAMPUS NAVIGATOR ═══════ */}
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10 mb-12 relative z-20">
+                <div className="text-center mb-6">
+                    <h2 className="text-2xl font-black text-slate-900">Interactive Campus Map</h2>
+                    <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">Click a building to explore its department</p>
                 </div>
-                {loading ? (
-                    <div className="flex items-center justify-center py-16">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                    </div>
-                ) : notices.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                        {notices.map(notice => (
-                            <NoticeCard key={notice._id} notice={notice} />
-                        ))}
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                        {/* Fallback static notices if API fails */}
-                        <NoticeCard notice={{ id: 1, title: 'Mid-Semester Examination Schedule Released', category: 'Exam', date: 'Feb 20, 2026', content: 'The mid-semester examination schedule for all departments has been published. Students are requested to check the updated timetable on GTU portal.', postedBy: 'Examination Cell', attachment: true }} />
-                        <NoticeCard notice={{ id: 2, title: 'New Admission Guidelines 2026-27', category: 'Admission', date: 'Feb 18, 2026', content: 'Applications are invited for admission to B.E. Computer Engineering for the academic year 2026-27 through ACPC.', postedBy: 'Admission Office', attachment: true }} />
-                        <NoticeCard notice={{ id: 3, title: 'Annual Cultural Fest — Euphoria 2026', category: 'Events', date: 'Feb 15, 2026', content: 'Annual cultural festival will be held from March 15-17. All students are encouraged to participate.', postedBy: 'Cultural Committee', attachment: false }} />
-                    </div>
-                )}
+                <InteractiveMap />
             </section>
 
-            {/* ═══════ SECTION 8: Placement & Quick Stats (Stanford-inspired) ═══════ */}
-            <section className="bg-primary-700 py-12">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="text-center mb-8">
-                        <h2 className="font-heading text-2xl font-bold text-white">Placement Highlights — Batch 2026</h2>
-                        <p className="text-primary-200 text-sm mt-1">Our students are placed in top IT companies across India</p>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                        {placementCompanies.map((c, i) => (
-                            <div key={i} className="bg-white/10 backdrop-blur-sm rounded-xl p-4 text-center border border-white/10 hover:bg-white/20 transition">
-                                <p className="font-heading font-bold text-2xl text-white">{c.count}</p>
-                                <p className="text-xs text-primary-200 mt-1 leading-snug">{c.name}</p>
+            {/* ═══════ GLOBAL CAMPUS BULLETIN (News & Events) ═══════ */}
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 mb-12">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                    {/* Live Announcements / News */}
+                    <div className="bg-white rounded-[3rem] p-10 shadow-2xl shadow-slate-200/50 border border-slate-100 flex flex-col">
+                        <div className="flex items-center justify-between mb-10">
+                            <div>
+                                <h2 className="text-3xl font-black text-slate-900">News & Highlights</h2>
+                                <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">Institutional Pulse</p>
                             </div>
-                        ))}
+                            <div className="w-12 h-12 bg-accent/10 rounded-2xl flex items-center justify-center">
+                                <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6 flex-1">
+                            {newsItems.map((news, i) => (
+                                <div key={i} className="flex items-start space-x-4 group cursor-default">
+                                    <span className="text-2xl mt-1 shrink-0 filter grayscale group-hover:grayscale-0 transition">{news.icon}</span>
+                                    <div className="pb-6 border-b border-slate-50 last:border-0 w-full">
+                                        <p className="text-sm font-bold text-slate-700 leading-relaxed group-hover:text-primary transition">{news.title}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <Link to="/notices" className="mt-8 text-center py-4 bg-slate-50 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:bg-primary hover:text-white transition">
+                            Explore All Updates
+                        </Link>
                     </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-10 pt-8 border-t border-white/10">
+
+                    {/* Upcoming Talks & Events */}
+                    <div className="bg-slate-900 rounded-[3rem] p-10 shadow-2xl shadow-slate-900/20 text-white relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-3xl"></div>
+
+                        <div className="flex items-center justify-between mb-10 relative z-10">
+                            <div>
+                                <h2 className="text-3xl font-black text-white">Talks & Events</h2>
+                                <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-1">Academic & Technical Calendar</p>
+                            </div>
+                            <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center animate-pulse">
+                                <svg className="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                            </div>
+                        </div>
+
+                        <div className="space-y-8 relative z-10">
+                            {talkEvents.map((event, i) => (
+                                <div key={i} className="flex items-center space-x-6 group cursor-pointer">
+                                    <div className="flex flex-col items-center justify-center w-16 h-16 bg-white/5 rounded-2xl border border-white/10 group-hover:bg-accent group-hover:border-accent group-hover:text-slate-900 transition-all duration-300">
+                                        <span className="text-xl font-black">{event.day}</span>
+                                        <span className="text-[10px] font-bold uppercase">{event.month}</span>
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="font-bold text-sm leading-snug group-hover:text-accent transition">{event.title}</h4>
+                                        <div className="flex items-center space-x-4 mt-2">
+                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{event.time}</span>
+                                            <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest">{event.speaker}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <Link to="/events" className="mt-12 block text-center py-4 bg-white/5 border border-white/10 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:bg-accent hover:text-slate-900 hover:border-accent transition">
+                            View Full Event Stream
+                        </Link>
+                    </div>
+                </div>
+            </section>
+
+            {/* ═══════ LATEST NOTICES (Horizontal Feed) ═══════ */}
+            <section className="bg-white py-24 mb-12">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center justify-between mb-12">
+                        <div>
+                            <h2 className="text-3xl font-black text-slate-900">Institute Notice Board</h2>
+                            <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-2">Latest Official Circulars</p>
+                        </div>
+                        <Link to="/notices" className="bg-slate-100 text-slate-600 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-primary hover:text-white transition">
+                            View Archive
+                        </Link>
+                    </div>
+
+                    {loading ? (
+                        <div className="flex items-center justify-center py-16">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {notices.length > 0 ? (
+                                notices.map(notice => <NoticeCard key={notice._id} notice={notice} />)
+                            ) : (
+                                <div className="col-span-3 text-center py-12 text-slate-400 font-medium italic border-2 border-dashed border-slate-100 rounded-3xl">No active notices found. Check back later.</div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </section>
+
+            {/* ═══════ CORE VALUES SECTION ═══════ */}
+            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 border-t border-slate-100">
+                <div className="text-center mb-16">
+                    <h2 className="text-3xl font-black text-slate-900">Built for Quality</h2>
+                    <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-2">Our Pillars of Excellence</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+                    <div className="text-center group">
+                        <div className="w-20 h-20 bg-primary/5 rounded-[2rem] flex items-center justify-center mb-8 mx-auto group-hover:bg-primary group-hover:text-white transition-all duration-500 shadow-xl shadow-primary/5">
+                            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+                        </div>
+                        <h3 className="text-xl font-black text-slate-900 mb-4 uppercase tracking-tighter">Infrastructure</h3>
+                        <p className="text-slate-500 text-sm font-medium leading-relaxed px-4">
+                            Modernized labs, campus-wide fiber connectivity, and high-tech library systems.
+                        </p>
+                    </div>
+                    <div className="text-center group">
+                        <div className="w-20 h-20 bg-accent/10 rounded-[2rem] flex items-center justify-center mb-8 mx-auto group-hover:bg-accent group-hover:text-slate-900 transition-all duration-500 shadow-xl shadow-accent/5">
+                            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 01-12 0v1z" /></svg>
+                        </div>
+                        <h3 className="text-xl font-black text-slate-900 mb-4 uppercase tracking-tighter">Academic Depth</h3>
+                        <p className="text-slate-500 text-sm font-medium leading-relaxed px-4">
+                            12 UG Departments offering rigorous technical education affiliated with GTU.
+                        </p>
+                    </div>
+                    <div className="text-center group">
+                        <div className="w-20 h-20 bg-orange-50 rounded-[2rem] flex items-center justify-center mb-8 mx-auto group-hover:bg-orange-500 group-hover:text-white transition-all duration-500 shadow-xl shadow-orange-500/5">
+                            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                        </div>
+                        <h3 className="text-xl font-black text-slate-900 mb-4 uppercase tracking-tighter">Innovation Hub</h3>
+                        <p className="text-slate-500 text-sm font-medium leading-relaxed px-4">
+                            Proactive participation in national hackathons and industry research projects.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            {/* ═══════ STATS BAR ═══════ */}
+            <section className="bg-primary py-20 relative overflow-hidden">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-12 text-center">
                         {[
-                            { val: '10+', label: 'Faculty Members' },
-                            { val: '120', label: 'Student Intake' },
-                            { val: '6', label: 'Laboratories' },
-                            { val: 'Est. 2001', label: 'Department Founded' },
+                            { val: '1994', label: 'Established' },
+                            { val: '12', label: 'UG Branches' },
+                            { val: '5000+', label: 'Total Students' },
+                            { val: 'A Grade', label: 'NAAC Accredited' },
                         ].map((stat, i) => (
-                            <div key={i} className="text-center">
-                                <p className="font-heading font-bold text-3xl text-white">{stat.val}</p>
-                                <p className="text-sm text-primary-200 mt-1">{stat.label}</p>
+                            <div key={i}>
+                                <p className="text-4xl md:text-5xl font-black text-accent mb-2">{stat.val}</p>
+                                <p className="text-[10px] font-black text-white/50 uppercase tracking-[0.2em]">{stat.label}</p>
                             </div>
                         ))}
                     </div>
@@ -357,4 +242,3 @@ const Home = () => {
 };
 
 export default Home;
-

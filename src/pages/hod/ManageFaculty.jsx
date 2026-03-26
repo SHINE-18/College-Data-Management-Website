@@ -1,9 +1,6 @@
-import { useState, useEffect } from 'react';
-import toast from 'react-hot-toast';
-import api from '../../utils/axios';
-import { useAuth } from '../../context/AuthContext';
+import { DEPARTMENTS } from '../../constants/departments';
 
-const departmentOptions = ['CSE', 'ECE', 'ME', 'CE', 'EE', 'IT'];
+const departmentOptions = DEPARTMENTS;
 const designationOptions = ['Professor', 'Associate Professor', 'Assistant Professor', 'HOD', 'Lecturer'];
 
 const ManageFaculty = () => {

@@ -42,7 +42,7 @@ router.post('/attendance', protect, authorize('faculty', 'hod'), async (req, res
         if (!Array.isArray(records)) return res.status(400).json({ message: 'Invalid records' });
 
         // Add faculty ID to each record
-        const attendanceWithFaculty = records.map(r => ({ ...r, markedBy: req.user._id }));
+        const attendanceWithFaculty = records.map(r => ({ ...r, faculty: req.user._id }));
 
         await Attendance.insertMany(attendanceWithFaculty);
         res.status(201).json({ message: 'Attendance records saved successfully' });

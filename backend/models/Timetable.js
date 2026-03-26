@@ -13,7 +13,20 @@ const timetableSchema = new mongoose.Schema({
     department: {
         type: String,
         required: [true, 'Department is required'],
-        enum: ['CSE', 'ECE', 'ME', 'CE', 'EE', 'IT'],
+        enum: [
+            'Chemical Engineering',
+            'Computer Engineering',
+            'Civil Engineering',
+            'Electrical Engineering',
+            'Electronics & Communication Engineering',
+            'Information Technology',
+            'Instrumentation & Control Engineering',
+            'Mechanical Engineering',
+            'Power Electronics Engineering',
+            'Computer Science and Engineering (Data Science)',
+            'Electronics And Instrumentation Engineering',
+            'Information and Communication Technology'
+        ],
     },
     semester: {
         type: Number,

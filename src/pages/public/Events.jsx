@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import api from '../../utils/axios';
+import { ALL_DEPARTMENTS } from '../../constants/departments';
+import usePageTitle from '../../utils/usePageTitle';
 
 const eventTypes = ['All', 'Conference', 'Workshop', 'Cultural', 'Sports', 'Placement', 'Lecture', 'Competition'];
-const departments = ['All', 'CSE', 'ECE', 'ME', 'CE', 'EE', 'IT', 'Placement Cell', 'Cultural Committee', 'Sports Committee', 'Alumni Cell'];
+const departments = [...ALL_DEPARTMENTS, 'Placement Cell', 'Cultural Committee', 'Sports Committee', 'Alumni Cell'];
 
 const typeColors = {
     Conference: 'bg-blue-100 text-blue-700',
@@ -15,10 +18,15 @@ const typeColors = {
 };
 
 const Events = () => {
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const initialDept = queryParams.get('dept') || 'All';
+    usePageTitle('Events');
+
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [typeFilter, setTypeFilter] = useState('All');
-    const [deptFilter, setDeptFilter] = useState('All');
+    const [deptFilter, setDeptFilter] = useState(initialDept);
     const [search, setSearch] = useState('');
     const [pagination, setPagination] = useState({
         page: 1,
@@ -37,7 +45,7 @@ const Events = () => {
                 const params = new URLSearchParams();
                 params.append('page', pagination.page);
                 params.append('limit', pagination.limit);
-                
+
                 if (search) {
                     params.append('search', search);
                 }
@@ -78,10 +86,10 @@ const Events = () => {
 
     const formatDate = (dateString) => {
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-US', { 
-            year: 'numeric', 
-            month: 'short', 
-            day: 'numeric' 
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
         });
     };
 
@@ -93,11 +101,11 @@ const Events = () => {
                     <p className="text-primary-200 max-w-2xl mx-auto">Explore upcoming events, workshops, guest lectures, and activities.</p>
                 </div>
             </div>
-            
+
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
                 {/* Filters */}
                 <div className="flex flex-col md:flex-row gap-4 mb-8">
-                    <select 
+                    <select
                         id="event-type"
                         value={typeFilter}
                         onChange={e => {
@@ -108,8 +116,8 @@ const Events = () => {
                     >
                         {eventTypes.map(t => <option key={t} value={t}>{t === 'All' ? 'All Types' : t}</option>)}
                     </select>
-                    
-                    <select 
+
+                    <select
                         id="event-dept"
                         value={deptFilter}
                         onChange={e => {
@@ -120,21 +128,21 @@ const Events = () => {
                     >
                         {departments.map(d => <option key={d} value={d}>{d === 'All' ? 'All Departments' : d}</option>)}
                     </select>
-                    
+
                     <div className="flex-1 relative">
                         <svg className="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
-                        <input 
+                        <input
                             id="event-search"
-                            type="text" 
-                            placeholder="Search events..." 
+                            type="text"
+                            placeholder="Search events..."
                             value={search}
                             onChange={e => {
                                 setSearch(e.target.value);
                                 setPagination(prev => ({ ...prev, page: 1 }));
                             }}
-                            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none transition" 
+                            className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none transition"
                         />
                     </div>
                 </div>
@@ -188,24 +196,24 @@ const Events = () => {
                         {/* Pagination */}
                         {pagination.pages > 1 && (
                             <div className="flex justify-center items-center space-x-2 mt-8">
-                                <button 
-                                    onClick={() => handlePageChange(pagination.page - 1)} 
+                                <button
+                                    onClick={() => handlePageChange(pagination.page - 1)}
                                     disabled={!pagination.hasPrev}
                                     className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 disabled:opacity-50 hover:bg-gray-50 transition"
                                 >
                                     Prev
                                 </button>
                                 {Array.from({ length: pagination.pages }, (_, i) => (
-                                    <button 
-                                        key={i} 
+                                    <button
+                                        key={i}
                                         onClick={() => handlePageChange(i + 1)}
                                         className={`w-10 h-10 rounded-lg text-sm font-medium transition ${pagination.page === i + 1 ? 'bg-primary text-white' : 'border border-gray-200 hover:bg-gray-50'}`}
                                     >
                                         {i + 1}
                                     </button>
                                 ))}
-                                <button 
-                                    onClick={() => handlePageChange(pagination.page + 1)} 
+                                <button
+                                    onClick={() => handlePageChange(pagination.page + 1)}
                                     disabled={!pagination.hasNext}
                                     className="px-4 py-2 rounded-lg text-sm font-medium border border-gray-200 disabled:opacity-50 hover:bg-gray-50 transition"
                                 >

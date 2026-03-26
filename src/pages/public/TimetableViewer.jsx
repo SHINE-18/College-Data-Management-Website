@@ -1,12 +1,21 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import api, { getAssetUrl } from '../../utils/axios';
+import { DEPARTMENTS } from '../../constants/departments';
 
-const departments = ['CSE', 'ECE', 'ME', 'CE', 'EE', 'IT'];
+const departments = DEPARTMENTS;
 const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
 
 const TimetableViewer = () => {
-    const [dept, setDept] = useState('CSE');
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const urlDept = queryParams.get('dept');
+
+    // Validate if urlDept exists in our departments list, otherwise fallback to first dept
+    const initialDept = departments.includes(urlDept) ? urlDept : (departments[0] || 'Computer Engineering');
+
+    const [dept, setDept] = useState(initialDept);
     const [sem, setSem] = useState(1);
     const [timetables, setTimetables] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -22,7 +31,7 @@ const TimetableViewer = () => {
         try {
             const response = await api.get(`/timetables?department=${dept}&semester=${sem}`);
             setTimetables(response.data);
-            
+
             // Auto-select first timetable if available
             if (response.data.length > 0 && !selectedTimetable) {
                 setSelectedTimetable(response.data[0]);
@@ -48,15 +57,15 @@ const TimetableViewer = () => {
                     <p className="text-primary-200 max-w-2xl mx-auto">View class schedules for any department and semester.</p>
                 </div>
             </div>
-            
+
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Filters */}
                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-8 flex flex-col sm:flex-row gap-4 items-end">
                     <div className="flex-1">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
-                        <select 
-                            id="tt-dept" 
-                            value={dept} 
+                        <select
+                            id="tt-dept"
+                            value={dept}
                             onChange={e => { setDept(e.target.value); setSelectedTimetable(null); }}
                             className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none bg-white"
                         >
@@ -65,9 +74,9 @@ const TimetableViewer = () => {
                     </div>
                     <div className="flex-1">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Semester</label>
-                        <select 
-                            id="tt-sem" 
-                            value={sem} 
+                        <select
+                            id="tt-sem"
+                            value={sem}
                             onChange={e => { setSem(Number(e.target.value)); setSelectedTimetable(null); }}
                             className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none bg-white"
                         >
@@ -89,7 +98,7 @@ const TimetableViewer = () => {
                         {/* Timetable Cards */}
                         <div className="lg:col-span-1 space-y-4">
                             <h3 className="text-lg font-semibold text-gray-900">Available Timetables</h3>
-                            
+
                             {timetables.length === 0 ? (
                                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 text-center">
                                     <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -105,14 +114,13 @@ const TimetableViewer = () => {
                             ) : (
                                 <div className="space-y-3">
                                     {timetables.map(timetable => (
-                                        <div 
+                                        <div
                                             key={timetable._id}
                                             onClick={() => setSelectedTimetable(timetable)}
-                                            className={`bg-white rounded-xl shadow-sm border p-4 cursor-pointer transition-all hover:shadow-md ${
-                                                selectedTimetable?._id === timetable._id 
-                                                    ? 'border-accent ring-2 ring-accent/20' 
-                                                    : 'border-gray-100'
-                                            }`}
+                                            className={`bg-white rounded-xl shadow-sm border p-4 cursor-pointer transition-all hover:shadow-md ${selectedTimetable?._id === timetable._id
+                                                ? 'border-accent ring-2 ring-accent/20'
+                                                : 'border-gray-100'
+                                                }`}
                                         >
                                             <div className="flex items-start justify-between">
                                                 <div>
@@ -124,7 +132,7 @@ const TimetableViewer = () => {
                                                         Uploaded: {new Date(timetable.createdAt).toLocaleDateString()}
                                                     </p>
                                                 </div>
-                                                <button 
+                                                <button
                                                     onClick={(e) => { e.stopPropagation(); handleDownload(timetable); }}
                                                     className="p-2 text-accent hover:bg-accent/10 rounded-lg transition"
                                                     title="Download PDF"
@@ -143,7 +151,7 @@ const TimetableViewer = () => {
                         {/* PDF Viewer */}
                         <div className="lg:col-span-2">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4">Preview</h3>
-                            
+
                             {selectedTimetable ? (
                                 <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                                     <div className="p-4 border-b border-gray-100 flex items-center justify-between">
@@ -153,7 +161,7 @@ const TimetableViewer = () => {
                                                 {selectedTimetable.department} - Semester {selectedTimetable.semester} - Division {selectedTimetable.division}
                                             </p>
                                         </div>
-                                        <button 
+                                        <button
                                             onClick={() => handleDownload(selectedTimetable)}
                                             className="bg-primary text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-primary-700 transition flex items-center space-x-2"
                                         >
@@ -190,4 +198,3 @@ const TimetableViewer = () => {
 };
 
 export default TimetableViewer;
-

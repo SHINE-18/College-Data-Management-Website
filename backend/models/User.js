@@ -33,7 +33,21 @@ const userSchema = new mongoose.Schema({
     },
     department: {
         type: String,
-        enum: ['CSE', 'ECE', 'ME', 'CE', 'EE', 'IT', 'All'],
+        enum: [
+            'Chemical Engineering',
+            'Computer Engineering',
+            'Civil Engineering',
+            'Electrical Engineering',
+            'Electronics & Communication Engineering',
+            'Information Technology',
+            'Instrumentation & Control Engineering',
+            'Mechanical Engineering',
+            'Power Electronics Engineering',
+            'Computer Science and Engineering (Data Science)',
+            'Electronics And Instrumentation Engineering',
+            'Information and Communication Technology',
+            'All'
+        ],
         default: 'All'
     },
     designation: {
@@ -44,6 +58,15 @@ const userSchema = new mongoose.Schema({
     facultyId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Faculty'
+    },
+    // Password reset fields
+    resetPasswordToken: {
+        type: String,
+        select: false
+    },
+    resetPasswordExpire: {
+        type: Date,
+        select: false
     },
     isActive: {
         type: Boolean,
@@ -73,7 +96,6 @@ userSchema.methods.comparePassword = async function (candidatePassword) {
 // ============================================
 // INDEXES — For improved query performance
 // ============================================
-userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ role: 1 });
 userSchema.index({ department: 1 });
 userSchema.index({ isActive: 1 });
