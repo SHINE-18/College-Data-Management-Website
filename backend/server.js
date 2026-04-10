@@ -171,7 +171,7 @@ if (process.env.NODE_ENV === 'production') {
 
     // Any route that is NOT an /api or /uploads route → serve React's index.html
     // This lets React Router handle client-side routing
-    app.get('*', (req, res) => {
+    app.get(/(.*)/, (req, res) => {
         res.sendFile(path.resolve(distPath, 'index.html'));
     });
 }
