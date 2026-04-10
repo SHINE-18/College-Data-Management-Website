@@ -73,9 +73,9 @@ app.get('/', (req, res) => {
         message: 'Welcome to VGEC CE Department API! 🚀',
         status: 'Server is running',
         endpoints: {
-            faculty: '/api/faculty',
-            notices: '/api/notices',
-            events: '/api/events',
+            // faculty: '/api/faculty',
+            // notices: '/api/notices',
+            // events: '/api/events',
         }
     });
 });
