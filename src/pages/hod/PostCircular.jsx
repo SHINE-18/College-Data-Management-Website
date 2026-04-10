@@ -6,6 +6,7 @@ import { useAuth } from '../../context/AuthContext';
 const PostCircular = () => {
     const { user } = useAuth();
     const [form, setForm] = useState({ title: '', content: '', category: 'General', target: 'All Faculty', expiry: '' });
+    const [fileItem, setFileItem] = useState(null);
     const [pastCirculars, setPastCirculars] = useState([]);
     const [submitting, setSubmitting] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -34,21 +35,50 @@ const PostCircular = () => {
 
         try {
             setSubmitting(true);
-            await api.post('/notices', {
+
+            let payload = {
                 title: form.title,
                 content: form.content,
                 category: form.category,
                 department: user?.department || 'CE',
-                // Expiry and target audience can be added to the Model later if needed
-            });
+            };
+
+            if (fileItem) {
+                payload = new FormData();
+                payload.append('title', form.title);
+                payload.append('content', form.content);
+                payload.append('category', form.category);
+                payload.append('department', user?.department || 'CE');
+                payload.append('attachment', fileItem);
+            }
+
+            await api.post('/notices', payload);
+
             toast.success('Circular posted successfully!');
             setForm({ title: '', content: '', category: 'General', target: 'All Faculty', expiry: '' });
+            setFileItem(null);
+            // reset file input visually
+            const fileInput = document.getElementById('circular-file-upload');
+            if (fileInput) fileInput.value = '';
+
             fetchCirculars(); // Refresh the list
         } catch (error) {
             console.error('Failed to post circular', error);
             toast.error(error.response?.data?.message || 'Failed to post circular');
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this circular?')) return;
+        try {
+            await api.delete(`/notices/${id}`);
+            toast.success('Circular deleted successfully!');
+            fetchCirculars();
+        } catch (error) {
+            console.error('Failed to delete circular', error);
+            toast.error(error.response?.data?.message || 'Failed to delete circular');
         }
     };
 
@@ -96,7 +126,7 @@ const PostCircular = () => {
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Attach File</label>
-                        <input type="file" className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-accent/10 file:text-accent hover:file:bg-accent/20" />
+                        <input id="circular-file-upload" type="file" onChange={e => setFileItem(e.target.files[0])} className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-accent/10 file:text-accent hover:file:bg-accent/20" />
                     </div>
                     <button type="submit" disabled={submitting} className="bg-primary text-white px-8 py-2.5 rounded-lg text-sm font-semibold hover:bg-primary-700 transition shadow-lg shadow-primary/25 disabled:opacity-70 flex items-center gap-2">
                         {submitting ? (
@@ -120,6 +150,7 @@ const PostCircular = () => {
                                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Category</th>
                                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Date Posted</th>
                                 <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Status</th>
+                                <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -147,6 +178,15 @@ const PostCircular = () => {
                                         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${c.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                             {c.isActive ? 'Active' : 'Archived'}
                                         </span>
+                                    </td>
+                                    <td className="px-6 py-3">
+                                        <button
+                                            onClick={() => handleDelete(c._id)}
+                                            className="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded-lg transition"
+                                            title="Delete Circular"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                        </button>
                                     </td>
                                 </tr>
                             ))}

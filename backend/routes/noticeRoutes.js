@@ -5,11 +5,29 @@
 const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
 const router = express.Router();
+const multer = require('multer');
+const path = require('path');
 const Notice = require('../models/Notice');
 const Student = require('../models/Student');
 const Faculty = require('../models/Faculty');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { notifyNewPost } = require('../utils/emailService');
+
+// Configure Multer for file upload
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'uploads/notices/');
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'notice-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
+
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
 
 // Validation middleware
 const validate = (req, res, next) => {
@@ -85,17 +103,26 @@ router.get('/:id', [
 router.post('/', [
     protect,
     authorize('hod', 'super_admin'),
+    upload.single('attachment'),
+    (req, res, next) => {
+        require('fs').writeFileSync('debug.txt', JSON.stringify({
+            contentType: req.headers['content-type'],
+            body: req.body,
+            file: req.file
+        }, null, 2));
+        next();
+    },
     body('title').trim().notEmpty().withMessage('Title is required'),
     body('content').trim().notEmpty().withMessage('Content is required'),
     body('category').optional().isIn(['General', 'Exam', 'Admission', 'Events', 'Placement', 'Other']).withMessage('Invalid category'),
     body('department').optional().trim(),
-    body('attachment').optional().trim(),
 ], validate, async (req, res) => {
     try {
         const notice = new Notice({
             ...req.body,
             department: req.user.role === 'hod' ? req.user.department : (req.body.department || 'All'),
             postedBy: req.user.name,
+            attachment: req.file ? `/uploads/notices/${req.file.filename}` : null,
         });
         const saved = await notice.save();
 

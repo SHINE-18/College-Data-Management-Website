@@ -53,7 +53,7 @@ import Reports from '../pages/hod/Reports';
 // Admin
 import SuperAdminDashboard from '../pages/admin/SuperAdminDashboard';
 import UserManagement from '../pages/admin/UserManagement';
-// import ManageDepartments from '../pages/admin/ManageDepartments'; // temporarily removed
+import ManageDepartments from '../pages/admin/ManageDepartments';
 import SiteSettings from '../pages/admin/SiteSettings';
 
 // Layouts
@@ -128,7 +128,7 @@ const AppRoutes = () => (
             <Route path="users" element={<UserManagement />} />
             <Route path="faculty" element={<ManageFaculty />} />
             <Route path="circular" element={<PostCircular />} />
-            {/* <Route path="departments" element={<ManageDepartments />} /> temporarily removed */}
+            <Route path="departments" element={<ManageDepartments />} />
             <Route path="settings" element={<SiteSettings />} />
         </Route>
 

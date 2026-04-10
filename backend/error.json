@@ -1,0 +1,19 @@
+{
+  "message": "Title is required",
+  "errors": [
+    {
+      "type": "field",
+      "value": "",
+      "msg": "Title is required",
+      "path": "title",
+      "location": "body"
+    },
+    {
+      "type": "field",
+      "value": "",
+      "msg": "Content is required",
+      "path": "content",
+      "location": "body"
+    }
+  ]
+}

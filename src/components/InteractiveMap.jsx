@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import campusMap from '../assets/campusmap.png';
+import vgecLogo from '../assets/vgec_hd.png';
 
 /**
  * InteractiveMap - A realistic campus navigator using a satellite image base.
@@ -145,6 +146,11 @@ const InteractiveMap = () => {
                         </motion.div>
                     )}
                 </AnimatePresence>
+
+                {/* 4. Branding Overlay (Hides original map watermark) */}
+                <div className="absolute bottom-10 right-10 z-40 bg-white/95 p-2 rounded-full backdrop-blur-md shadow-xl border border-slate-200 flex items-center justify-center pointer-events-none">
+                    <img src={vgecLogo} alt="VGEC Logo" className="w-10 h-10 object-contain drop-shadow-sm" />
+                </div>
             </div>
         </div>
     );

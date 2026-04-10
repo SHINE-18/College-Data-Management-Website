@@ -31,6 +31,13 @@ const ManageDepartments = () => {
         toast.success('HOD assigned!');
     };
 
+    const removeDept = (id) => {
+        if (confirm('Are you sure you want to remove this department?')) {
+            setDepts(prev => prev.filter(d => d.id !== id));
+            toast.success('Department removed!');
+        }
+    };
+
     return (
         <div className="animate-fade-in space-y-6">
             <div className="flex items-center justify-between">
@@ -52,6 +59,7 @@ const ManageDepartments = () => {
                             <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Code</th>
                             <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Established</th>
                             <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">HOD</th>
+                            <th className="text-right px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -65,6 +73,17 @@ const ManageDepartments = () => {
                                         <option value="Unassigned">— Assign HOD —</option>
                                         {hodOptions.map(h => <option key={h} value={h}>{h}</option>)}
                                     </select>
+                                </td>
+                                <td className="px-6 py-3 text-right">
+                                    <button
+                                        onClick={() => removeDept(d.id)}
+                                        className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition-colors"
+                                        title="Remove Department"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                    </button>
                                 </td>
                             </tr>
                         ))}

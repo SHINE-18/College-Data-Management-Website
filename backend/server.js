@@ -134,6 +134,11 @@ if (!fs.existsSync(circularsDir)) {
     fs.mkdirSync(circularsDir, { recursive: true });
 }
 
+const noticesDir = path.join(uploadsDir, 'notices');
+if (!fs.existsSync(noticesDir)) {
+    fs.mkdirSync(noticesDir, { recursive: true });
+}
+
 const assignmentsDir = path.join(uploadsDir, 'assignments');
 if (!fs.existsSync(assignmentsDir)) {
     fs.mkdirSync(assignmentsDir, { recursive: true });
