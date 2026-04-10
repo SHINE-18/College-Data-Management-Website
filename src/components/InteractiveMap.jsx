@@ -16,44 +16,58 @@ const buildingData = [
     {
         id: 'me',
         name: 'Mechanical Engineering (M block)',
-        points: "220,160 380,160 380,360 220,360",
-        description: "Large department for machine design and workshops."
+        points: "615,70,683,349,974,289,900,7",
+        description: "Large department for machine design and workshops.",
+        isDepartment: true
     },
     {
         id: 'library',
         name: 'VGEC Central Library',
-        points: "750,110 850,110 850,210 750,210",
-        description: "Resource center and quiet study areas."
+        points: "1131,80,1077,356,1375,418,1432,162",
+        description: "Resource center and quiet study areas.",
+        isDepartment: false
     },
     {
         id: 'admin',
         name: 'Administrative Block',
-        points: "1200,164 1352,164 1352,364 1200,364",
-        description: "Principal's office and institute administration."
+        points: "1333,1406,1651,1344,1685,1679,1359,1698",
+        description: "Principal's office and institute administration.",
+        isDepartment: false
     },
     {
         id: 'cp',
         name: 'Computer Engineering (Block D)',
-        points: "430,900 550,900 550,1100 430,1100",
-        description: "Computing resources and AI/ML research."
+        points: "607,1542,564,1763,821,1822,866,1591",
+        description: "Computing resources and AI/ML research.",
+        isDepartment: true
     },
     {
         id: 'it',
         name: 'Information Technology (Block B)',
-        points: "1267,726 1367,726 1367,826 1267,826",
-        description: "Digital systems and network security."
+        points: "1035,1633,1334,1563,1397,1812,1098,1878",
+        description: "Digital systems and network security.",
+        isDepartment: true
     },
     {
         id: 'ee',
         name: 'Electrical Engineering (Block C)',
-        points: "1512,1569 1612,1569 1612,1669 1512,1669",
-        description: "Power systems and renewable energy."
+        points: "816,1367,1108,1379,1098,1618,811,1607",
+        description: "Power systems and renewable energy.",
+        isDepartment: true
     },
     {
         id: 'ch',
         name: 'Chemical Engineering (Block H/I)',
         points: "400,1479 500,1479 500,1579 400,1579",
-        description: "Industrial chemistry and process engineering."
+        description: "Industrial chemistry and process engineering.",
+        isDepartment: true
+    },
+    {
+        id: 'cl',
+        name: 'Civil Engineering (Block N)',
+        points: "102,179,406,108,469,383,172,456",
+        description: "Structural design and construction management.",
+        isDepartment: true
     }
 ];
 
@@ -73,9 +87,9 @@ const InteractiveMap = () => {
         });
     };
 
-    const handleBuildingClick = (id) => {
-        if (!id) return;
-        navigate(`/department/${id}`);
+    const handleBuildingClick = (building) => {
+        if (!building || !building.isDepartment) return;
+        navigate(`/department/${building.id}`);
         window.scrollTo(0, 0);
     };
 
@@ -113,7 +127,7 @@ const InteractiveMap = () => {
                             className="cursor-pointer transition-all duration-200"
                             onHoverStart={() => setHoveredBuilding(building)}
                             onHoverEnd={() => setHoveredBuilding(null)}
-                            onClick={() => handleBuildingClick(building.id)}
+                            onClick={() => handleBuildingClick(building)}
                         />
                     ))}
                 </svg>

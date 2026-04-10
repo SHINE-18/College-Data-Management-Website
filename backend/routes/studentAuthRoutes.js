@@ -77,4 +77,33 @@ router.get('/me', protectStudent, async (req, res) => {
     }
 });
 
+// PUT /api/student-auth/password - Change student password
+router.put('/password', [
+    protectStudent,
+    body('currentPassword').notEmpty().withMessage('Current password is required'),
+    body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters'),
+    validate
+], async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        const student = await Student.findById(req.student._id).select('+password');
+
+        // Verify current password
+        const isMatch = await student.comparePassword(currentPassword);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Current password is incorrect' });
+        }
+
+        // Update password
+        student.password = newPassword;
+        await student.save();
+
+        res.json({ message: 'Password updated successfully' });
+    } catch (error) {
+        console.error('Password change error:', error);
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
 module.exports = router;

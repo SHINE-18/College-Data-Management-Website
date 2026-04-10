@@ -37,7 +37,7 @@ const AssignmentPoster = () => {
         if (file) formData.append('assignmentFile', file);
 
         try {
-            await api.post('/faculty/assignments', formData, {
+            await api.post('/faculty/portal/assignments', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             toast.success("Assignment posted successfully!");

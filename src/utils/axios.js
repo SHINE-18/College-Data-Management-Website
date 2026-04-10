@@ -24,7 +24,8 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 401) {
+        // Don't redirect during login/auth requests (let them handle their own errors)
+        if (error.response?.status === 401 && !error.config?.url?.includes('/auth')) {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             window.location.href = '/login';

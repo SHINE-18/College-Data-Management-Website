@@ -52,7 +52,9 @@ const PostCircular = () => {
                 payload.append('attachment', fileItem);
             }
 
-            await api.post('/notices', payload);
+            await api.post('/notices', payload, fileItem ? {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            } : undefined);
 
             toast.success('Circular posted successfully!');
             setForm({ title: '', content: '', category: 'General', target: 'All Faculty', expiry: '' });

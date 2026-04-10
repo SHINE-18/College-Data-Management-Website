@@ -124,13 +124,17 @@ const UserManagement = () => {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right space-x-3 text-lg">
-                                            <button onClick={() => handleToggleActive(user._id)} title={user.isActive ? 'Deactivate User' : 'Activate User'}
-                                                className={`transition ${user.isActive ? 'text-red-400 hover:text-red-600' : 'text-green-400 hover:text-green-600'}`}>
-                                                {user.isActive ? <FaTimesCircle /> : <FaCheckCircle />}
-                                            </button>
-                                            <button onClick={() => handleDelete(user._id)} title="Delete User" className="text-gray-400 hover:text-red-600 transition">
-                                                <FaTrash size={16} />
-                                            </button>
+                                            {user.role !== 'super_admin' && (
+                                                <button onClick={() => handleToggleActive(user._id)} title={user.isActive ? 'Deactivate User' : 'Activate User'}
+                                                    className={`transition ${user.isActive ? 'text-red-400 hover:text-red-600' : 'text-green-400 hover:text-green-600'}`}>
+                                                    {user.isActive ? <FaTimesCircle /> : <FaCheckCircle />}
+                                                </button>
+                                            )}
+                                            {user.role !== 'super_admin' && (
+                                                <button onClick={() => handleDelete(user._id)} title="Delete User" className="text-gray-400 hover:text-red-600 transition">
+                                                    <FaTrash size={16} />
+                                                </button>
+                                            )}
                                         </td>
                                     </tr>
                                 ))

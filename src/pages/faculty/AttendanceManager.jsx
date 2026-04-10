@@ -28,7 +28,7 @@ const AttendanceManager = () => {
             // For now, let's pretend it fetches all and we filter, or we hit a specific API endpoint.
             const { data } = await api.get('/auth/users'); // Fallback or placeholder actually we need students!
             // Let's assume we have a new endpoint to get students explicitly:
-            const response = await api.get(`/faculty/students?semester=${semester}`);
+            const response = await api.get(`/faculty/portal/students?semester=${semester}`);
 
             setStudents(response.data);
 
@@ -66,8 +66,8 @@ const AttendanceManager = () => {
                 semester: Number(semester)
             }));
 
-            // Assuming a batch POST route exists at /api/faculty/attendance
-            await api.post('/faculty/attendance', { records });
+            // Assuming a batch POST route exists at /api/faculty/portal/attendance
+            await api.post('/faculty/portal/attendance', { records });
             toast.success('Attendance saved successfully!');
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to save attendance');

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../../utils/axios';
+import { getAssetUrl } from '../../utils/axios';
 import toast from 'react-hot-toast';
 import { FaCloudUploadAlt, FaFilePdf, FaCheckCircle, FaClock } from 'react-icons/fa';
 
@@ -93,7 +94,7 @@ const AssignmentUploader = () => {
                                 <p className="text-xs text-gray-500 line-clamp-2 bg-gray-50 p-3 rounded-lg">{assignment.description || "No description provided."}</p>
 
                                 {assignment.fileUrl && (
-                                    <a href={assignment.fileUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center space-x-2 text-xs text-primary hover:underline font-medium">
+                                    <a href={getAssetUrl(assignment.fileUrl)} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center space-x-2 text-xs text-primary hover:underline font-medium">
                                         <FaFilePdf /> <span>Download Reference file</span>
                                     </a>
                                 )}

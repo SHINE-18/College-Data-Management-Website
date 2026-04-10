@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import api from '../utils/axios';
+import { getAssetUrl } from '../utils/axios';
 
 const categoryColors = {
     General: 'bg-gray-50 text-gray-700 border border-gray-200',
@@ -42,7 +42,7 @@ const NoticeCard = ({ notice }) => {
     const hasAttachment = notice.attachment || notice.attachment === true;
 
     const fileUrl = hasAttachment && typeof notice.attachment === 'string'
-        ? api.defaults.baseURL.replace('/api', '') + notice.attachment
+        ? getAssetUrl(notice.attachment)
         : null;
 
     const handleCardClick = () => {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api from '../../utils/axios';
+import api, { getAssetUrl } from '../../utils/axios';
 import { FaFilePowerpoint, FaFileAlt, FaVideo, FaLink, FaDownload, FaFilter } from 'react-icons/fa';
 
 const ResourceLibrary = () => {
@@ -88,7 +88,7 @@ const ResourceLibrary = () => {
                                         View Content
                                     </a>
                                 ) : (
-                                    <a href={api.defaults.baseURL + res.fileUrl} target="_blank" rel="noopener noreferrer" className="block w-full text-center py-2.5 rounded-xl bg-primary text-white font-bold hover:bg-primary-700 transition shadow-md shadow-primary/20">
+                                    <a href={getAssetUrl(res.fileUrl)} target="_blank" rel="noopener noreferrer" className="block w-full text-center py-2.5 rounded-xl bg-primary text-white font-bold hover:bg-primary-700 transition shadow-md shadow-primary/20">
                                         Download {res.resourceType}
                                     </a>
                                 )}

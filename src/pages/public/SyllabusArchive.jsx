@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api from '../../utils/axios';
+import api, { getAssetUrl } from '../../utils/axios';
 import { FaDownload, FaSearch, FaBookOpen } from 'react-icons/fa';
 
 const SyllabusArchive = () => {
@@ -98,7 +98,7 @@ const SyllabusArchive = () => {
                             <p className="text-sm font-mono text-gray-400 mb-6">{syllabus.courseCode}</p>
 
                             <a
-                                href={api.defaults.baseURL + syllabus.syllabusUrl}
+                                href={getAssetUrl(syllabus.syllabusUrl)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="w-full flex items-center justify-center space-x-2 bg-gray-900 hover:bg-primary text-white py-3 rounded-xl transition font-bold shadow-lg shadow-gray-200 hover:shadow-primary/30"

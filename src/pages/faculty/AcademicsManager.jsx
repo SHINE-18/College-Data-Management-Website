@@ -26,7 +26,9 @@ const AcademicsManager = () => {
         formData.append('syllabusFile', sylFile);
 
         try {
-            await api.post('/academics/syllabi', formData);
+            await api.post('/academics/syllabi', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
             toast.success("Syllabus uploaded successfully!");
             setSylData({ courseTitle: '', courseCode: '', semester: '1', credits: '4' });
             setSylFile(null);
@@ -45,7 +47,9 @@ const AcademicsManager = () => {
         if (resFile) formData.append('resourceFile', resFile);
 
         try {
-            await api.post('/academics/resources', formData);
+            await api.post('/academics/resources', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            });
             toast.success("Resource added successfully!");
             setResData({ title: '', subject: '', semester: '1', resourceType: 'PPT', description: '', externalLink: '' });
             setResFile(null);

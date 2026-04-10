@@ -7,11 +7,11 @@ const mongoose = require('mongoose');
 const siteSettingSchema = new mongoose.Schema({
     collegeName: {
         type: String,
-        default: 'Vishwakarma Government Engineering College'
+        default: ''
     },
     email: {
         type: String,
-        default: 'info@vgecg.ac.in'
+        default: ''
     },
     phone: {
         type: String,
@@ -23,7 +23,7 @@ const siteSettingSchema = new mongoose.Schema({
     },
     website: {
         type: String,
-        default: 'https://www.vgecg.ac.in'
+        default: ''
     },
     logoUrl: {
         type: String,

@@ -1,40 +1,64 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
+import api from '../../utils/axios';
 
-import { DEPARTMENT_DETAILS } from '../../constants/departments';
-
-const initialDepts = DEPARTMENT_DETAILS.map((dept, index) => ({
-    id: index + 1,
-    name: dept.name,
-    code: dept.code,
-    established: 1948 + (index * 5), // Mock established years for variety
-    hod: 'Unassigned'
-}));
-
-const hodOptions = ['Dr. Rajesh Kumar', 'Dr. Priya Sharma', 'Dr. Suresh Patel', 'Dr. Anita Singh', 'Dr. Vikram Reddy', 'Dr. Meena Gupta', 'Dr. Sneha Verma', 'Dr. Pooja Mehta'];
+const hodOptions = ['Dr. Rajesh Kumar', 'Dr. Priya Sharma', 'Dr. Suresh Patel', 'Dr. Anita Singh', 'Dr. Vikram Reddy', 'Dr. Meena Gupta', 'Dr. Sneha Verma', 'Dr. Pooja Mehta', 'Dr. A. K. Shah', 'Prof. Kajal S. Patel', 'Dr. V. P. Patel'];
 const emptyForm = { name: '', code: '', established: '' };
 
 const ManageDepartments = () => {
-    const [depts, setDepts] = useState(initialDepts);
+    const [depts, setDepts] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [form, setForm] = useState(emptyForm);
+    const [loading, setLoading] = useState(true);
 
-    const handleSave = () => {
+    const fetchDepartments = async () => {
+        try {
+            setLoading(true);
+            const response = await api.get('/departments');
+            setDepts(response.data.data);
+        } catch (error) {
+            toast.error('Failed to load departments');
+            console.error(error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchDepartments();
+    }, []);
+
+    const handleSave = async () => {
         if (!form.name || !form.code || !form.established) { toast.error('Fill all required fields.'); return; }
-        setDepts(prev => [...prev, { ...form, id: Date.now(), hod: 'Unassigned' }]);
-        toast.success('Department added!');
-        setShowModal(false); setForm(emptyForm);
+        try {
+            await api.post('/departments', form);
+            toast.success('Department added!');
+            setShowModal(false); setForm(emptyForm);
+            fetchDepartments();
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Failed to add department');
+        }
     };
 
-    const assignHod = (id, hod) => {
-        setDepts(prev => prev.map(d => d.id === id ? { ...d, hod } : d));
-        toast.success('HOD assigned!');
+    const assignHod = async (id, hodName) => {
+        try {
+            await api.put(`/departments/${id}`, { hod: { name: hodName, message: '' } });
+            toast.success('HOD assigned!');
+            fetchDepartments();
+        } catch (error) {
+            toast.error('Failed to assign HOD');
+        }
     };
 
-    const removeDept = (id) => {
+    const removeDept = async (id) => {
         if (confirm('Are you sure you want to remove this department?')) {
-            setDepts(prev => prev.filter(d => d.id !== id));
-            toast.success('Department removed!');
+            try {
+                await api.delete(`/departments/${id}`);
+                toast.success('Department removed!');
+                fetchDepartments();
+            } catch (error) {
+                toast.error('Failed to remove department');
+            }
         }
     };
 
@@ -63,20 +87,24 @@ const ManageDepartments = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {depts.map((d, i) => (
-                            <tr key={d.id} className={`${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition`}>
+                        {loading ? (
+                            <tr><td colSpan="5" className="px-6 py-4 text-center text-gray-500">Loading departments...</td></tr>
+                        ) : depts.length === 0 ? (
+                            <tr><td colSpan="5" className="px-6 py-4 text-center text-gray-500">No departments found.</td></tr>
+                        ) : depts.map((d, i) => (
+                            <tr key={d._id} className={`${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition`}>
                                 <td className="px-6 py-3 text-sm font-medium text-gray-900">{d.name}</td>
                                 <td className="px-6 py-3"><span className="text-xs font-semibold bg-primary/10 text-primary px-2.5 py-1 rounded-full">{d.code}</span></td>
                                 <td className="px-6 py-3 text-sm text-gray-600">{d.established}</td>
                                 <td className="px-6 py-3">
-                                    <select value={d.hod} onChange={e => assignHod(d.id, e.target.value)} className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-1 focus:ring-accent outline-none">
+                                    <select value={d.hod?.name || 'Unassigned'} onChange={e => assignHod(d._id, e.target.value)} className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:ring-1 focus:ring-accent outline-none">
                                         <option value="Unassigned">— Assign HOD —</option>
                                         {hodOptions.map(h => <option key={h} value={h}>{h}</option>)}
                                     </select>
                                 </td>
                                 <td className="px-6 py-3 text-right">
                                     <button
-                                        onClick={() => removeDept(d.id)}
+                                        onClick={() => removeDept(d._id)}
                                         className="text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 p-2 rounded-lg transition-colors"
                                         title="Remove Department"
                                     >

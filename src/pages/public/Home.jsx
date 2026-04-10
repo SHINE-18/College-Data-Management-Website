@@ -5,14 +5,9 @@ import InteractiveMap from '../../components/InteractiveMap';
 import collegemain from '../../assets/collegemain.jpg';
 import api from '../../utils/axios';
 import usePageTitle from '../../utils/usePageTitle';
+import AnnouncementTicker from '../../components/AnnouncementTicker';
 
 /* ── Global Campus Bulletin Data ── */
-const talkEvents = [
-    { day: '04', month: 'Feb', time: '09:00 AM', title: 'TECHNIX 2026 — Institute Technical Festival', speaker: 'Technical Committee, VGEC' },
-    { day: '07', month: 'Apr', time: 'Deadline', title: 'International Experience Program (IEP) 2026 — Australia', speaker: 'GTU / Adelaide Campus' },
-    { day: '22', month: 'Mar', time: '11:00 AM', title: 'Expert Session: Career Paths for Engineers', speaker: 'Industry Experts, CE Dept' },
-];
-
 const newsItems = [
     { icon: '🏆', title: 'TECHNIX 2026 — College-wide technical fest held on Feb 4, 2026' },
     { icon: '🌏', title: 'GTU announces International Experience Program at Adelaide, Australia for CE/IT students' },
@@ -23,17 +18,23 @@ const newsItems = [
 
 const Home = () => {
     const [notices, setNotices] = useState([]);
+    const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     usePageTitle('Home');
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const noticesRes = await api.get('/notices?page=1&limit=3');
+                const [noticesRes, eventsRes] = await Promise.all([
+                    api.get('/notices?page=1&limit=3'),
+                    api.get('/events?page=1&limit=3')
+                ]);
                 setNotices(noticesRes.data.data || []);
+                setEvents(eventsRes.data.data || []);
             } catch (error) {
                 console.error('Error fetching home data:', error);
                 setNotices([]);
+                setEvents([]);
             } finally {
                 setLoading(false);
             }
@@ -43,6 +44,8 @@ const Home = () => {
 
     return (
         <div className="animate-fade-in bg-slate-50/30">
+            <AnnouncementTicker department="All" />
+
             {/* ═══════ HERO BANNER ═══════ */}
             <section className="relative">
                 <div className="w-full h-[500px] md:h-[650px] overflow-hidden">
@@ -63,10 +66,10 @@ const Home = () => {
                         </p>
 
                         <div className="flex flex-wrap gap-4">
-                            <Link to="/notices" className="bg-white text-slate-900 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-accent transition transform hover:-translate-y-1 shadow-2xl">
+                            <Link to="https://www.vgecg.ac.in/admissions.php" className="bg-white text-slate-900 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-accent transition transform hover:-translate-y-1 shadow-2xl">
                                 Admission 2026
                             </Link>
-                            <Link to="/about" className="bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/20 transition transform hover:-translate-y-1">
+                            <Link to="https://www.vgecg.ac.in/" className="bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/20 transition transform hover:-translate-y-1">
                                 Discover VGEC
                             </Link>
                         </div>
@@ -129,21 +132,29 @@ const Home = () => {
                         </div>
 
                         <div className="space-y-8 relative z-10">
-                            {talkEvents.map((event, i) => (
-                                <div key={i} className="flex items-center space-x-6 group cursor-pointer">
-                                    <div className="flex flex-col items-center justify-center w-16 h-16 bg-white/5 rounded-2xl border border-white/10 group-hover:bg-accent group-hover:border-accent group-hover:text-slate-900 transition-all duration-300">
-                                        <span className="text-xl font-black">{event.day}</span>
-                                        <span className="text-[10px] font-bold uppercase">{event.month}</span>
-                                    </div>
-                                    <div className="flex-1">
-                                        <h4 className="font-bold text-sm leading-snug group-hover:text-accent transition">{event.title}</h4>
-                                        <div className="flex items-center space-x-4 mt-2">
-                                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{event.time}</span>
-                                            <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest">{event.speaker}</span>
+                            {events.map((event, i) => {
+                                const eventDate = new Date(event.date);
+                                const day = eventDate.getDate().toString().padStart(2, '0');
+                                const month = eventDate.toLocaleString('default', { month: 'short' });
+                                return (
+                                    <div key={event._id || i} className="flex items-center space-x-6 group cursor-pointer">
+                                        <div className="flex flex-col items-center justify-center w-16 h-16 bg-white/5 rounded-2xl border border-white/10 group-hover:bg-accent group-hover:border-accent group-hover:text-slate-900 transition-all duration-300">
+                                            <span className="text-xl font-black">{day}</span>
+                                            <span className="text-[10px] font-bold uppercase">{month}</span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <h4 className="font-bold text-sm leading-snug group-hover:text-accent transition truncate">{event.title}</h4>
+                                            <div className="flex items-center space-x-4 mt-2">
+                                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{event.time}</span>
+                                                <span className="text-[10px] font-black text-orange-400 uppercase tracking-widest truncate">{event.organizer || event.department}</span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
+                            {events.length === 0 && !loading && (
+                                <p className="text-sm text-slate-400 italic">No upcoming events scheduled.</p>
+                            )}
                         </div>
 
                         <Link to="/events" className="mt-12 block text-center py-4 bg-white/5 border border-white/10 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:bg-accent hover:text-slate-900 hover:border-accent transition">

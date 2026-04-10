@@ -104,14 +104,6 @@ router.post('/', [
     protect,
     authorize('hod', 'super_admin'),
     upload.single('attachment'),
-    (req, res, next) => {
-        require('fs').writeFileSync('debug.txt', JSON.stringify({
-            contentType: req.headers['content-type'],
-            body: req.body,
-            file: req.file
-        }, null, 2));
-        next();
-    },
     body('title').trim().notEmpty().withMessage('Title is required'),
     body('content').trim().notEmpty().withMessage('Content is required'),
     body('category').optional().isIn(['General', 'Exam', 'Admission', 'Events', 'Placement', 'Other']).withMessage('Invalid category'),

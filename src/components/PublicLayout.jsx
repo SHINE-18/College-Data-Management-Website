@@ -6,7 +6,6 @@ import Footer from './Footer';
 const PublicLayout = () => (
     <div className="min-h-screen flex flex-col bg-cream">
         <Navbar />
-        <AnnouncementTicker />
         <main className="flex-1">
             <Outlet />
         </main>

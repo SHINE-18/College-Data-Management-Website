@@ -4,33 +4,62 @@ import FacultyCard from '../../components/FacultyCard';
 import { DEPARTMENT_DETAILS } from '../../constants/departments';
 import api from '../../utils/axios';
 import { useState } from 'react';
+import AnnouncementTicker from '../../components/AnnouncementTicker';
 
 const DepartmentDetail = () => {
     const { id } = useParams();
     const [faculty, setFaculty] = useState([]);
+    const [dept, setDept] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    const dept = DEPARTMENT_DETAILS.find(d => d.id === id) || DEPARTMENT_DETAILS[0];
-
     useEffect(() => {
-        const fetchDeptFaculty = async () => {
+        const fetchData = async () => {
             setLoading(true);
             try {
-                // Fetch only faculty for this department
-                const response = await api.get(`/faculty?department=${encodeURIComponent(dept.name)}&limit=6`);
-                setFaculty(response.data.data);
+                // Find department name/code from constants to guide the API search
+                const deptConst = DEPARTMENT_DETAILS.find(d => d.id === id) || { code: id };
+
+                // Fetch department details
+                const deptRes = await api.get(`/departments/search?code=${deptConst.code}`);
+                const currentDept = deptRes.data.data;
+                setDept(currentDept);
+
+                if (currentDept) {
+                    // Fetch faculty for this department
+                    const facRes = await api.get(`/faculty?department=${encodeURIComponent(currentDept.name)}&limit=6`);
+                    setFaculty(facRes.data.data);
+                }
             } catch (error) {
-                console.error('Error fetching department faculty:', error);
+                console.error('Error fetching department details:', error);
             } finally {
                 setLoading(false);
             }
         };
-        fetchDeptFaculty();
+        fetchData();
         window.scrollTo(0, 0);
-    }, [id, dept.name]);
+    }, [id]);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
+
+    if (!dept) {
+        return (
+            <div className="text-center py-20 text-slate-500 font-medium text-lg">
+                Department not found.
+                <br />
+                <Link to="/" className="text-primary hover:underline mt-4 inline-block">Return to Home</Link>
+            </div>
+        );
+    }
 
     return (
         <div className="animate-fade-in pb-20 bg-slate-50/50">
+            <AnnouncementTicker department={dept.name} />
             {/* ═══════ HERO SECTION ═══════ */}
             <div className="bg-primary-700 relative overflow-hidden py-24">
                 {/* Decorative Background Elements */}
@@ -103,16 +132,16 @@ const DepartmentDetail = () => {
                                     <div className="absolute inset-0 bg-primary/10 rounded-2xl rotate-3"></div>
                                     <div className="absolute inset-0 bg-accent/20 rounded-2xl -rotate-3"></div>
                                     <div className="relative w-full h-full bg-gradient-to-br from-slate-200 to-slate-300 rounded-2xl flex items-center justify-center overflow-hidden shadow-lg border-4 border-white text-4xl text-white font-black">
-                                        {dept.hod.name[0]}
+                                        {dept.hod?.name ? dept.hod.name[0] : 'H'}
                                     </div>
                                 </div>
                                 <div className="space-y-4">
                                     <div>
-                                        <h2 className="text-2xl font-black text-slate-800 tracking-tight">{dept.hod.name}</h2>
+                                        <h2 className="text-2xl font-black text-slate-800 tracking-tight">{dept.hod?.name || 'Unassigned'}</h2>
                                         <p className="text-accent font-bold text-xs uppercase tracking-widest">Head of Department</p>
                                     </div>
                                     <p className="text-slate-600 leading-relaxed italic text-lg font-medium">
-                                        "{dept.hod.message}"
+                                        "{dept.hod?.message || 'Welcome to our department. We are dedicated to nurturing excellence.'}"
                                     </p>
                                     <div className="pt-4 flex items-center space-x-3">
                                         <div className="w-10 h-[2px] bg-slate-200"></div>

@@ -103,10 +103,11 @@ app.use('/api/qualifications', require('./routes/qualificationRoutes'));
 app.use('/api/circulars', require('./routes/circularRoutes'));
 app.use('/api/student-auth', require('./routes/studentAuthRoutes'));
 app.use('/api/student', require('./routes/studentRoutes'));
-app.use('/api/faculty', require('./routes/facultyStudentRoutes')); // Specialized faculty-student portal routes
+app.use('/api/faculty/portal', require('./routes/facultyStudentRoutes')); // Specialized faculty-student portal routes
 app.use('/api/academics', require('./routes/academicRoutes')); // Syllabi and Resources
 app.use('/api/admin', require('./routes/adminRoutes'));           // Admin dashboard stats
 app.use('/api/settings', require('./routes/siteSettingRoutes'));  // Site settings
+app.use('/api/departments', require('./routes/departmentRoutes')); // Departments Mngmt
 
 // Create uploads directory if it doesn't exist
 const uploadsDir = path.join(__dirname, 'uploads');

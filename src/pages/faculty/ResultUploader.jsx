@@ -24,7 +24,7 @@ const ResultUploader = () => {
         try {
             // Placeholder: Assume new student fetch endpoint
             const { data } = await api.get('/auth/users'); // we need a real /students endpoint here
-            const response = await api.get(`/faculty/students?semester=${semester}`);
+            const response = await api.get(`/faculty/portal/students?semester=${semester}`);
 
             setStudents(response.data);
 
@@ -74,7 +74,7 @@ const ResultUploader = () => {
             }
 
             // Mock endpoint for submitting batch results
-            await api.post('/faculty/results', { records });
+            await api.post('/faculty/portal/results', { records });
             toast.success(`${records.length} results saved successfully!`);
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to save results');

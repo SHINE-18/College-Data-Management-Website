@@ -1,23 +1,17 @@
-export const DEPARTMENTS = [
-    'Chemical Engineering',
-    'Computer Engineering',
-    'Civil Engineering',
-    'Electrical Engineering',
-    'Electronics & Communication Engineering',
-    'Information Technology',
-    'Instrumentation & Control Engineering',
-    'Mechanical Engineering',
-    'Power Electronics Engineering',
-    'Computer Science and Engineering (Data Science)',
-    'Electronics And Instrumentation Engineering',
-    'Information and Communication Technology'
-];
+// ============================================
+// seedDepartments.js — Import existing mock data to MongoDB
+// Run this once: node seedDepartments.js
+// ============================================
 
-export const ALL_DEPARTMENTS = [...DEPARTMENTS, 'All'];
+const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+const Department = require('./models/Department');
 
-export const DEPARTMENT_DETAILS = [
+dotenv.config();
+
+const DEPARTMENTS_DATA = [
     {
-        id: 'ch', name: 'Chemical Engineering', code: 'CH',
+        name: 'Chemical Engineering', code: 'CH', established: 1948,
         description: 'Focusing on the design and operation of chemical plants and methods of improving production.',
         detailAbout: 'The Department of Chemical Engineering has a long history of excellence. Our curriculum focuses on bridging the gap between chemistry and engineering to solve real-world industrial problems. Our state-of-the-art labs provide hands-on experience.',
         hod: { name: 'Dr. A. K. Shah', message: 'Welcome to the Chemical Engineering Department. We focus on bridging the gap between chemistry and engineering to solve real-world industrial problems.' },
@@ -44,7 +38,7 @@ export const DEPARTMENT_DETAILS = [
         ]
     },
     {
-        id: 'cp', name: 'Computer Engineering', code: 'CP',
+        name: 'Computer Engineering', code: 'CP', established: 1953,
         description: 'Leading the way in computing, artificial intelligence, machine learning, and software development.',
         detailAbout: 'The Department of Computer Engineering at Vishwakarma Government Engineering College was established in 2001 with an annual intake of 120 students. The department is committed to creating an environment for providing value-based education through innovation, teamwork, and ethical practices. Affiliated to Gujarat Technological University (GTU) and approved by AICTE, the department offers a rigorous B.E. program that prepares students to meet the demands of industry, government, society, and the scientific community.',
         hod: { name: 'Prof. Kajal S. Patel', message: 'Welcome to the Department of Computer Engineering at VGEC. Our department is dedicated to producing computer engineering graduates who are equipped to meet the demands of industry, government, and society. We focus on developing state-of-the-art computing facilities and academic infrastructure while building partnerships with industries for knowledge sharing.' },
@@ -72,7 +66,7 @@ export const DEPARTMENT_DETAILS = [
         ]
     },
     {
-        id: 'cl', name: 'Civil Engineering', code: 'CL',
+        name: 'Civil Engineering', code: 'CL', established: 1958,
         description: 'Building the future with sustainable infrastructure, structural design, and urban planning.',
         detailAbout: 'The Civil Engineering Department is committed to creating infrastructure innovators. With exposure to advanced structural design and hands-on site experience, students go on to construct modern marvels while prioritizing sustainability and ecological balance.',
         hod: { name: 'Dr. V. P. Patel', message: 'Civil engineering is the backbone of infrastructure. Our mission is to build safer and more sustainable cities for the future.' },
@@ -98,7 +92,7 @@ export const DEPARTMENT_DETAILS = [
         ]
     },
     {
-        id: 'ee', name: 'Electrical Engineering', code: 'EE',
+        name: 'Electrical Engineering', code: 'EE', established: 1963,
         description: 'Powering innovation in electrical systems, renewable energy, and smart grid technologies.',
         detailAbout: 'As one of the oldest and most dynamic departments, our Electrical Engineering graduates pioneer solutions in renewable energy and power systems. Equipped with advanced technology labs to replicate modern power grids, we create industry-ready leaders.',
         hod: { name: 'Dr. S. R. Mehta', message: 'We are at the forefront of the renewable energy revolution. Our students learn to power the world efficiently and sustainably.' },
@@ -125,7 +119,7 @@ export const DEPARTMENT_DETAILS = [
         ]
     },
     {
-        id: 'ec', name: 'Electronics & Communication Engineering', code: 'EC',
+        name: 'Electronics & Communication Engineering', code: 'EC', established: 1968,
         description: 'Excellence in electronics, VLSI design, and communication systems.',
         detailAbout: 'The EC Department aims to deliver high-quality technical education aligned with today’s fast-paced digital era. Our expertise spans VLSI design, embedded systems, networking, and wireless communication, building foundation for 5G and IoT.',
         hod: { name: 'Dr. M. N. Singh', message: 'Communication connects the world. We prepare our students for the 5G and IoT era with hands-on technical skills.' },
@@ -152,7 +146,7 @@ export const DEPARTMENT_DETAILS = [
         ]
     },
     {
-        id: 'it', name: 'Information Technology', code: 'IT',
+        name: 'Information Technology', code: 'IT', established: 1973,
         description: 'Shaping the digital world with solutions in web technologies, cybersecurity, and data analytics.',
         detailAbout: 'The Department of IT is a hub for software ingenuity. Our modern infrastructure and emphasis on experiential learning in software lifecycle engineering empower our students to adapt swiftly to the modern industrial context.',
         hod: { name: 'Dr. J. S. Dave', message: 'The digital transformation is here. We guide our students to become architects of the next-generation digital ecosystem.' },
@@ -179,7 +173,7 @@ export const DEPARTMENT_DETAILS = [
         ]
     },
     {
-        id: 'ic', name: 'Instrumentation & Control Engineering', code: 'IC',
+        name: 'Instrumentation & Control Engineering', code: 'IC', established: 1978,
         description: 'Expertise in measurement, control systems, and automation in industrial processes.',
         detailAbout: 'As the core enablers of Industry 4.0, our IC Engineering program dives into highly technical fields combining software, electronics, and mechanical engineering principles. We produce specialists in automated safety systems and precision instrumentation.',
         hod: { name: 'Dr. R. B. Joshi', message: 'Automation is the key to industry 4.0. We specialize in making processes smarter, safer, and more autonomous.' },
@@ -206,7 +200,7 @@ export const DEPARTMENT_DETAILS = [
         ]
     },
     {
-        id: 'me', name: 'Mechanical Engineering', code: 'ME',
+        name: 'Mechanical Engineering', code: 'ME', established: 1983,
         description: 'Innovation in design, manufacturing, thermal engineering, and robotics.',
         detailAbout: 'Mechanical engineering forms the robust backbone of numerous technological marvels. We instruct students in everything from CAD manufacturing models to thermodynamics, utilizing industry-standard technology in heavily outfitted machine shops.',
         hod: { name: 'Dr. K. L. Prajapati', message: 'Mechanical engineering is the foundation of all industries. We build the machines and systems that move the world.' },
@@ -233,7 +227,7 @@ export const DEPARTMENT_DETAILS = [
         ]
     },
     {
-        id: 'pe', name: 'Power Electronics Engineering', code: 'PE',
+        name: 'Power Electronics Engineering', code: 'PE', established: 1988,
         description: 'Specialize in the conversion, control, and conditioning of electric power.',
         detailAbout: 'A specialized discipline at the heart of the modern sustainable push. Our graduates work extensively with power rectifiers, EV propulsion components, and renewable grid integration networks.',
         hod: { name: 'Dr. H. G. Patel', message: 'Power electronics is crucial for electric vehicles and renewable energy. Join us in optimizing power for a greener future.' },
@@ -259,7 +253,7 @@ export const DEPARTMENT_DETAILS = [
         ]
     },
     {
-        id: 'cseds', name: 'Computer Science and Engineering (Data Science)', code: 'CSE-DS',
+        name: 'Computer Science and Engineering (Data Science)', code: 'CSE-DS', established: 1993,
         description: 'Focusing on extracting insights from data and building data-driven systems.',
         detailAbout: 'As data expands globally, decoding it guarantees transformative results. Our specialized Data Science track emphasizes natural language processing, predictive modeling, machine learning algorithms, and deep analytics methodologies.',
         hod: { name: 'Dr. S. K. Gupta', message: 'Data is the new oil. In our department, we learn to refine it into actionable intelligence through AI and Big Data.' },
@@ -285,7 +279,7 @@ export const DEPARTMENT_DETAILS = [
         ]
     },
     {
-        id: 'ei', name: 'Electronics And Instrumentation Engineering', code: 'EI',
+        name: 'Electronics And Instrumentation Engineering', code: 'EI', established: 1998,
         description: 'Combining electronics with instrumentation for precise measurement and control.',
         detailAbout: 'Bridging the divide between circuit design and mechanical action. Our EI framework gives future engineers hands-on tools to deploy IoT networks across traditional manufacturing networks to drive maximum efficiency.',
         hod: { name: 'Dr. P. R. Chavda', message: 'Precision and measurement define progress. We prepare students for the complex world of industrial monitoring and control.' },
@@ -311,7 +305,7 @@ export const DEPARTMENT_DETAILS = [
         ]
     },
     {
-        id: 'ict', name: 'Information and Communication Technology', code: 'ICT',
+        name: 'Information and Communication Technology', code: 'ICT', established: 2003,
         description: 'Integrating telecommunications and computers to manage and communicate information.',
         detailAbout: 'By leveraging the overlap of computer engineering and advanced telecommunication protocols, our ICT sector breeds engineers ready for an interwoven digital lifestyle across global cloud centers and telecom networks.',
         hod: { name: 'Dr. T. M. Parmar', message: 'ICT is the engine of the modern economy. We integrate computing and communication to create powerful information systems.' },
@@ -337,3 +331,24 @@ export const DEPARTMENT_DETAILS = [
         ]
     }
 ];
+
+const seedDepartments = async () => {
+    try {
+        await mongoose.connect(process.env.MONGODB_URI);
+        console.log('✅ Connected to MongoDB Atlas');
+
+        console.log('Deleting existing departments...');
+        await Department.deleteMany({});
+
+        console.log(`Inserting ${DEPARTMENTS_DATA.length} departments...`);
+        await Department.insertMany(DEPARTMENTS_DATA);
+
+        console.log('🎉 Departments seeding complete!');
+        process.exit();
+    } catch (error) {
+        console.error('❌ Error seeding departments:', error.message);
+        process.exit(1);
+    }
+};
+
+seedDepartments();

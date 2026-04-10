@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
-const { protect, authorize } = require('../middleware/authMiddleware');
+const { protect, authorize, protectBoth } = require('../middleware/authMiddleware');
 const Syllabus = require('../models/Syllabus');
 const Resource = require('../models/Resource');
 
@@ -28,8 +28,8 @@ const uploadResource = multer({ storage: resourceStorage });
 
 // ── SYLLABUS ROUTES ──
 
-// GET /api/academics/syllabi - Public list
-router.get('/syllabi', async (req, res) => {
+// GET /api/academics/syllabi - Accessible to both users and students
+router.get('/syllabi', protectBoth, async (req, res) => {
     try {
         const { semester, search } = req.query;
         let query = { isActive: true };
@@ -44,7 +44,7 @@ router.get('/syllabi', async (req, res) => {
 });
 
 // POST /api/academics/syllabi - Admin/Faculty upload
-router.post('/syllabi', protect, authorize('hod', 'super_admin'), uploadSyllabus.single('syllabusFile'), async (req, res) => {
+router.post('/syllabi', protect, authorize('faculty', 'hod', 'super_admin'), uploadSyllabus.single('syllabusFile'), async (req, res) => {
     try {
         const syllabusData = {
             ...req.body,
@@ -61,8 +61,8 @@ router.post('/syllabi', protect, authorize('hod', 'super_admin'), uploadSyllabus
 
 // ── RESOURCE ROUTES ──
 
-// GET /api/academics/resources - Filtered resources
-router.get('/resources', protect, async (req, res) => {
+// GET /api/academics/resources - Filtered resources (accessible to both users and students)
+router.get('/resources', protectBoth, async (req, res) => {
     try {
         const { semester, type, subject } = req.query;
         let query = { isActive: true };
@@ -78,7 +78,7 @@ router.get('/resources', protect, async (req, res) => {
 });
 
 // POST /api/academics/resources - Faculty upload
-router.post('/resources', protect, authorize('faculty', 'hod'), uploadResource.single('resourceFile'), async (req, res) => {
+router.post('/resources', protect, authorize('faculty', 'hod', 'super_admin'), uploadResource.single('resourceFile'), async (req, res) => {
     try {
         const resourceData = {
             ...req.body,

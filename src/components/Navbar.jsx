@@ -88,7 +88,7 @@ const Navbar = () => {
                                     <button onClick={logout} className="bg-primary text-white text-sm font-semibold px-7 py-2 rounded-lg hover:bg-blue-900 transition ">Logout</button>
                                 </>
                             ) : (
-                                <Link to="/login" className="bg-primary text-white text-sm font-semibold px-5 py-2 rounded-lg hover:bg-blue-900 transition block text-center">Faculty Login</Link>
+                                <Link to="/login" className="bg-primary text-white text-sm font-semibold px-5 py-2 rounded-lg hover:bg-blue-900 transition block text-center">Login</Link>
                             )}
                         </div>
                     </div>
@@ -114,12 +114,11 @@ const Navbar = () => {
                         </Link>
 
                         {/* People Dropdown */}
-                        <div ref={peopleRef} className="relative">
+                        <div ref={peopleRef} className="relative" onMouseEnter={() => setPeopleOpen(true)} onMouseLeave={() => setPeopleOpen(false)}>
                             <button
-                                onClick={() => { setPeopleOpen(!peopleOpen); setAcademicsOpen(false); }}
                                 className={`px-4 py-2 text-sm font-semibold uppercase tracking-wider transition flex items-center space-x-1 ${isActive('/faculty') ? 'bg-white/20 text-white' : 'text-primary-100 hover:bg-white/10 hover:text-white'}`}
                             >
-                                <span>People</span>
+                                <span>Faculty</span>
                                 <svg className={`w-3 h-3 transition-transform ${peopleOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                 </svg>
@@ -132,10 +131,9 @@ const Navbar = () => {
                         </div>
 
                         {/* Academics Dropdown */}
-                        <div ref={academicsRef} className="relative">
+                        <div ref={academicsRef} className="relative" onMouseEnter={() => setAcademicsOpen(true)} onMouseLeave={() => setAcademicsOpen(false)}>
                             <button
-                                onClick={() => { setAcademicsOpen(!academicsOpen); setPeopleOpen(false); }}
-                                className={`px-4 py-2 text-sm font-semibold uppercase tracking-wider transition flex items-center space-x-1 ${(isActive('/timetable') || isActive('/calendar')) ? 'bg-white/20 text-white' : 'text-primary-100 hover:bg-white/10 hover:text-white'}`}
+                                className={`px-4 py-2 text-sm font-semibold uppercase tracking-wider transition flex items-center space-x-1 ${(isActive('/timetable') || isActive('/calendar') || isActive('/syllabi')) ? 'bg-white/20 text-white' : 'text-primary-100 hover:bg-white/10 hover:text-white'}`}
                             >
                                 <span>Academics</span>
                                 <svg className={`w-3 h-3 transition-transform ${academicsOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
