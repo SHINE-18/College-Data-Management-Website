@@ -7,6 +7,7 @@ const FacultyProfile = () => {
     const [faculty, setFaculty] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [isOffline, setIsOffline] = useState(false);
 
     // Fetch faculty data from API
     useEffect(() => {
@@ -16,7 +17,12 @@ const FacultyProfile = () => {
                 setFaculty(response.data);
             } catch (err) {
                 console.error('Error fetching faculty:', err);
-                setError('Failed to load faculty profile');
+                // Distinguish between network error (backend offline) vs 404
+                if (!err.response) {
+                    setIsOffline(true);
+                } else {
+                    setError('Faculty profile not found.');
+                }
             } finally {
                 setLoading(false);
             }
@@ -45,7 +51,7 @@ const FacultyProfile = () => {
     }
 
     // Error state
-    if (error || !faculty) {
+    if (isOffline || error || !faculty) {
         return (
             <div className="animate-fade-in">
                 <div className="bg-gradient-to-r from-primary-700 to-primary py-16">
@@ -54,7 +60,15 @@ const FacultyProfile = () => {
                     </div>
                 </div>
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 text-center">
-                    <p className="text-gray-500 text-lg">Faculty profile not found.</p>
+                    {isOffline ? (
+                        <div className="inline-flex flex-col items-center gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-10 py-8">
+                            <svg className="w-10 h-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+                            <p className="text-amber-800 font-bold text-lg">Backend server is offline</p>
+                            <p className="text-amber-600 text-sm">Faculty profiles are loaded from the database. Please start the backend server to view this page.</p>
+                        </div>
+                    ) : (
+                        <p className="text-gray-500 text-lg">{error || 'Faculty profile not found.'}</p>
+                    )}
                 </div>
             </div>
         );

@@ -25,6 +25,7 @@ const Events = () => {
 
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isOffline, setIsOffline] = useState(false);
     const [typeFilter, setTypeFilter] = useState('All');
     const [deptFilter, setDeptFilter] = useState(initialDept);
     const [search, setSearch] = useState('');
@@ -65,6 +66,8 @@ const Events = () => {
             } catch (error) {
                 console.error('Error fetching events:', error);
                 setEvents([]);
+                if (!error.response) setIsOffline(true);
+                else setIsOffline(false);
             } finally {
                 setLoading(false);
             }
@@ -188,8 +191,16 @@ const Events = () => {
                         </div>
 
                         {events.length === 0 && (
-                            <div className="text-center py-12 text-gray-400">
-                                <p>No events found.</p>
+                            <div className="col-span-3">
+                                {isOffline ? (
+                                    <div className="flex flex-col items-center gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-8 py-10 text-center">
+                                        <svg className="w-9 h-9 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+                                        <p className="text-amber-800 font-bold">Backend server is offline</p>
+                                        <p className="text-amber-600 text-sm">Events are stored in the database. Start the backend server to view them.</p>
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-12 text-gray-400"><p>No events found.</p></div>
+                                )}
                             </div>
                         )}
 

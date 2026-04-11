@@ -5,6 +5,7 @@ import { FaDownload, FaSearch, FaBookOpen } from 'react-icons/fa';
 const SyllabusArchive = () => {
     const [syllabi, setSyllabi] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isOffline, setIsOffline] = useState(false);
     const [semester, setSemester] = useState('');
     const [search, setSearch] = useState('');
 
@@ -16,6 +17,8 @@ const SyllabusArchive = () => {
                 setSyllabi(data);
             } catch (error) {
                 console.error("Failed to load syllabi", error);
+                if (!error.response) setIsOffline(true);
+                else setIsOffline(false);
             } finally {
                 setLoading(false);
             }
@@ -75,11 +78,19 @@ const SyllabusArchive = () => {
                     {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-48 bg-gray-100 rounded-2xl animate-pulse"></div>)}
                 </div>
             ) : syllabi.length === 0 ? (
-                <div className="bg-white rounded-3xl p-16 text-center shadow-inner border-2 border-dashed border-gray-100">
-                    <FaBookOpen className="text-6xl text-gray-200 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold text-gray-900">No courses found</h3>
-                    <p className="text-gray-500">Try adjusting your filters or search terms.</p>
-                </div>
+                isOffline ? (
+                    <div className="flex flex-col items-center gap-3 bg-amber-50 border border-amber-200 rounded-3xl px-8 py-12 text-center">
+                        <svg className="w-10 h-10 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+                        <p className="text-amber-800 font-bold text-lg">Backend server is offline</p>
+                        <p className="text-amber-600 text-sm">Syllabus data is stored in the database. Start the backend server to view syllabi.</p>
+                    </div>
+                ) : (
+                    <div className="bg-white rounded-3xl p-16 text-center shadow-inner border-2 border-dashed border-gray-100">
+                        <FaBookOpen className="text-6xl text-gray-200 mx-auto mb-4" />
+                        <h3 className="text-xl font-bold text-gray-900">No courses found</h3>
+                        <p className="text-gray-500">Try adjusting your filters or search terms.</p>
+                    </div>
+                )
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {syllabi.map((syllabus) => (

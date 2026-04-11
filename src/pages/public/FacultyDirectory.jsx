@@ -18,6 +18,7 @@ const FacultyDirectory = () => {
     const [deptFilter, setDeptFilter] = useState(initialDept);
     const [faculty, setFaculty] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isOffline, setIsOffline] = useState(false);
     const [pagination, setPagination] = useState({
         page: 1,
         limit: 12,
@@ -55,6 +56,8 @@ const FacultyDirectory = () => {
             } catch (error) {
                 console.error('Error fetching faculty:', error);
                 setFaculty([]);
+                if (!error.response) setIsOffline(true);
+                else setIsOffline(false);
             } finally {
                 setLoading(false);
             }
@@ -158,8 +161,16 @@ const FacultyDirectory = () => {
                                 </div>
 
                                 {faculty.length === 0 && (
-                                    <div className="text-center py-16 text-gray-400">
-                                        <p className="text-lg">No faculty found matching your criteria.</p>
+                                    <div>
+                                        {isOffline ? (
+                                            <div className="flex flex-col items-center gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-8 py-10 text-center">
+                                                <svg className="w-9 h-9 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" /></svg>
+                                                <p className="text-amber-800 font-bold">Backend server is offline</p>
+                                                <p className="text-amber-600 text-sm">Faculty data is loaded from the database. Start the backend server to view faculty profiles.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-16 text-gray-400"><p className="text-lg">No faculty found matching your criteria.</p></div>
+                                        )}
                                     </div>
                                 )}
 

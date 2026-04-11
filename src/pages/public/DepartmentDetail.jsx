@@ -15,12 +15,12 @@ const DepartmentDetail = () => {
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
+            // Always resolve local constants as a fallback first
+            const deptConst = DEPARTMENT_DETAILS.find(d => d.id === id);
             try {
-                // Find department name/code from constants to guide the API search
-                const deptConst = DEPARTMENT_DETAILS.find(d => d.id === id) || { code: id };
-
-                // Fetch department details
-                const deptRes = await api.get(`/departments/search?code=${deptConst.code}`);
+                const code = deptConst?.code || id;
+                // Fetch department details from API
+                const deptRes = await api.get(`/departments/search?code=${code}`);
                 const currentDept = deptRes.data.data;
                 setDept(currentDept);
 
@@ -30,7 +30,11 @@ const DepartmentDetail = () => {
                     setFaculty(facRes.data.data);
                 }
             } catch (error) {
-                console.error('Error fetching department details:', error);
+                console.error('Error fetching department details, falling back to local data:', error);
+                // Fallback: use local constants so the page always renders
+                if (deptConst) {
+                    setDept(deptConst);
+                }
             } finally {
                 setLoading(false);
             }
