@@ -39,13 +39,14 @@ const HODDashboard = () => {
             const faculty = Array.isArray(facultyRes.data) ? facultyRes.data : [];
             const leaves = Array.isArray(leavesRes.data) ? leavesRes.data.slice(0, 5) : [];
             const notices = noticesRes.data.data || [];
+            const totalNoticeCount = noticesRes.data.pagination?.total ?? notices.length;
 
             setFacultyList(faculty);
             setRecentLeaves(leaves);
             setStats({
                 totalFaculty: faculty.length,
                 pendingLeaves: leaves.length,
-                circulars: notices.length,
+                circulars: totalNoticeCount,
                 publications: faculty.reduce((total, item) => total + (item.publications?.length || 0), 0),
             });
         } catch (err) {

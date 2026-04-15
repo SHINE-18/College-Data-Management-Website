@@ -4,26 +4,9 @@
 
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
 const Circular = require('../models/Circular');
 const { protect, authorize } = require('../middleware/authMiddleware');
-
-// Configure Multer for file upload
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/circulars/');
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'circular-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
-
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
-});
+const { uploadCircular } = require('../middleware/upload');
 
 // GET /api/circulars - Get all active circulars
 router.get('/', async (req, res) => {
@@ -75,7 +58,7 @@ const { notifyNewPost } = require('../utils/emailService');
 router.post('/', [
     protect,
     authorize('hod', 'super_admin'),
-    upload.single('attachment')
+    uploadCircular.single('attachment')
 ], async (req, res) => {
     try {
         const { title, description, department, priority, circularType, targetAudience, expiryDate } = req.body;
@@ -89,7 +72,7 @@ router.post('/', [
             targetAudience: targetAudience || 'All',
             expiryDate,
             createdBy: req.user.name,
-            attachmentUrl: req.file ? `/uploads/circulars/${req.file.filename}` : null,
+            attachmentUrl: req.file ? (req.file.path || req.file.secure_url || req.file.location) : null,
             attachmentName: req.file ? req.file.originalname : null
         });
 

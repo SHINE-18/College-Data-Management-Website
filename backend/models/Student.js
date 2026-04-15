@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const { normalizeDepartment } = require('../utils/departmentUtils');
 
 const studentSchema = new mongoose.Schema({
     enrollmentNumber: {
@@ -49,7 +50,8 @@ const studentSchema = new mongoose.Schema({
             'Computer Science and Engineering (Data Science)',
             'Electronics And Instrumentation Engineering',
             'Information and Communication Technology'
-        ]
+        ],
+        set: normalizeDepartment
     },
     batch: {
         type: String, // e.g. "2023-2027"
@@ -61,6 +63,22 @@ const studentSchema = new mongoose.Schema({
     },
     lastLogin: {
         type: Date
+    },
+    phone: {
+        type: String,
+        trim: true
+    },
+    address: {
+        type: String,
+        trim: true
+    },
+    guardianName: {
+        type: String,
+        trim: true
+    },
+    guardianContact: {
+        type: String,
+        trim: true
     }
 }, {
     timestamps: true

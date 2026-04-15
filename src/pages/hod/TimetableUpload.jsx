@@ -1,30 +1,42 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import api from '../../utils/axios';
 import toast from 'react-hot-toast';
 import { DEPARTMENTS } from '../../constants/departments';
+import { useAuth } from '../../context/AuthContext';
 
 const departments = DEPARTMENTS;
 const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
-const divisions = ['A', 'B', 'C', 'D'];
+const divisions = ['All', 'A', 'B', 'C', 'D'];
 
 const TimetableUpload = () => {
+    const { user } = useAuth();
     const [formData, setFormData] = useState({
         title: '',
         department: 'Computer Engineering',
         semester: 1,
-        division: 'A'
+        division: 'All'
     });
     const [file, setFile] = useState(null);
     const [loading, setLoading] = useState(false);
     const [previewUrl, setPreviewUrl] = useState(null);
 
+    useEffect(() => {
+        if (user?.department) {
+            setFormData(prev => ({
+                ...prev,
+                department: user.department,
+                title: prev.title || `Timetable - ${user.department} - Sem ${prev.semester} - ${prev.division}`
+            }));
+        }
+    }, [user?.department]);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData(prev => ({
-            ...prev,
-            [name]: value,
-            // Auto-generate title when department/semester/division changes
-            title: name === 'department' || name === 'semester' || name === 'division'
+            setFormData(prev => ({
+                ...prev,
+                [name]: value,
+                // Auto-generate title when department/semester/division changes
+                title: name === 'department' || name === 'semester' || name === 'division'
                 ? `Timetable - ${name === 'department' ? value : formData.department} - Sem ${name === 'semester' ? value : formData.semester} - ${name === 'division' ? value : formData.division}`
                 : prev.title
         }));
@@ -77,9 +89,9 @@ const TimetableUpload = () => {
             // Reset form
             setFormData({
                 title: '',
-                department: 'Computer Engineering',
+                department: user?.department || 'Computer Engineering',
                 semester: 1,
-                division: 'A'
+                division: 'All'
             });
             setFile(null);
             setPreviewUrl(null);
@@ -110,12 +122,16 @@ const TimetableUpload = () => {
                                 name="department"
                                 value={formData.department}
                                 onChange={handleChange}
+                                disabled={user?.role === 'hod'}
                                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none bg-white"
                             >
                                 {departments.map(dept => (
                                     <option key={dept} value={dept}>{dept}</option>
                                 ))}
                             </select>
+                            {user?.role === 'hod' && (
+                                <p className="mt-1 text-xs text-gray-500">Your department is fixed automatically for HOD uploads.</p>
+                            )}
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
@@ -141,7 +157,7 @@ const TimetableUpload = () => {
                                     className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none bg-white"
                                 >
                                     {divisions.map(div => (
-                                        <option key={div} value={div}>Division {div}</option>
+                                        <option key={div} value={div}>{div === 'All' ? 'All Divisions' : `Division ${div}`}</option>
                                     ))}
                                 </select>
                             </div>
@@ -247,7 +263,8 @@ const TimetableUpload = () => {
                     <li>Only PDF files are accepted</li>
                     <li>Maximum file size is 10MB</li>
                     <li>File name should be descriptive (e.g., "CSE-Sem3-A-Timetable.pdf")</li>
-                    <li>The timetable will be visible to all students of the selected department</li>
+                    <li>Choose `All Divisions` if the same PDF should be visible to every division in that semester</li>
+                    <li>Students can filter by division on the public timetable page</li>
                 </ul>
             </div>
         </div>

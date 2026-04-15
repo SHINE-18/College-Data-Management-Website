@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../../utils/axios';
+import { getAssetUrl } from '../../utils/axios';
 
 const FacultyProfile = () => {
     const { id } = useParams();
@@ -8,6 +9,9 @@ const FacultyProfile = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [isOffline, setIsOffline] = useState(false);
+    const [detailedQualifications, setDetailedQualifications] = useState([]);
+    const [detailedAchievements, setDetailedAchievements] = useState([]);
+    const [detailedPublications, setDetailedPublications] = useState([]);
 
     // Fetch faculty data from API
     useEffect(() => {
@@ -15,6 +19,22 @@ const FacultyProfile = () => {
             try {
                 const response = await api.get(`/faculty/${id}`);
                 setFaculty(response.data);
+
+                const [qualificationsRes, achievementsRes, publicationsRes] = await Promise.allSettled([
+                    api.get(`/qualifications/faculty/${id}`),
+                    api.get(`/achievements/faculty/${id}`),
+                    api.get(`/publications/faculty/${id}`)
+                ]);
+
+                if (qualificationsRes.status === 'fulfilled') {
+                    setDetailedQualifications(Array.isArray(qualificationsRes.value.data) ? qualificationsRes.value.data : []);
+                }
+                if (achievementsRes.status === 'fulfilled') {
+                    setDetailedAchievements(Array.isArray(achievementsRes.value.data) ? achievementsRes.value.data : []);
+                }
+                if (publicationsRes.status === 'fulfilled') {
+                    setDetailedPublications(Array.isArray(publicationsRes.value.data) ? publicationsRes.value.data : []);
+                }
             } catch (err) {
                 console.error('Error fetching faculty:', err);
                 // Distinguish between network error (backend offline) vs 404
@@ -81,6 +101,10 @@ const FacultyProfile = () => {
         return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
     };
 
+    const qualifications = detailedQualifications.length > 0 ? detailedQualifications : (faculty?.qualifications || []);
+    const achievements = detailedAchievements.length > 0 ? detailedAchievements : (faculty?.achievements || []);
+    const publications = detailedPublications.length > 0 ? detailedPublications : (faculty?.publications || []);
+
     return (
         <div className="animate-fade-in">
             <div className="bg-gradient-to-r from-primary-700 to-primary py-16">
@@ -90,7 +114,7 @@ const FacultyProfile = () => {
                         <div className="w-28 h-28 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center shadow-xl">
                             {faculty.profilePhoto ? (
                                 <img
-                                    src={faculty.profilePhoto}
+                                    src={getAssetUrl(faculty.profilePhoto)}
                                     alt={faculty.name}
                                     className="w-full h-full object-cover rounded-2xl"
                                 />
@@ -134,18 +158,21 @@ const FacultyProfile = () => {
                 )}
 
                 {/* Education */}
-                {faculty.qualifications && faculty.qualifications.length > 0 && (
+                {qualifications.length > 0 && (
                     <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                         <h2 className="text-lg font-bold text-gray-900 mb-6">Education</h2>
                         <div className="relative">
                             <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-accent/20"></div>
-                            {faculty.qualifications.map((edu, i) => (
+                            {qualifications.map((edu, i) => (
                                 <div key={i} className="relative pl-10 pb-6 last:pb-0">
                                     <div className="absolute left-2.5 top-1.5 w-3 h-3 bg-accent rounded-full border-2 border-white shadow"></div>
                                     <div className="bg-gray-50 rounded-lg p-4">
                                         <div className="flex items-center justify-between mb-1">
-                                            <h3 className="font-semibold text-primary text-sm">{edu.degree} in {edu.field}</h3>
-                                            <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full">{edu.year}</span>
+                                            <h3 className="font-semibold text-primary text-sm">
+                                                {edu.degree}
+                                                {edu.fieldOfStudy || edu.field ? ` in ${edu.fieldOfStudy || edu.field}` : ''}
+                                            </h3>
+                                            <span className="text-xs text-gray-500 bg-white px-2 py-1 rounded-full">{edu.endYear || edu.year}</span>
                                         </div>
                                         <p className="text-sm text-gray-600">{edu.institution}</p>
                                     </div>
@@ -176,18 +203,18 @@ const FacultyProfile = () => {
                 )}
 
                 {/* Achievements */}
-                {faculty.achievements && faculty.achievements.length > 0 && (
+                {achievements.length > 0 && (
                     <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                         <h2 className="text-lg font-bold text-gray-900 mb-6">Achievements & Awards</h2>
                         <div className="space-y-4">
-                            {faculty.achievements.map((ach, i) => (
+                            {achievements.map((ach, i) => (
                                 <div key={i} className="flex gap-4 p-4 rounded-lg bg-gray-50/50 border border-gray-100">
                                     <div className="w-10 h-10 shrink-0 bg-accent/10 rounded-full flex items-center justify-center">
                                         <svg className="w-5 h-5 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
                                     </div>
                                     <div>
                                         <h3 className="font-bold text-gray-900">{ach.title}</h3>
-                                        {ach.date && <p className="text-xs text-primary font-bold mb-1">{ach.date}</p>}
+                                        {ach.date && <p className="text-xs text-primary font-bold mb-1">{typeof ach.date === 'string' ? ach.date : formatDate(ach.date)}</p>}
                                         {ach.description && <p className="text-sm text-gray-600 mt-1">{ach.description}</p>}
                                     </div>
                                 </div>
@@ -197,28 +224,33 @@ const FacultyProfile = () => {
                 )}
 
                 {/* Detailed Publications */}
-                {faculty.publications && faculty.publications.length > 0 ? (
+                {publications.length > 0 ? (
                     <section className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
                         <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center justify-between">
-                            <span>Publications ({faculty.publications.length})</span>
+                            <span>Publications ({publications.length})</span>
                         </h2>
                         <div className="space-y-4">
-                            {faculty.publications.map((pub, i) => (
+                            {publications.map((pub, i) => {
+                                const venue = pub.journalName || pub.conferenceName || pub.journal || pub.publisher;
+                                const link = pub.link || (pub.doi ? (pub.doi.startsWith('http') ? pub.doi : `https://doi.org/${pub.doi}`) : '');
+                                const year = pub.publicationDate ? new Date(pub.publicationDate).getFullYear() : pub.year;
+
+                                return (
                                 <div key={i} className="p-4 rounded-lg border border-gray-100 hover:border-primary/20 hover:shadow-md transition bg-white">
                                     <h3 className="font-bold text-gray-900 text-sm leading-snug mb-2">{pub.title}</h3>
                                     <div className="flex items-center justify-between">
                                         <div className="text-xs text-gray-500 font-medium space-x-2">
-                                            <span className="text-primary bg-primary/5 px-2 py-1 rounded">{pub.journal}</span>
-                                            <span className="bg-gray-100 px-2 py-1 rounded">{pub.year}</span>
+                                            <span className="text-primary bg-primary/5 px-2 py-1 rounded">{venue}</span>
+                                            <span className="bg-gray-100 px-2 py-1 rounded">{year}</span>
                                         </div>
-                                        {pub.link && (
-                                            <a href={pub.link} target="_blank" rel="noreferrer" className="text-accent hover:text-primary transition p-2 bg-slate-50 rounded-full inline-flex items-center justify-center">
+                                        {link && (
+                                            <a href={link} target="_blank" rel="noreferrer" className="text-accent hover:text-primary transition p-2 bg-slate-50 rounded-full inline-flex items-center justify-center">
                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
                                             </a>
                                         )}
                                     </div>
                                 </div>
-                            ))}
+                            )})}
                         </div>
                     </section>
                 ) : (

@@ -7,6 +7,10 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const Qualification = require('../models/Qualification');
 const { protect, authorize } = require('../middleware/authMiddleware');
+const {
+    resolveFacultyProfileId,
+    syncQualificationSummary,
+} = require('../utils/facultyDataSync');
 
 // Validation middleware
 const validate = (req, res, next) => {
@@ -54,12 +58,18 @@ router.post('/', [
     validate
 ], async (req, res) => {
     try {
+        const facultyId = await resolveFacultyProfileId(req.user);
+        if (!facultyId) {
+            return res.status(400).json({ message: 'Faculty profile not found for this user' });
+        }
+
         const qualification = new Qualification({
             ...req.body,
-            facultyId: req.user.facultyId || req.user._id
+            facultyId
         });
 
         await qualification.save();
+        await syncQualificationSummary(facultyId);
         res.status(201).json(qualification);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -83,6 +93,7 @@ router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (r
 
         Object.assign(qualification, req.body);
         await qualification.save();
+        await syncQualificationSummary(qualification.facultyId);
         res.json(qualification);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -121,7 +132,9 @@ router.delete('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async
             return res.status(403).json({ message: 'Not authorized' });
         }
 
+        const facultyId = qualification.facultyId;
         await qualification.deleteOne();
+        await syncQualificationSummary(facultyId);
         res.json({ message: 'Qualification deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });

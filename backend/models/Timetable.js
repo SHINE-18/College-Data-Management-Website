@@ -3,6 +3,7 @@
 // ============================================
 
 const mongoose = require('mongoose');
+const { normalizeDepartment } = require('../utils/departmentUtils');
 
 const timetableSchema = new mongoose.Schema({
     title: {
@@ -27,6 +28,7 @@ const timetableSchema = new mongoose.Schema({
             'Electronics And Instrumentation Engineering',
             'Information and Communication Technology'
         ],
+        set: normalizeDepartment,
     },
     semester: {
         type: Number,

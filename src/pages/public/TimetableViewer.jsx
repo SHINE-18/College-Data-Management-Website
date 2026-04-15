@@ -1,45 +1,59 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
-import toast from 'react-hot-toast';
 import api, { getAssetUrl } from '../../utils/axios';
 import { DEPARTMENTS } from '../../constants/departments';
 
 const departments = DEPARTMENTS;
 const semesters = [1, 2, 3, 4, 5, 6, 7, 8];
+const divisions = ['All', 'A', 'B', 'C', 'D'];
 
 const TimetableViewer = () => {
     const location = useLocation();
     const queryParams = new URLSearchParams(location.search);
     const urlDept = queryParams.get('dept');
+    const urlDivision = queryParams.get('division');
 
     // Validate if urlDept exists in our departments list, otherwise fallback to first dept
     const initialDept = departments.includes(urlDept) ? urlDept : (departments[0] || 'Computer Engineering');
 
     const [dept, setDept] = useState(initialDept);
     const [sem, setSem] = useState(1);
+    const [division, setDivision] = useState(divisions.includes(urlDivision) ? urlDivision : 'All');
     const [timetables, setTimetables] = useState([]);
     const [loading, setLoading] = useState(false);
     const [selectedTimetable, setSelectedTimetable] = useState(null);
 
-    // Fetch timetables when department or semester changes
+    // Fetch timetables when department, semester, or division changes
     useEffect(() => {
         fetchTimetables();
-    }, [dept, sem]);
+    }, [dept, sem, division]);
 
     const fetchTimetables = async () => {
         setLoading(true);
         try {
-            const response = await api.get(`/timetables?department=${dept}&semester=${sem}`);
+            const params = new URLSearchParams({
+                department: dept,
+                semester: String(sem)
+            });
+
+            if (division !== 'All') {
+                params.set('division', division);
+            }
+
+            const response = await api.get(`/timetables?${params.toString()}`);
             setTimetables(response.data);
 
-            // Auto-select first timetable if available
-            if (response.data.length > 0 && !selectedTimetable) {
-                setSelectedTimetable(response.data[0]);
+            if (response.data.length === 0) {
+                setSelectedTimetable(null);
+                return;
             }
+
+            const stillSelected = response.data.find(item => item._id === selectedTimetable?._id);
+            setSelectedTimetable(stillSelected || response.data[0]);
         } catch (error) {
             console.error('Error fetching timetables:', error);
-            // Fallback to demo data if API fails
             setTimetables([]);
+            setSelectedTimetable(null);
         } finally {
             setLoading(false);
         }
@@ -60,7 +74,7 @@ const TimetableViewer = () => {
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Filters */}
-                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-8 flex flex-col sm:flex-row gap-4 items-end">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
                     <div className="flex-1">
                         <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
                         <select
@@ -81,6 +95,17 @@ const TimetableViewer = () => {
                             className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none bg-white"
                         >
                             {semesters.map(s => <option key={s} value={s}>Semester {s}</option>)}
+                        </select>
+                    </div>
+                    <div className="flex-1">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Division</label>
+                        <select
+                            id="tt-division"
+                            value={division}
+                            onChange={e => { setDivision(e.target.value); setSelectedTimetable(null); }}
+                            className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none bg-white"
+                        >
+                            {divisions.map(d => <option key={d} value={d}>{d === 'All' ? 'All Divisions' : `Division ${d}`}</option>)}
                         </select>
                     </div>
                 </div>
@@ -105,7 +130,7 @@ const TimetableViewer = () => {
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                     </svg>
                                     <p className="text-gray-500 text-sm">
-                                        No timetable available for {dept} Semester {sem}.
+                                        No timetable available for {dept} Semester {sem}{division !== 'All' ? `, Division ${division}` : ''}.
                                     </p>
                                     <p className="text-gray-400 text-xs mt-2">
                                         Please contact your HOD to upload the timetable.

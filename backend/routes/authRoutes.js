@@ -6,7 +6,8 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
-const { protect, authorize, generateToken } = require('../middleware/authMiddleware');
+const { protect, authorize, generateToken, generateRefreshToken } = require('../middleware/authMiddleware');
+const { normalizeDepartment, isKnownDepartment } = require('../utils/departmentUtils');
 
 // Validation middleware
 const validate = (req, res, next) => {
@@ -25,11 +26,17 @@ router.post('/register', [
     body('email').isEmail().withMessage('Please enter a valid email'),
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
     body('role').isIn(['faculty', 'hod']).withMessage('Invalid role'),
-    body('department').optional().isIn(['CSE', 'ECE', 'ME', 'CE', 'EE', 'IT', 'All']),
+    body('department').optional().custom(value => {
+        if (!isKnownDepartment(value)) {
+            throw new Error('Invalid department');
+        }
+        return true;
+    }),
     validate
 ], async (req, res) => {
     try {
         const { name, email, password, role, department, designation } = req.body;
+        const normalizedDepartment = department ? normalizeDepartment(department) : undefined;
 
         // Eforce Hierarchy
         if (req.user.role === 'super_admin') {
@@ -41,7 +48,7 @@ router.post('/register', [
                 return res.status(403).json({ message: 'HOD can only register Faculty' });
             }
             // Ensure HOD only registers faculty for their own department
-            if (department && department !== req.user.department) {
+            if (normalizedDepartment && normalizedDepartment !== normalizeDepartment(req.user.department)) {
                 return res.status(403).json({ message: 'HOD can only register faculty for their own department' });
             }
         }
@@ -58,7 +65,9 @@ router.post('/register', [
             email,
             password,
             role,
-            department: req.user.role === 'hod' ? req.user.department : (department || 'All'),
+            department: req.user.role === 'hod'
+                ? normalizeDepartment(req.user.department)
+                : (normalizedDepartment || 'All'),
             designation
         });
 
@@ -106,6 +115,15 @@ router.post('/login', [
         user.lastLogin = new Date();
         await user.save({ validateBeforeSave: false });
 
+        // Issue refresh token as httpOnly cookie
+        const refreshToken = generateRefreshToken(user._id);
+        res.cookie('refreshToken', refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        });
+
         res.json({
             _id: user._id,
             name: user.name,
@@ -144,7 +162,12 @@ router.get('/me', protect, async (req, res) => {
 router.put('/profile', [
     protect,
     body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
-    body('department').optional().isIn(['CSE', 'ECE', 'ME', 'CE', 'EE', 'IT', 'All']),
+    body('department').optional().custom(value => {
+        if (!isKnownDepartment(value)) {
+            throw new Error('Invalid department');
+        }
+        return true;
+    }),
     validate
 ], async (req, res) => {
     try {
@@ -153,7 +176,7 @@ router.put('/profile', [
         const user = await User.findById(req.user._id);
 
         if (name) user.name = name;
-        if (department) user.department = department;
+        if (department) user.department = normalizeDepartment(department);
         if (designation) user.designation = designation;
 
         const updatedUser = await user.save();
@@ -335,6 +358,33 @@ router.post('/reset-password/:token', [
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
+});
+
+// POST /api/auth/refresh — Issue new access token using refresh token cookie
+router.post('/refresh', async (req, res) => {
+    const token = req.cookies?.refreshToken;
+    if (!token) return res.status(401).json({ message: 'No refresh token' });
+
+    try {
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id).select('-password');
+        if (!user || !user.isActive) return res.status(401).json({ message: 'User not found or inactive' });
+
+        res.json({ token: generateToken(user._id) });
+    } catch {
+        res.status(401).json({ message: 'Refresh token invalid or expired. Please log in again.' });
+    }
+});
+
+// POST /api/auth/logout — Clear refresh token cookie
+router.post('/logout', (req, res) => {
+    res.clearCookie('refreshToken', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax'
+    });
+    res.json({ message: 'Logged out successfully' });
 });
 
 module.exports = router;

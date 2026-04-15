@@ -1,30 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
 const { protect, authorize, protectBoth } = require('../middleware/authMiddleware');
 const Syllabus = require('../models/Syllabus');
 const Resource = require('../models/Resource');
-
-// Configure Multer for Syllabi
-const syllabusStorage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, 'uploads/syllabi/'),
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'syllabus-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
-const uploadSyllabus = multer({ storage: syllabusStorage });
-
-// Configure Multer for Resources
-const resourceStorage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, 'uploads/resources/'),
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'resource-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
-const uploadResource = multer({ storage: resourceStorage });
+const { uploadSyllabus, uploadResource } = require('../middleware/upload');
 
 // ── SYLLABUS ROUTES ──
 
@@ -48,7 +27,7 @@ router.post('/syllabi', protect, authorize('faculty', 'hod', 'super_admin'), upl
     try {
         const syllabusData = {
             ...req.body,
-            syllabusUrl: `/uploads/syllabi/${req.file.filename}`,
+            syllabusUrl: req.file ? (req.file.path || req.file.secure_url || req.file.location) : null,
             uploadedBy: req.user._id
         };
         const syllabus = new Syllabus(syllabusData);
@@ -86,7 +65,7 @@ router.post('/resources', protect, authorize('faculty', 'hod', 'super_admin'), u
         };
 
         if (req.file) {
-            resourceData.fileUrl = `/uploads/resources/${req.file.filename}`;
+            resourceData.fileUrl = req.file.path || req.file.secure_url || req.file.location;
         }
 
         const resource = new Resource(resourceData);

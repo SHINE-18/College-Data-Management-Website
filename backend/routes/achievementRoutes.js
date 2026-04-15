@@ -7,6 +7,10 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const Achievement = require('../models/Achievement');
 const { protect, authorize } = require('../middleware/authMiddleware');
+const {
+    resolveFacultyProfileId,
+    syncAchievementSummary,
+} = require('../utils/facultyDataSync');
 
 // Validation middleware
 const validate = (req, res, next) => {
@@ -54,13 +58,19 @@ router.post('/', [
     validate
 ], async (req, res) => {
     try {
+        const facultyId = await resolveFacultyProfileId(req.user);
+        if (!facultyId) {
+            return res.status(400).json({ message: 'Faculty profile not found for this user' });
+        }
+
         const achievement = new Achievement({
             ...req.body,
-            facultyId: req.user.facultyId || req.user._id,
+            facultyId,
             facultyName: req.user.name
         });
 
         await achievement.save();
+        await syncAchievementSummary(facultyId);
         res.status(201).json(achievement);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -84,6 +94,7 @@ router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (r
 
         Object.assign(achievement, req.body);
         await achievement.save();
+        await syncAchievementSummary(achievement.facultyId);
         res.json(achievement);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -122,7 +133,9 @@ router.delete('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async
             return res.status(403).json({ message: 'Not authorized' });
         }
 
+        const facultyId = achievement.facultyId;
         await achievement.deleteOne();
+        await syncAchievementSummary(facultyId);
         res.json({ message: 'Achievement deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });

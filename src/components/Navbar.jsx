@@ -1,14 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import vgec_hd from '../assets/vgec_hd.png';
 import { DEPARTMENT_DETAILS } from '../constants/departments';
+import NotificationBell from './NotificationBell';
+// import GlobalSearch from './GlobalSearch';
 
 const Navbar = () => {
     const [open, setOpen] = useState(false);
     const [peopleOpen, setPeopleOpen] = useState(false);
     const [academicsOpen, setAcademicsOpen] = useState(false);
     const { isAuthenticated, role, logout } = useAuth();
+    const { isDark, toggleTheme } = useTheme();
     const location = useLocation();
     const queryParams = new URLSearchParams(location.search);
 
@@ -79,13 +83,32 @@ const Navbar = () => {
                             </p>
                         </div>
                     </Link>
-                    {/* LOGIN  */}
-                    <div className="hidden lg:flex item-center">
-                        <div className="relative">
+                    {/* Right side: search + notification + dark mode + login */}
+                    <div className="hidden lg:flex items-center gap-2">
+                        {/* <GlobalSearch /> */}
+                        {isAuthenticated && <NotificationBell />}
+                        {/* Dark mode toggle */}
+                        {/* <button
+                            onClick={toggleTheme}
+                            className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                            aria-label="Toggle dark mode"
+                            id="dark-mode-toggle"
+                        >
+                            {isDark ? (
+                                <svg className="w-5 h-5 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364l-.707.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707-.707M12 7a5 5 0 110 10A5 5 0 0112 7z" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} stroke="currentColor" fill="none" />
+                                </svg>
+                            ) : (
+                                <svg className="w-4.5 h-4.5 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z" />
+                                </svg>
+                            )}
+                        </button> */}
+                        <div className="relative ml-1">
                             {isAuthenticated ? (
                                 <>
-                                    <Link to={portalLink} className="bg-primary text-white text-sm font-semibold px-7 py-2 mr-7 rounded-lg hover:bg-blue-900 transition ">Dashboard</Link>
-                                    <button onClick={logout} className="bg-primary text-white text-sm font-semibold px-7 py-2 rounded-lg hover:bg-blue-900 transition ">Logout</button>
+                                    <Link to={portalLink} className="bg-primary text-white text-sm font-semibold px-5 py-2 mr-2 rounded-lg hover:bg-blue-900 transition">Dashboard</Link>
+                                    <button onClick={logout} className="bg-primary text-white text-sm font-semibold px-5 py-2 rounded-lg hover:bg-blue-900 transition">Logout</button>
                                 </>
                             ) : (
                                 <Link to="/login" className="bg-primary text-white text-sm font-semibold px-5 py-2 rounded-lg hover:bg-blue-900 transition block text-center">Login</Link>
@@ -113,7 +136,7 @@ const Navbar = () => {
                             Home
                         </Link>
 
-                        {/* People Dropdown */}
+                        {/* People Dropdown
                         <div ref={peopleRef} className="relative" onMouseEnter={() => setPeopleOpen(true)} onMouseLeave={() => setPeopleOpen(false)}>
                             <button
                                 className={`px-4 py-2 text-sm font-semibold uppercase tracking-wider transition flex items-center space-x-1 ${isActive('/faculty') ? 'bg-white/20 text-white' : 'text-primary-100 hover:bg-white/10 hover:text-white'}`}
@@ -128,7 +151,7 @@ const Navbar = () => {
                                     <Link to={getDeptLink("/faculty")} onClick={() => setPeopleOpen(false)} className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-primary hover:text-white transition">Faculty</Link>
                                 </div>
                             )}
-                        </div>
+                        </div> */}
 
                         {/* Academics Dropdown */}
                         <div ref={academicsRef} className="relative" onMouseEnter={() => setAcademicsOpen(true)} onMouseLeave={() => setAcademicsOpen(false)}>
@@ -155,6 +178,15 @@ const Navbar = () => {
                         <Link to={getDeptLink("/notices")} className={`px-4 py-2 text-sm font-semibold uppercase tracking-wider transition ${isActive('/notices') ? 'bg-white/20 text-white' : 'text-primary-100 hover:bg-white/10 hover:text-white'}`}>
                             Notices
                         </Link>
+                        <Link to={getDeptLink("/gtu-circulars")} className={`px-4 py-2 text-sm font-semibold uppercase tracking-wider transition ${isActive('/gtu-circulars') ? 'bg-white/20 text-white' : 'text-primary-100 hover:bg-white/10 hover:text-white'}`}>
+                            GTU Circulars
+                        </Link>
+                        {/* <Link to="/placements" className={`px-4 py-2 text-sm font-semibold uppercase tracking-wider transition ${isActive('/placements') ? 'bg-white/20 text-white' : 'text-primary-100 hover:bg-white/10 hover:text-white'}`}>
+                            Placements
+                        </Link>
+                        <Link to="/feedback" className={`px-4 py-2 text-sm font-semibold uppercase tracking-wider transition ${isActive('/feedback') ? 'bg-white/20 text-white' : 'text-primary-100 hover:bg-white/10 hover:text-white'}`}>
+                            Feedback
+                        </Link> */}
 
                         {isAuthenticated && (
                             <Link to={portalLink} className={`px-4 py-2 text-sm font-semibold uppercase tracking-wider transition text-primary-100 hover:bg-white/10 hover:text-white`}>
@@ -172,9 +204,12 @@ const Navbar = () => {
                         <Link to="/" onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Home</Link>
                         <Link to={getDeptLink("/faculty")} onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/faculty') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Faculty</Link>
                         <Link to={getDeptLink("/notices")} onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/notices') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Notices</Link>
+                        <Link to={getDeptLink("/gtu-circulars")} onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/gtu-circulars') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>GTU Circulars</Link>
                         <Link to={getDeptLink("/timetable")} onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/timetable') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Timetable</Link>
-                        <Link to={getDeptLink("/events")} onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/events') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Events</Link>
-                        <Link to={getDeptLink("/calendar")} onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/calendar') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Calendar</Link>
+                        <Link to={getDeptLink("/events")} onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/events') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'}`}>Events</Link>
+                        <Link to={getDeptLink("/calendar")} onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/calendar') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'}`}>Calendar</Link>
+                        {/* <Link to="/placements" onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/placements') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'}`}>Placements</Link>
+                        <Link to="/feedback" onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/feedback') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'}`}>Feedback</Link> */}
                         <div className="pt-3 border-t border-gray-200">
                             {isAuthenticated ? (
                                 <>

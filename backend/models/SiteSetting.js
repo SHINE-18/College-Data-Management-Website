@@ -28,6 +28,10 @@ const siteSettingSchema = new mongoose.Schema({
     logoUrl: {
         type: String,
         default: ''
+    },
+    visitorCount: {
+        type: Number,
+        default: 0
     }
 }, {
     timestamps: true

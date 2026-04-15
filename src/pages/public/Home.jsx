@@ -8,16 +8,11 @@ import usePageTitle from '../../utils/usePageTitle';
 import AnnouncementTicker from '../../components/AnnouncementTicker';
 
 /* ── Global Campus Bulletin Data ── */
-const newsItems = [
-    { icon: '🏆', title: 'TECHNIX 2026 — College-wide technical fest held on Feb 4, 2026' },
-    { icon: '🌏', title: 'GTU announces International Experience Program at Adelaide, Australia for CE/IT students' },
-    { icon: '🎓', title: '15th Annual GTU Convocation held on January 22, 2026' },
-    { icon: '💡', title: 'B-Plan Pitch Event: CE students showcase startup ideas to industry mentors' },
-    { icon: '🏗️', title: 'Network Operation Center upgraded with new fiber connectivity at VGEC' },
-];
+
 
 const Home = () => {
-    const [notices, setNotices] = useState([]);
+    const [collegeNotices, setCollegeNotices] = useState([]);
+    const [gtuCirculars, setGtuCirculars] = useState([]);
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     usePageTitle('Home');
@@ -25,15 +20,18 @@ const Home = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [noticesRes, eventsRes] = await Promise.all([
-                    api.get('/notices?page=1&limit=3'),
+                const [collegeNoticesRes, gtuCircularsRes, eventsRes] = await Promise.all([
+                    api.get('/notices?page=1&limit=3&excludeSource=GTU'),
+                    api.get('/notices?page=1&limit=3&source=GTU'),
                     api.get('/events?page=1&limit=3')
                 ]);
-                setNotices(noticesRes.data.data || []);
+                setCollegeNotices(collegeNoticesRes.data.data || []);
+                setGtuCirculars(gtuCircularsRes.data.data || []);
                 setEvents(eventsRes.data.data || []);
             } catch (error) {
                 console.error('Error fetching home data:', error);
-                setNotices([]);
+                setCollegeNotices([]);
+                setGtuCirculars([]);
                 setEvents([]);
             } finally {
                 setLoading(false);
@@ -63,7 +61,7 @@ const Home = () => {
                         </h1>
                         <p className="text-white/70 text-lg md:text-xl font-medium max-w-xl mb-10 drop-shadow-md">
                             Empowering the next generation of engineers through innovation, research, and technical excellence since 1994.
-                        </p>
+                        </p> 
 
                         <div className="flex flex-wrap gap-4">
                             <Link to="https://www.vgecg.ac.in/admissions.php" className="bg-white text-slate-900 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-accent transition transform hover:-translate-y-1 shadow-2xl">
@@ -87,10 +85,10 @@ const Home = () => {
             </section>
 
             {/* ═══════ GLOBAL CAMPUS BULLETIN (News & Events) ═══════ */}
-            <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 mb-12">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            {/* <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 mb-12">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12"> */}
                     {/* Live Announcements / News */}
-                    <div className="bg-white rounded-[3rem] p-10 shadow-2xl shadow-slate-200/50 border border-slate-100 flex flex-col">
+                    {/* <div className="bg-white rounded-[3rem] p-10 shadow-2xl shadow-slate-200/50 border border-slate-100 flex flex-col">
                         <div className="flex items-center justify-between mb-10">
                             <div>
                                 <h2 className="text-3xl font-black text-slate-900">News & Highlights</h2>
@@ -115,10 +113,10 @@ const Home = () => {
                         <Link to="/notices" className="mt-8 text-center py-4 bg-slate-50 rounded-2xl font-black text-[10px] uppercase tracking-widest text-slate-400 hover:bg-primary hover:text-white transition">
                             Explore All Updates
                         </Link>
-                    </div>
+                    </div> */}
 
                     {/* Upcoming Talks & Events */}
-                    <div className="bg-slate-900 rounded-[3rem] p-10 shadow-2xl shadow-slate-900/20 text-white relative overflow-hidden">
+                    {/* <div className="bg-slate-900 rounded-[3rem] p-10 shadow-2xl shadow-slate-900/20 text-white relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-full blur-3xl"></div>
 
                         <div className="flex items-center justify-between mb-10 relative z-10">
@@ -162,7 +160,7 @@ const Home = () => {
                         </Link>
                     </div>
                 </div>
-            </section>
+            </section> */}
 
             {/* ═══════ LATEST NOTICES (Horizontal Feed) ═══════ */}
             <section className="bg-white py-24 mb-12">
@@ -170,7 +168,7 @@ const Home = () => {
                     <div className="flex items-center justify-between mb-12">
                         <div>
                             <h2 className="text-3xl font-black text-slate-900">Institute Notice Board</h2>
-                            <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-2">Latest Official Circulars</p>
+                            <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-2">Latest College Notices</p>
                         </div>
                         <Link to="/notices" className="bg-slate-100 text-slate-600 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-primary hover:text-white transition">
                             View Archive
@@ -183,10 +181,38 @@ const Home = () => {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                            {notices.length > 0 ? (
-                                notices.map(notice => <NoticeCard key={notice._id} notice={notice} />)
+                            {collegeNotices.length > 0 ? (
+                                collegeNotices.map(notice => <NoticeCard key={notice._id} notice={notice} />)
                             ) : (
-                                <div className="col-span-3 text-center py-12 text-slate-400 font-medium italic border-2 border-dashed border-slate-100 rounded-3xl">No active notices found. Check back later.</div>
+                                <div className="col-span-3 text-center py-12 text-slate-400 font-medium italic border-2 border-dashed border-slate-100 rounded-3xl">No college notices found. Check back later.</div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </section>
+
+            <section className="bg-white py-24 mb-12">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="flex items-center justify-between mb-12">
+                        <div>
+                            <h2 className="text-3xl font-black text-slate-900">GTU Circulars</h2>
+                            <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-2">Latest Official GTU Circulars</p>
+                        </div>
+                        <Link to="/gtu-circulars" className="bg-slate-100 text-slate-600 px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-primary hover:text-white transition">
+                            View Archive
+                        </Link>
+                    </div>
+
+                    {loading ? (
+                        <div className="flex items-center justify-center py-16">
+                            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            {gtuCirculars.length > 0 ? (
+                                gtuCirculars.map(circular => <NoticeCard key={circular._id} notice={circular} />)
+                            ) : (
+                                <div className="col-span-3 text-center py-12 text-slate-400 font-medium italic border-2 border-dashed border-slate-100 rounded-3xl">No GTU circulars found. Check back later.</div>
                             )}
                         </div>
                     )}

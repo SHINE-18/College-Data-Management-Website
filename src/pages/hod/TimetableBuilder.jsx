@@ -1,99 +1,205 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import api, { getAssetUrl } from '../../utils/axios';
+import { useAuth } from '../../context/AuthContext';
 
-const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const timeSlots = ['9:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-1:00', '1:00-2:00', '2:00-3:00', '3:00-4:00'];
-const subjects = ['', 'Data Structures', 'Algorithms', 'DBMS', 'OS', 'Networks', 'AI', 'ML', 'LUNCH'];
-const facultyNames = ['', 'Dr. Sneha', 'Prof. Amit', 'Dr. Kavita', 'Prof. Deepak', 'Dr. Pooja'];
+const divisions = ['All', 'A', 'B', 'C', 'D'];
+const semesters = ['All', 1, 2, 3, 4, 5, 6, 7, 8];
 
 const TimetableBuilder = () => {
-    const [grid, setGrid] = useState(() => {
-        const g = {};
-        days.forEach(d => { g[d] = {}; timeSlots.forEach(t => { g[d][t] = { subject: t === '12:00-1:00' ? 'LUNCH' : '', faculty: '' }; }); });
-        return g;
-    });
+    const { user } = useAuth();
+    const [timetables, setTimetables] = useState([]);
+    const [filters, setFilters] = useState({ semester: 'All', division: 'All' });
+    const [loading, setLoading] = useState(true);
+    const [deletingId, setDeletingId] = useState(null);
 
-    const updateCell = (day, slot, field, value) => {
-        setGrid(prev => ({ ...prev, [day]: { ...prev[day], [slot]: { ...prev[day][slot], [field]: value } } }));
+    const loadTimetables = async () => {
+        if (!user?.department) {
+            setTimetables([]);
+            setLoading(false);
+            return;
+        }
+
+        try {
+            setLoading(true);
+            const params = { department: user.department };
+            if (filters.semester !== 'All') params.semester = filters.semester;
+            if (filters.division !== 'All') params.division = filters.division;
+
+            const response = await api.get('/timetables', { params });
+            setTimetables(Array.isArray(response.data) ? response.data : []);
+        } catch (error) {
+            console.error('Failed to load timetables', error);
+            toast.error(error.response?.data?.message || 'Failed to load timetables');
+        } finally {
+            setLoading(false);
+        }
     };
 
-    // Clash detection: same faculty assigned at same time on same day
-    const getClashes = () => {
-        const clashes = new Set();
-        timeSlots.forEach(slot => {
-            const seen = {};
-            days.forEach(day => {
-                const fac = grid[day][slot].faculty;
-                if (fac) {
-                    if (seen[fac]) { clashes.add(`${seen[fac]}-${slot}`); clashes.add(`${day}-${slot}`); }
-                    else seen[fac] = day;
-                }
-            });
-        });
-        return clashes;
+    useEffect(() => {
+        loadTimetables();
+    }, [user?.department, filters.semester, filters.division]);
+
+    const handleDelete = async (timetableId) => {
+        if (!window.confirm('Hide this timetable from students?')) {
+            return;
+        }
+
+        try {
+            setDeletingId(timetableId);
+            await api.delete(`/timetables/${timetableId}`);
+            toast.success('Timetable removed from the active list.');
+            await loadTimetables();
+        } catch (error) {
+            console.error('Failed to delete timetable', error);
+            toast.error(error.response?.data?.message || 'Failed to remove timetable');
+        } finally {
+            setDeletingId(null);
+        }
     };
 
-    const clashes = getClashes();
-
-    const handleSave = () => {
-        if (clashes.size > 0) { toast.error('Please resolve clashes before saving.'); return; }
-        toast.success('Timetable saved successfully!');
-    };
+    const activeCount = timetables.length;
+    const semesterCount = new Set(timetables.map(item => item.semester)).size;
 
     return (
         <div className="animate-fade-in space-y-6">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Timetable Builder</h1>
-                    <p className="text-gray-500 text-sm mt-1">Build and manage the department timetable. Red cells indicate faculty clashes.</p>
+                    <h1 className="text-2xl font-bold text-gray-900">Timetable Manager</h1>
+                    <p className="text-gray-500 text-sm mt-1">
+                        Review, filter, and retire the live timetable PDFs students can see for {user?.department || 'your department'}.
+                    </p>
                 </div>
-                <button onClick={handleSave} className="bg-primary text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-primary-700 transition shadow-md">Save Timetable</button>
+                <Link
+                    to="/hod/timetable-upload"
+                    className="inline-flex items-center justify-center rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-md transition hover:bg-primary-700"
+                >
+                    Upload New Timetable
+                </Link>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 overflow-x-auto">
-                <table className="w-full border-collapse min-w-[900px]">
-                    <thead>
-                        <tr>
-                            <th className="bg-primary text-white px-3 py-2 text-xs font-semibold text-left rounded-tl-lg w-24">Day</th>
-                            {timeSlots.map((slot, i) => (
-                                <th key={slot} className={`bg-primary text-white px-2 py-2 text-xs font-semibold text-center ${i === timeSlots.length - 1 ? 'rounded-tr-lg' : ''}`}>{slot}</th>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="rounded-2xl border border-blue-100 bg-blue-50 p-5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">Active PDFs</p>
+                    <p className="mt-2 text-3xl font-bold text-blue-900">{activeCount}</p>
+                    <p className="mt-1 text-sm text-blue-700">Currently visible in the public timetable section.</p>
+                </div>
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-600">Semesters Covered</p>
+                    <p className="mt-2 text-3xl font-bold text-emerald-900">{semesterCount}</p>
+                    <p className="mt-1 text-sm text-emerald-700">Distinct semesters represented in the filtered list.</p>
+                </div>
+                <div className="rounded-2xl border border-amber-100 bg-amber-50 p-5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-amber-600">Current Scope</p>
+                    <p className="mt-2 text-lg font-bold text-amber-900">{filters.semester === 'All' ? 'All Semesters' : `Semester ${filters.semester}`}</p>
+                    <p className="mt-1 text-sm text-amber-700">{filters.division === 'All' ? 'All divisions' : `Division ${filters.division}`}</p>
+                </div>
+            </div>
+
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+                    <div className="w-full lg:max-w-xs">
+                        <label className="mb-1 block text-sm font-medium text-gray-700">Semester</label>
+                        <select
+                            value={filters.semester}
+                            onChange={(e) => setFilters(prev => ({ ...prev, semester: e.target.value }))}
+                            className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none transition focus:ring-2 focus:ring-accent"
+                        >
+                            {semesters.map((semester) => (
+                                <option key={semester} value={semester}>
+                                    {semester === 'All' ? 'All Semesters' : `Semester ${semester}`}
+                                </option>
                             ))}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {days.map((day, di) => (
-                            <tr key={day} className={di % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                <td className="px-3 py-2 text-xs font-semibold text-primary border-b border-gray-100">{day}</td>
-                                {timeSlots.map(slot => {
-                                    const isLunch = slot === '12:00-1:00';
-                                    const hasClash = clashes.has(`${day}-${slot}`);
-                                    return (
-                                        <td key={slot} className={`px-1 py-1 border-b border-gray-100 ${hasClash ? 'bg-red-100' : ''} ${isLunch ? 'bg-yellow-50' : ''}`}>
-                                            {isLunch ? (
-                                                <div className="text-center text-xs text-yellow-600 font-medium py-2">LUNCH</div>
-                                            ) : (
-                                                <div className="space-y-1">
-                                                    <select value={grid[day][slot].subject} onChange={e => updateCell(day, slot, 'subject', e.target.value)} className="w-full px-1 py-1 border border-gray-200 rounded text-[10px] bg-white focus:ring-1 focus:ring-accent outline-none">
-                                                        {subjects.filter(s => s !== 'LUNCH').map(s => <option key={s} value={s}>{s || '— Subject —'}</option>)}
-                                                    </select>
-                                                    <select value={grid[day][slot].faculty} onChange={e => updateCell(day, slot, 'faculty', e.target.value)} className="w-full px-1 py-1 border border-gray-200 rounded text-[10px] bg-white focus:ring-1 focus:ring-accent outline-none">
-                                                        {facultyNames.map(f => <option key={f} value={f}>{f || '— Faculty —'}</option>)}
-                                                    </select>
-                                                </div>
-                                            )}
-                                        </td>
-                                    );
-                                })}
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </select>
+                    </div>
+                    <div className="w-full lg:max-w-xs">
+                        <label className="mb-1 block text-sm font-medium text-gray-700">Division</label>
+                        <select
+                            value={filters.division}
+                            onChange={(e) => setFilters(prev => ({ ...prev, division: e.target.value }))}
+                            className="w-full rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm outline-none transition focus:ring-2 focus:ring-accent"
+                        >
+                            {divisions.map((division) => (
+                                <option key={division} value={division}>
+                                    {division === 'All' ? 'All Divisions' : `Division ${division}`}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                    <button
+                        onClick={() => setFilters({ semester: 'All', division: 'All' })}
+                        className="inline-flex items-center justify-center rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+                    >
+                        Reset Filters
+                    </button>
+                </div>
             </div>
 
-            {clashes.size > 0 && (
-                <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-4 flex items-start space-x-2">
-                    <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z" /></svg>
-                    <span>⚠️ Faculty clash detected! The same faculty is assigned to multiple classes at the same time slot. Red highlighted cells indicate clashes.</span>
+            {loading ? (
+                <div className="flex min-h-[40vh] items-center justify-center rounded-2xl border border-gray-100 bg-white">
+                    <div className="h-12 w-12 animate-spin rounded-full border-b-2 border-primary"></div>
+                </div>
+            ) : timetables.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-gray-300 bg-white px-8 py-16 text-center">
+                    <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100 text-gray-400">
+                        <svg className="h-8 w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                    </div>
+                    <h2 className="text-lg font-bold text-gray-900">No active timetables found</h2>
+                    <p className="mt-2 text-sm text-gray-500">
+                        Upload a timetable PDF first, then it will show up here for filtering and retirement.
+                    </p>
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+                    {timetables.map((timetable) => (
+                        <div key={timetable._id} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
+                            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                                            Semester {timetable.semester}
+                                        </span>
+                                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                                            Division {timetable.division}
+                                        </span>
+                                    </div>
+                                    <h2 className="mt-3 text-lg font-bold text-gray-900">{timetable.title}</h2>
+                                    <p className="mt-1 text-sm text-gray-500">{timetable.department}</p>
+                                    <p className="mt-2 text-xs font-medium uppercase tracking-[0.16em] text-gray-400">
+                                        Uploaded by {timetable.uploadedBy} on {new Date(timetable.createdAt).toLocaleDateString()}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="mt-5 flex flex-wrap gap-3">
+                                <a
+                                    href={getAssetUrl(timetable.pdfUrl)}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="inline-flex items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-700"
+                                >
+                                    View PDF
+                                </a>
+                                <a
+                                    href={getAssetUrl(timetable.pdfUrl)}
+                                    download
+                                    className="inline-flex items-center justify-center rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
+                                >
+                                    Download
+                                </a>
+                                <button
+                                    onClick={() => handleDelete(timetable._id)}
+                                    disabled={deletingId === timetable._id}
+                                    className="inline-flex items-center justify-center rounded-lg border border-red-200 px-4 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50 disabled:opacity-60"
+                                >
+                                    {deletingId === timetable._id ? 'Removing...' : 'Hide from Students'}
+                                </button>
+                            </div>
+                        </div>
+                    ))}
                 </div>
             )}
         </div>

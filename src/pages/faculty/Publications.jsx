@@ -3,115 +3,158 @@ import toast from 'react-hot-toast';
 import api from '../../utils/axios';
 import { useAuth } from '../../context/AuthContext';
 
-const typeColors = { Journal: 'bg-blue-100 text-blue-700', Conference: 'bg-purple-100 text-purple-700', Book: 'bg-green-100 text-green-700', Patent: 'bg-orange-100 text-orange-700' };
-const indexColors = { SCI: 'bg-green-100 text-green-700', Scopus: 'bg-blue-100 text-blue-700', UGC: 'bg-purple-100 text-purple-700', Other: 'bg-gray-100 text-gray-700' };
+const typeColors = {
+    Journal: 'bg-blue-100 text-blue-700',
+    Conference: 'bg-purple-100 text-purple-700',
+    'Book Chapter': 'bg-teal-100 text-teal-700',
+    Book: 'bg-green-100 text-green-700',
+    Patent: 'bg-orange-100 text-orange-700'
+};
 
-const emptyForm = { title: '', journal: '', issn: '', year: '', type: 'Journal', indexType: 'SCI', doi: '' };
+const indexColors = {
+    SCI: 'bg-green-100 text-green-700',
+    Scopus: 'bg-blue-100 text-blue-700',
+    UGC: 'bg-purple-100 text-purple-700',
+    Other: 'bg-gray-100 text-gray-700'
+};
+
+const emptyForm = {
+    title: '',
+    journalName: '',
+    publicationType: 'Journal',
+    publicationYear: '',
+    doi: '',
+    indexingDetails: 'SCI'
+};
 
 const Publications = () => {
     const { user } = useAuth();
     const [facultyId, setFacultyId] = useState(null);
     const [pubs, setPubs] = useState([]);
-
-    // UI State
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [showModal, setShowModal] = useState(false);
-    const [editIndex, setEditIndex] = useState(null);
+    const [editingPublication, setEditingPublication] = useState(null);
     const [form, setForm] = useState(emptyForm);
+
+    const loadPublications = async (resolvedFacultyId) => {
+        const response = await api.get(`/publications/faculty/${resolvedFacultyId}`);
+        setPubs(Array.isArray(response.data) ? response.data : []);
+    };
 
     useEffect(() => {
         const fetchPublications = async () => {
-            if (!user?.email) return;
-            try {
-                const response = await api.get(`/faculty?search=${encodeURIComponent(user.email)}`);
-                const facultyList = response.data.data;
+            if (!user?.email) {
+                setLoading(false);
+                return;
+            }
 
-                if (facultyList && facultyList.length > 0) {
-                    const myProfile = facultyList.find(f => f.email === user.email);
-                    if (myProfile) {
-                        setFacultyId(myProfile._id);
-                        // Map the backend structure to the frontend structure if needed
-                        // The backend schema currently has: title, journal, year, link (which maps to 'doi')
-                        // We will adapt the form to save everything we need.
-                        setPubs(myProfile.publications || []);
-                    }
+            try {
+                const facultyResponse = await api.get(`/faculty?search=${encodeURIComponent(user.email)}`);
+                const facultyList = facultyResponse.data.data || [];
+                const myProfile = facultyList.find(faculty => faculty.email === user.email);
+
+                if (myProfile) {
+                    setFacultyId(myProfile._id);
+                    await loadPublications(myProfile._id);
                 }
             } catch (error) {
-                console.error("Failed to fetch publications", error);
-                toast.error("Failed to load publications");
+                console.error('Failed to fetch publications', error);
+                toast.error('Failed to load publications');
             } finally {
                 setLoading(false);
             }
         };
+
         fetchPublications();
     }, [user]);
 
-    const openAdd = () => { setForm(emptyForm); setEditIndex(null); setShowModal(true); };
+    const closeModal = () => {
+        setShowModal(false);
+        setEditingPublication(null);
+        setForm(emptyForm);
+    };
 
-    const openEdit = (p, index) => {
-        setForm({
-            title: p.title || '',
-            journal: p.journal || '',
-            issn: p.issn || '',
-            year: p.year || '',
-            type: p.type || 'Journal',
-            indexType: p.indexType || 'SCI',
-            doi: p.doi || p.link || ''
-        });
-        setEditIndex(index);
+    const openAdd = () => {
+        setEditingPublication(null);
+        setForm(emptyForm);
         setShowModal(true);
     };
 
-    const closeModal = () => { setShowModal(false); setEditIndex(null); setForm(emptyForm); };
+    const openEdit = (publication) => {
+        setEditingPublication(publication);
+        setForm({
+            title: publication.title || '',
+            journalName: publication.journalName || publication.conferenceName || publication.publisher || '',
+            publicationType: publication.publicationType || 'Journal',
+            publicationYear: publication.publicationDate ? String(new Date(publication.publicationDate).getFullYear()) : '',
+            doi: publication.doi || '',
+            indexingDetails: publication.indexingDetails || 'SCI'
+        });
+        setShowModal(true);
+    };
 
-    const updateBackend = async (newPubsArray, successMessage) => {
+    const handleSave = async () => {
         if (!facultyId) {
-            toast.error("Faculty profile not found. Cannot save changes.");
+            toast.error('Faculty profile not found. Cannot save publications.');
+            return;
+        }
+
+        if (!form.title || !form.journalName || !form.publicationYear) {
+            toast.error('Please fill required fields: Title, Journal/Venue, and Year.');
             return;
         }
 
         try {
             setSaving(true);
-            // Before saving, ensure we map 'doi' back to 'link' for the backend schema
-            const backendPubs = newPubsArray.map(p => ({
-                ...p,
-                link: p.doi || p.link
-            }));
 
-            await api.put(`/faculty/${facultyId}`, { publications: backendPubs });
-            setPubs(newPubsArray);
-            toast.success(successMessage);
+            const payload = {
+                title: form.title.trim(),
+                publicationType: form.publicationType,
+                publicationDate: `${form.publicationYear}-01-01`,
+                doi: form.doi.trim(),
+                indexingDetails: form.indexingDetails,
+                isIndexed: form.indexingDetails !== 'Other'
+            };
+
+            if (form.publicationType === 'Conference') {
+                payload.conferenceName = form.journalName.trim();
+            } else {
+                payload.journalName = form.journalName.trim();
+            }
+
+            if (editingPublication?._id) {
+                await api.put(`/publications/${editingPublication._id}`, payload);
+                toast.success('Publication updated!');
+            } else {
+                await api.post('/publications', payload);
+                toast.success('Publication added!');
+            }
+
+            await loadPublications(facultyId);
             closeModal();
         } catch (error) {
-            console.error("Update failed", error);
-            toast.error("Failed to save changes");
+            console.error('Publication save failed', error);
+            toast.error(error.response?.data?.message || 'Failed to save publication');
         } finally {
             setSaving(false);
         }
     };
 
-    const handleSave = () => {
-        if (!form.title || !form.journal || !form.year) {
-            toast.error('Please fill required fields: Title, Journal/Venue, and Year.');
+    const handleDelete = async (publicationId) => {
+        if (!window.confirm('Are you sure you want to delete this publication?')) {
             return;
         }
 
-        let updatedPubs = [...pubs];
-
-        if (editIndex !== null) {
-            updatedPubs[editIndex] = { ...updatedPubs[editIndex], ...form };
-            updateBackend(updatedPubs, 'Publication updated!');
-        } else {
-            updatedPubs.push({ ...form });
-            updateBackend(updatedPubs, 'Publication added!');
-        }
-    };
-
-    const handleDelete = (index) => {
-        if (window.confirm("Are you sure you want to delete this publication?")) {
-            const updatedPubs = pubs.filter((_, i) => i !== index);
-            updateBackend(updatedPubs, 'Publication deleted.');
+        try {
+            await api.delete(`/publications/${publicationId}`);
+            toast.success('Publication deleted.');
+            if (facultyId) {
+                await loadPublications(facultyId);
+            }
+        } catch (error) {
+            console.error('Publication delete failed', error);
+            toast.error(error.response?.data?.message || 'Failed to delete publication');
         }
     };
 
@@ -136,7 +179,7 @@ const Publications = () => {
                 </button>
             </div>
 
-            {!facultyId && !loading && (
+            {!facultyId && (
                 <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-4 text-sm font-medium">
                     Warning: Your logged-in email does not currently match any faculty records in the public directory. Please ask the HOD to add a faculty profile for you before adding publications.
                 </div>
@@ -156,28 +199,42 @@ const Publications = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {pubs.map((p, i) => {
-                                const doiOrLink = p.doi || p.link;
+                            {pubs.map((publication, index) => {
+                                const venue = publication.journalName || publication.conferenceName || publication.publisher || '-';
+                                const publicationYear = publication.publicationDate
+                                    ? new Date(publication.publicationDate).getFullYear()
+                                    : '-';
+
                                 return (
-                                    <tr key={i} className={`${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition`}>
+                                    <tr key={publication._id || index} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition`}>
                                         <td className="px-6 py-4 text-sm font-medium text-gray-900 max-w-xs">
-                                            <div className="truncate" title={p.title}>{p.title}</div>
-                                            {doiOrLink && <a href={doiOrLink.startsWith('10.') ? `https://doi.org/${doiOrLink}` : doiOrLink} target="_blank" rel="noreferrer" className="text-xs text-accent hover:underline block mt-1 truncate" title={doiOrLink}>Link/DOI: {doiOrLink}</a>}
+                                            <div className="truncate" title={publication.title}>{publication.title}</div>
+                                            {publication.doi && (
+                                                <a
+                                                    href={publication.doi.startsWith('http') ? publication.doi : `https://doi.org/${publication.doi}`}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="text-xs text-accent hover:underline block mt-1 truncate"
+                                                    title={publication.doi}
+                                                >
+                                                    DOI: {publication.doi}
+                                                </a>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-600">
-                                            <div className="truncate max-w-[150px]" title={p.journal}>{p.journal}</div>
+                                            <div className="truncate max-w-[150px]" title={venue}>{venue}</div>
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-gray-600">{p.year}</td>
-                                        <td className="px-6 py-4"><span className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${typeColors[p.type || 'Journal'] || 'bg-gray-100 text-gray-700'}`}>{p.type || 'Journal'}</span></td>
-                                        <td className="px-6 py-4"><span className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${indexColors[p.indexType || 'SCI'] || 'bg-gray-100 text-gray-700'}`}>{p.indexType || 'SCI'}</span></td>
+                                        <td className="px-6 py-4 text-sm text-gray-600">{publicationYear}</td>
+                                        <td className="px-6 py-4"><span className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${typeColors[publication.publicationType] || 'bg-gray-100 text-gray-700'}`}>{publication.publicationType}</span></td>
+                                        <td className="px-6 py-4"><span className={`text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${indexColors[publication.indexingDetails] || 'bg-gray-100 text-gray-700'}`}>{publication.indexingDetails || 'Other'}</span></td>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center space-x-3">
-                                                <button onClick={() => openEdit(p, i)} className="text-accent hover:text-accent-600 text-sm font-medium">Edit</button>
-                                                <button onClick={() => handleDelete(i)} className="text-red-500 hover:text-red-700 text-sm font-medium">Delete</button>
+                                                <button onClick={() => openEdit(publication)} className="text-accent hover:text-accent-600 text-sm font-medium">Edit</button>
+                                                <button onClick={() => handleDelete(publication._id)} className="text-red-500 hover:text-red-700 text-sm font-medium">Delete</button>
                                             </div>
                                         </td>
                                     </tr>
-                                )
+                                );
                             })}
                         </tbody>
                     </table>
@@ -188,19 +245,18 @@ const Publications = () => {
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={closeModal}>
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
-                        <h2 className="text-lg font-bold text-gray-900 mb-4">{editIndex !== null ? 'Edit' : 'Add'} Publication</h2>
+                        <h2 className="text-lg font-bold text-gray-900 mb-4">{editingPublication ? 'Edit' : 'Add'} Publication</h2>
                         <div className="space-y-4">
                             <div><label className="block text-sm font-medium text-gray-700 mb-1">Title *</label><input value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none" /></div>
-                            <div><label className="block text-sm font-medium text-gray-700 mb-1">Journal/Venue *</label><input value={form.journal} onChange={e => setForm({ ...form, journal: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none" /></div>
+                            <div><label className="block text-sm font-medium text-gray-700 mb-1">Journal/Venue *</label><input value={form.journalName} onChange={e => setForm({ ...form, journalName: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none" /></div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div><label className="block text-sm font-medium text-gray-700 mb-1">ISSN</label><input value={form.issn} onChange={e => setForm({ ...form, issn: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none" placeholder="Optional" /></div>
-                                <div><label className="block text-sm font-medium text-gray-700 mb-1">Year *</label><input type="number" value={form.year} onChange={e => setForm({ ...form, year: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none" placeholder="2024" /></div>
+                                <div><label className="block text-sm font-medium text-gray-700 mb-1">Type</label><select value={form.publicationType} onChange={e => setForm({ ...form, publicationType: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none bg-white">{['Journal', 'Conference', 'Book Chapter', 'Book', 'Patent'].map(type => <option key={type}>{type}</option>)}</select></div>
+                                <div><label className="block text-sm font-medium text-gray-700 mb-1">Year *</label><input type="number" min="1900" max="2100" value={form.publicationYear} onChange={e => setForm({ ...form, publicationYear: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none" placeholder="2026" /></div>
                             </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div><label className="block text-sm font-medium text-gray-700 mb-1">Type</label><select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none bg-white">{['Journal', 'Conference', 'Book', 'Patent'].map(t => <option key={t}>{t}</option>)}</select></div>
-                                <div><label className="block text-sm font-medium text-gray-700 mb-1">Index Type</label><select value={form.indexType} onChange={e => setForm({ ...form, indexType: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none bg-white">{['SCI', 'Scopus', 'UGC', 'Other'].map(t => <option key={t}>{t}</option>)}</select></div>
+                                <div><label className="block text-sm font-medium text-gray-700 mb-1">DOI / Link</label><input value={form.doi} onChange={e => setForm({ ...form, doi: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none" placeholder="10.xxxx/xxxxx" /></div>
+                                <div><label className="block text-sm font-medium text-gray-700 mb-1">Index Type</label><select value={form.indexingDetails} onChange={e => setForm({ ...form, indexingDetails: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none bg-white">{['SCI', 'Scopus', 'UGC', 'Other'].map(type => <option key={type}>{type}</option>)}</select></div>
                             </div>
-                            <div><label className="block text-sm font-medium text-gray-700 mb-1">DOI / Link</label><input value={form.doi} onChange={e => setForm({ ...form, doi: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none" placeholder="10.xxxx/xxxxx or URL" /></div>
                         </div>
                         <div className="flex justify-end space-x-3 mt-6">
                             <button onClick={closeModal} disabled={saving} className="px-5 py-2.5 border border-gray-200 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50 transition disabled:opacity-50">Cancel</button>

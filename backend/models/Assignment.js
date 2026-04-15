@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { normalizeDepartment } = require('../utils/departmentUtils');
 
 const assignmentSchema = new mongoose.Schema({
     title: {
@@ -35,7 +36,8 @@ const assignmentSchema = new mongoose.Schema({
             'Information and Communication Technology',
             'All'
         ],
-        default: 'All'
+        default: 'All',
+        set: normalizeDepartment
     },
     faculty: {
         type: mongoose.Schema.ObjectId,

@@ -18,8 +18,11 @@ const PostCircular = () => {
     const fetchCirculars = async () => {
         try {
             setLoading(true);
-            // Fetch notices, optionally filter by department if needed
-            const response = await api.get('/notices?limit=10');
+            const params = new URLSearchParams({ limit: '10' });
+            if (user?.department) {
+                params.set('department', user.department);
+            }
+            const response = await api.get(`/notices?${params.toString()}`);
             setPastCirculars(response.data.data || []);
         } catch (error) {
             console.error('Failed to fetch circulars', error);
@@ -40,7 +43,7 @@ const PostCircular = () => {
                 title: form.title,
                 content: form.content,
                 category: form.category,
-                department: user?.department || 'CE',
+                department: user?.department || 'Computer Engineering',
             };
 
             if (fileItem) {
@@ -48,7 +51,7 @@ const PostCircular = () => {
                 payload.append('title', form.title);
                 payload.append('content', form.content);
                 payload.append('category', form.category);
-                payload.append('department', user?.department || 'CE');
+                payload.append('department', user?.department || 'Computer Engineering');
                 payload.append('attachment', fileItem);
             }
 

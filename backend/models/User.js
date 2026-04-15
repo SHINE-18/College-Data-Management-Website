@@ -4,6 +4,7 @@
 
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const { normalizeDepartment } = require('../utils/departmentUtils');
 
 const userSchema = new mongoose.Schema({
     name: {
@@ -48,7 +49,8 @@ const userSchema = new mongoose.Schema({
             'Information and Communication Technology',
             'All'
         ],
-        default: 'All'
+        default: 'All',
+        set: normalizeDepartment
     },
     designation: {
         type: String,

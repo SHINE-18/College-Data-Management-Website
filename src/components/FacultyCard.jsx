@@ -23,6 +23,7 @@ const FacultyCard = ({ faculty }) => {
     const facultyQualification = faculty.qualification || '';
     const facultySpecialization = faculty.specialization || '';
     const facultyEmail = faculty.email || '';
+    const facultyPhoto = faculty.profilePhoto || '';
     
     const spec = specializations[facultySpecialization] || { 
         color: 'bg-gray-600', 
@@ -41,8 +42,24 @@ const FacultyCard = ({ faculty }) => {
 
                 {/* Circular Photo */}
                 <div className="pt-10 pb-4 px-4">
-                    <div className="w-28 h-28 mx-auto rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300 ring-4 ring-white">
-                        <span className="text-white font-bold text-3xl font-heading">{facultyName?.[0]}</span>
+                    <div className="w-28 h-28 mx-auto rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300 ring-4 ring-white overflow-hidden">
+                        {facultyPhoto ? (
+                            <img 
+                                src={facultyPhoto} 
+                                alt={facultyName}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    e.target.style.display = 'none';
+                                    e.target.nextElementSibling.style.display = 'block';
+                                }}
+                            />
+                        ) : null}
+                        <span 
+                            className="text-white font-bold text-3xl font-heading"
+                            style={{ display: facultyPhoto ? 'none' : 'block' }}
+                        >
+                            {facultyName?.[0]}
+                        </span>
                     </div>
                 </div>
 

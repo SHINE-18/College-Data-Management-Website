@@ -7,6 +7,10 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const Publication = require('../models/Publication');
 const { protect, authorize } = require('../middleware/authMiddleware');
+const {
+    resolveFacultyProfileId,
+    syncPublicationSummary,
+} = require('../utils/facultyDataSync');
 
 // Validation middleware
 const validate = (req, res, next) => {
@@ -53,13 +57,19 @@ router.post('/', [
     validate
 ], async (req, res) => {
     try {
+        const facultyId = await resolveFacultyProfileId(req.user);
+        if (!facultyId) {
+            return res.status(400).json({ message: 'Faculty profile not found for this user' });
+        }
+
         const publication = new Publication({
             ...req.body,
-            facultyId: req.user.facultyId || req.user._id,
+            facultyId,
             facultyName: req.user.name
         });
 
         await publication.save();
+        await syncPublicationSummary(facultyId);
         res.status(201).json(publication);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -83,6 +93,7 @@ router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (r
 
         Object.assign(publication, req.body);
         await publication.save();
+        await syncPublicationSummary(publication.facultyId);
         res.json(publication);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -104,7 +115,9 @@ router.delete('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async
             return res.status(403).json({ message: 'Not authorized' });
         }
 
+        const facultyId = publication.facultyId;
         await publication.deleteOne();
+        await syncPublicationSummary(facultyId);
         res.json({ message: 'Publication deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });

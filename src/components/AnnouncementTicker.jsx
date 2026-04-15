@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api from '../utils/axios';
+import api, { getAssetUrl } from '../utils/axios';
 
 const AnnouncementTicker = ({ department = 'All' }) => {
     const [notices, setNotices] = useState([]);
@@ -8,9 +8,9 @@ const AnnouncementTicker = ({ department = 'All' }) => {
     useEffect(() => {
         const fetchNotices = async () => {
             try {
-                // Fetch the 5 most recent active notices
+                // Fetch the 5 most recent active college notices
                 const { data } = await api.get('/notices', {
-                    params: { department, limit: 5 }
+                    params: { department, limit: 5, excludeSource: 'GTU' }
                 });
                 setNotices(data.data || []);
             } catch (error) {
@@ -36,15 +36,15 @@ const AnnouncementTicker = ({ department = 'All' }) => {
                         {notices.map((n, i) => (
                             <a
                                 key={n._id || i}
-                                href={n.attachment ? n.attachment : `/notices?id=${n._id}`}
-                                target={n.attachment ? "_blank" : "_self"}
+                                href={n.attachment ? getAssetUrl(n.attachment) : (n.sourceUrl || '/notices')}
+                                target={n.attachment || n.sourceUrl ? "_blank" : "_self"}
                                 rel="noreferrer"
                                 className="text-sm hover:text-primary-200 transition inline-flex items-center"
                             >
                                 <span className="text-primary-300 mr-2">▸</span>
                                 {n.title}
                                 <span className="text-primary-400 ml-2 text-xs">
-                                    ({new Date(n.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')})
+                                    ({new Date(n.publishedAt || n.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')})
                                 </span>
                             </a>
                         ))}

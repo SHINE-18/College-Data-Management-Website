@@ -11,6 +11,12 @@ const DepartmentDetail = () => {
     const [faculty, setFaculty] = useState([]);
     const [dept, setDept] = useState(null);
     const [loading, setLoading] = useState(true);
+    const hodVideo = id === 'cp'
+        ? {
+            title: 'Message From Prof. Kajal S. Patel',
+            embedUrl: 'https://www.youtube-nocookie.com/embed/M4LzD0qshns?rel=0'
+        }
+        : null;
 
     useEffect(() => {
         const fetchData = async () => {
@@ -147,6 +153,25 @@ const DepartmentDetail = () => {
                                     <p className="text-slate-600 leading-relaxed italic text-lg font-medium">
                                         "{dept.hod?.message || 'Welcome to our department. We are dedicated to nurturing excellence.'}"
                                     </p>
+                                    {hodVideo && (
+                                        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
+                                            <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-slate-500">
+                                                Watch The HOD Message
+                                            </p>
+                                            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-900 shadow-lg">
+                                                <div className="relative w-full pt-[56.25%]">
+                                                    <iframe
+                                                        className="absolute inset-0 h-full w-full"
+                                                        src={hodVideo.embedUrl}
+                                                        title={hodVideo.title}
+                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                        referrerPolicy="strict-origin-when-cross-origin"
+                                                        allowFullScreen
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
                                     <div className="pt-4 flex items-center space-x-3">
                                         <div className="w-10 h-[2px] bg-slate-200"></div>
                                         <span className="text-xs text-slate-400 font-bold uppercase">Visionary Leadership</span>

@@ -8,6 +8,7 @@ import DepartmentDetail from '../pages/public/DepartmentDetail';
 import FacultyDirectory from '../pages/public/FacultyDirectory';
 import FacultyProfile from '../pages/public/FacultyProfile';
 import NoticeBoard from '../pages/public/NoticeBoard';
+import GTUCirculars from '../pages/public/GTUCirculars';
 import TimetableViewer from '../pages/public/TimetableViewer';
 import Events from '../pages/public/Events';
 import AcademicCalendar from '../pages/public/AcademicCalendar';
@@ -55,6 +56,13 @@ import SuperAdminDashboard from '../pages/admin/SuperAdminDashboard';
 import UserManagement from '../pages/admin/UserManagement';
 import ManageDepartments from '../pages/admin/ManageDepartments';
 import SiteSettings from '../pages/admin/SiteSettings';
+import AdminImportStudents from '../pages/admin/AdminImportStudents';
+
+// New Feature Pages
+import Placements from '../pages/Placements';
+import Feedback from '../pages/Feedback';
+import HODReports from '../pages/HODReports';
+import StudentProfile from '../pages/student/StudentProfile';
 
 // Layouts
 import PublicLayout from '../components/PublicLayout';
@@ -70,10 +78,13 @@ const AppRoutes = () => (
             <Route path="/faculty" element={<FacultyDirectory />} />
             <Route path="/faculty/:id" element={<FacultyProfile />} />
             <Route path="/notices" element={<NoticeBoard />} />
+            <Route path="/gtu-circulars" element={<GTUCirculars />} />
             <Route path="/timetable" element={<TimetableViewer />} />
             <Route path="/events" element={<Events />} />
             <Route path="/calendar" element={<AcademicCalendar />} />
             <Route path="/syllabi" element={<SyllabusArchive />} />
+            {/* <Route path="/placements" element={<Placements />} />
+            <Route path="/feedback" element={<Feedback />} /> */}
         </Route>
 
         {/* Auth */}
@@ -88,7 +99,7 @@ const AppRoutes = () => (
             <Route path="results" element={<GradesViewer />} />
             <Route path="assignments" element={<AssignmentUploader />} />
             <Route path="resources" element={<ResourceLibrary />} />
-            {/* Additional student routes will be added here later */}
+            <Route path="profile" element={<StudentProfile />} />
         </Route>
 
         {/* Faculty Portal */}
@@ -116,6 +127,7 @@ const AppRoutes = () => (
             <Route path="leave" element={<LeaveApprovals />} />
             <Route path="circular" element={<PostCircular />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="hod-reports" element={<HODReports />} />
             <Route path="attendance-manager" element={<AttendanceManager />} />
             <Route path="result-uploader" element={<ResultUploader />} />
             <Route path="assignments" element={<AssignmentPoster />} />
@@ -130,6 +142,7 @@ const AppRoutes = () => (
             <Route path="circular" element={<PostCircular />} />
             <Route path="departments" element={<ManageDepartments />} />
             <Route path="settings" element={<SiteSettings />} />
+            <Route path="import-students" element={<AdminImportStudents />} />
         </Route>
 
         {/* 404 — catches all unmatched routes */}

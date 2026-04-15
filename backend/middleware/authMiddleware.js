@@ -59,10 +59,17 @@ const authorize = (...roles) => {
     };
 };
 
-// Generate JWT Token
+// Generate short-lived access token (15 minutes)
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
-        expiresIn: '30d'
+        expiresIn: '15m'
+    });
+};
+
+// Generate long-lived refresh token (7 days)
+const generateRefreshToken = (id) => {
+    return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, {
+        expiresIn: '7d'
     });
 };
 
@@ -135,5 +142,5 @@ const protectBoth = async (req, res, next) => {
     }
 };
 
-module.exports = { protect, authorize, generateToken, protectStudent, protectBoth };
+module.exports = { protect, authorize, generateToken, generateRefreshToken, protectStudent, protectBoth };
 

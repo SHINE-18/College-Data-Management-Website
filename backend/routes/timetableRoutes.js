@@ -4,47 +4,27 @@
 
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
 const Timetable = require('../models/Timetable');
 const { protect, authorize } = require('../middleware/authMiddleware');
-
-// Configure Multer for PDF file upload
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/timetables/');
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'timetable-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
-
-// Filter to only accept PDF files
-const fileFilter = (req, file, cb) => {
-    if (file.mimetype === 'application/pdf') {
-        cb(null, true);
-    } else {
-        cb(new Error('Only PDF files are allowed!'), false);
-    }
-};
-
-const upload = multer({ 
-    storage: storage,
-    fileFilter: fileFilter,
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
-});
+const { uploadTimetable } = require('../middleware/upload');
+const {
+    buildDepartmentMatch,
+    departmentsMatch,
+    normalizeDepartment,
+} = require('../utils/departmentUtils');
 
 // GET /api/timetables — Get all active timetables (with optional filters)
 router.get('/', async (req, res) => {
     try {
         const { department, semester, division } = req.query;
         let query = { isActive: true };
-        
-        if (department) query.department = department;
+
+        if (department) query.department = buildDepartmentMatch(department);
         if (semester) query.semester = parseInt(semester);
-        if (division) query.division = division;
-        
+        if (division && division !== 'All') {
+            query.division = { $in: [division, 'All'] };
+        }
+
         const timetables = await Timetable.find(query).sort({ createdAt: -1 });
         res.json(timetables);
     } catch (error) {
@@ -55,9 +35,9 @@ router.get('/', async (req, res) => {
 // GET /api/timetables/departments/:dept — Get timetables by department
 router.get('/departments/:dept', async (req, res) => {
     try {
-        const timetables = await Timetable.find({ 
-            department: req.params.dept,
-            isActive: true 
+        const timetables = await Timetable.find({
+            department: buildDepartmentMatch(req.params.dept),
+            isActive: true
         }).sort({ semester: 1, division: 1 });
         res.json(timetables);
     } catch (error) {
@@ -77,20 +57,20 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/timetables — Upload a new timetable (with PDF file)
-router.post('/', protect, authorize('hod', 'super_admin'), upload.single('pdf'), async (req, res) => {
+router.post('/', protect, authorize('hod', 'super_admin'), uploadTimetable.single('pdf'), async (req, res) => {
     try {
         const { title, department, semester, division, uploadedBy } = req.body;
-        
+
         if (!req.file) {
             return res.status(400).json({ message: 'PDF file is required' });
         }
 
         const timetable = new Timetable({
-            title: title || `Timetable - ${req.user.role === 'hod' ? req.user.department : department} - Sem ${semester} - ${division}`,
-            department: req.user.role === 'hod' ? req.user.department : department,
+            title: title || `Timetable - ${normalizeDepartment(req.user.role === 'hod' ? req.user.department : department)} - Sem ${semester} - ${division}`,
+            department: normalizeDepartment(req.user.role === 'hod' ? req.user.department : department),
             semester: parseInt(semester),
-            division,
-            pdfUrl: `/uploads/timetables/${req.file.filename}`,
+            division: division || 'All',
+            pdfUrl: req.file ? (req.file.path || req.file.secure_url || req.file.location) : null,
             uploadedBy: uploadedBy || req.user.name,
         });
 
@@ -112,22 +92,22 @@ router.put('/:id', protect, authorize('hod', 'super_admin'), async (req, res) =>
             return res.status(404).json({ message: 'Timetable not found' });
         }
 
-        if (req.user.role === 'hod' && existingTimetable.department !== req.user.department) {
+        if (req.user.role === 'hod' && !departmentsMatch(existingTimetable.department, req.user.department)) {
             return res.status(403).json({ message: 'Not authorized to update timetables outside your department' });
         }
-        
+
         const updated = await Timetable.findByIdAndUpdate(
             req.params.id,
             {
                 title,
-                department: req.user.role === 'hod' ? req.user.department : department,
+                department: normalizeDepartment(req.user.role === 'hod' ? req.user.department : department),
                 semester,
-                division,
+                division: division || 'All',
                 isActive
             },
             { new: true, runValidators: true }
         );
-        
+
         if (!updated) return res.status(404).json({ message: 'Timetable not found' });
         res.json(updated);
     } catch (error) {
@@ -144,7 +124,7 @@ router.delete('/:id', protect, authorize('hod', 'super_admin'), async (req, res)
             return res.status(404).json({ message: 'Timetable not found' });
         }
 
-        if (req.user.role === 'hod' && existingTimetable.department !== req.user.department) {
+        if (req.user.role === 'hod' && !departmentsMatch(existingTimetable.department, req.user.department)) {
             return res.status(403).json({ message: 'Not authorized to delete timetables outside your department' });
         }
 
@@ -154,7 +134,7 @@ router.delete('/:id', protect, authorize('hod', 'super_admin'), async (req, res)
             { isActive: false },
             { new: true }
         );
-        
+
         if (!deleted) return res.status(404).json({ message: 'Timetable not found' });
         res.json({ message: `Timetable "${deleted.title}" has been removed` });
     } catch (error) {

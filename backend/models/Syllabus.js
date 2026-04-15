@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { normalizeDepartment } = require('../utils/departmentUtils');
 
 const syllabusSchema = new mongoose.Schema({
     courseTitle: {
@@ -35,7 +36,8 @@ const syllabusSchema = new mongoose.Schema({
             'Information and Communication Technology'
         ],
         default: 'Computer Engineering',
-        required: true
+        required: true,
+        set: normalizeDepartment
     },
     credits: {
         type: Number,

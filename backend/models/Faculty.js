@@ -5,6 +5,7 @@
 // Think of it as a form template with predefined fields.
 
 const mongoose = require('mongoose');
+const { normalizeDepartment } = require('../utils/departmentUtils');
 
 // mongoose.Schema() defines the structure
 // Each field has a TYPE (String, Number, etc.) and RULES (required, default, etc.)
@@ -18,7 +19,7 @@ const facultySchema = new mongoose.Schema({
     designation: {
         type: String,
         required: true,
-        enum: ['Professor', 'Associate Professor', 'Assistant Professor', 'HOD', 'Lecturer'],
+        enum: ['Professor', 'Associate Professor', 'Assistant Professor', 'HOD', 'Lecturer', 'Computer Operator', 'Lab Assistant'],
         // enum = only these values are allowed (like a dropdown)
     },
     department: {
@@ -38,6 +39,7 @@ const facultySchema = new mongoose.Schema({
             'Information and Communication Technology'
         ],
         default: 'Computer Engineering',
+        set: normalizeDepartment,
     },
     email: {
         type: String,

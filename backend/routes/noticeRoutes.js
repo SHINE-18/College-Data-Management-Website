@@ -5,29 +5,18 @@
 const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
 const Notice = require('../models/Notice');
 const Student = require('../models/Student');
 const Faculty = require('../models/Faculty');
+const Notification = require('../models/Notification');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { notifyNewPost } = require('../utils/emailService');
-
-// Configure Multer for file upload
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/notices/');
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'notice-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
-
-const upload = multer({
-    storage: storage,
-    limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
-});
+const { uploadNotice } = require('../middleware/upload');
+const {
+    buildDepartmentMatch,
+    departmentsMatch,
+    normalizeDepartment,
+} = require('../utils/departmentUtils');
 
 // Validation middleware
 const validate = (req, res, next) => {
@@ -45,28 +34,65 @@ router.get('/', [
     query('search').optional().trim(),
     query('category').optional().trim(),
     query('department').optional().trim(),
+    query('source').optional().trim(),
+    query('excludeSource').optional().trim(),
 ], validate, async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
         const skip = (page - 1) * limit;
 
-        const searchQuery = { isActive: true };
+        const matchConditions = [{ isActive: true }];
 
         if (req.query.search) {
-            searchQuery.$text = { $search: req.query.search };
+            matchConditions.push({ $text: { $search: req.query.search } });
         }
         if (req.query.category) {
-            searchQuery.category = req.query.category;
+            matchConditions.push({ category: req.query.category });
         }
         if (req.query.department) {
-            searchQuery.$or = [
-                { department: req.query.department },
-                { department: 'All' }
-            ];
+            matchConditions.push({
+                department: buildDepartmentMatch(req.query.department, { includeAll: true })
+            });
+        }
+        if (req.query.source) {
+            if (req.query.source === 'Internal') {
+                matchConditions.push({
+                    $or: [
+                        { source: 'Internal' },
+                        { source: { $exists: false } },
+                        { source: null }
+                    ]
+                });
+            } else {
+                matchConditions.push({ source: req.query.source });
+            }
+        }
+        if (req.query.excludeSource) {
+            matchConditions.push({
+                $or: [
+                    { source: { $ne: req.query.excludeSource } },
+                    { source: { $exists: false } },
+                    { source: null }
+                ]
+            });
         }
 
-        const notices = await Notice.find(searchQuery).sort({ createdAt: -1 }).skip(skip).limit(limit);
+        const searchQuery = matchConditions.length === 1
+            ? matchConditions[0]
+            : { $and: matchConditions };
+
+        const notices = await Notice.aggregate([
+            { $match: searchQuery },
+            {
+                $addFields: {
+                    sortDate: { $ifNull: ['$publishedAt', '$createdAt'] }
+                }
+            },
+            { $sort: { sortDate: -1, createdAt: -1 } },
+            { $skip: skip },
+            { $limit: limit }
+        ]);
         const total = await Notice.countDocuments(searchQuery);
 
         res.json({
@@ -103,7 +129,7 @@ router.get('/:id', [
 router.post('/', [
     protect,
     authorize('hod', 'super_admin'),
-    upload.single('attachment'),
+    uploadNotice.single('attachment'),
     body('title').trim().notEmpty().withMessage('Title is required'),
     body('content').trim().notEmpty().withMessage('Content is required'),
     body('category').optional().isIn(['General', 'Exam', 'Admission', 'Events', 'Placement', 'Other']).withMessage('Invalid category'),
@@ -112,11 +138,37 @@ router.post('/', [
     try {
         const notice = new Notice({
             ...req.body,
-            department: req.user.role === 'hod' ? req.user.department : (req.body.department || 'All'),
+            department: req.user.role === 'hod'
+                ? normalizeDepartment(req.user.department)
+                : normalizeDepartment(req.body.department || 'All'),
             postedBy: req.user.name,
-            attachment: req.file ? `/uploads/notices/${req.file.filename}` : null,
+            source: 'Internal',
+            publishedAt: req.body.publishedAt || new Date(),
+            attachment: req.file ? (req.file.path || req.file.secure_url || req.file.location) : null,
         });
         const saved = await notice.save();
+
+        // Auto-create in-app notifications for all students in this department (async)
+        (async () => {
+            try {
+                const deptFilter = saved.department && saved.department !== 'All'
+                    ? { department: saved.department, isActive: true }
+                    : { isActive: true };
+                const students = await Student.find(deptFilter).select('_id');
+                if (students.length > 0) {
+                    await Notification.insertMany(students.map(s => ({
+                        userId: s._id,
+                        userModel: 'Student',
+                        title: `New Notice: ${saved.title}`,
+                        message: saved.content.substring(0, 200),
+                        type: 'notice',
+                        link: '/notices'
+                    })));
+                }
+            } catch (err) {
+                console.error('Notification creation failed:', err);
+            }
+        })();
 
         // Broadcast email notification (asynchronously)
         (async () => {
@@ -155,12 +207,16 @@ router.put('/:id', [
         const existingNotice = await Notice.findById(req.params.id);
         if (!existingNotice) return res.status(404).json({ message: 'Notice not found' });
 
-        if (req.user.role === 'hod' && existingNotice.department !== req.user.department) {
+        if (req.user.role === 'hod' && !departmentsMatch(existingNotice.department, req.user.department)) {
             return res.status(403).json({ message: 'Not authorized to update notices outside your department' });
         }
 
         const updateData = { ...req.body, postedBy: existingNotice.postedBy };
-        if (req.user.role === 'hod') updateData.department = req.user.department;
+        if (req.user.role === 'hod') {
+            updateData.department = normalizeDepartment(req.user.department);
+        } else if (updateData.department) {
+            updateData.department = normalizeDepartment(updateData.department);
+        }
 
         const updated = await Notice.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
         res.json(updated);
@@ -178,7 +234,7 @@ router.delete('/:id', [
     try {
         const deleted = await Notice.findById(req.params.id);
         if (!deleted) return res.status(404).json({ message: 'Notice not found' });
-        if (req.user.role === 'hod' && deleted.department !== req.user.department) {
+        if (req.user.role === 'hod' && !departmentsMatch(deleted.department, req.user.department)) {
             return res.status(403).json({ message: 'Not authorized to delete notices outside your department' });
         }
         await deleted.deleteOne();

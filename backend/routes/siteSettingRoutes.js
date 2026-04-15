@@ -17,6 +17,29 @@ router.get('/', async (req, res) => {
     }
 });
 
+// GET /api/settings/visitor-count — Get public visitor count
+router.get('/visitor-count', async (req, res) => {
+    try {
+        const settings = await SiteSetting.getSettings();
+        res.json({ visitorCount: settings.visitorCount || 0 });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+// POST /api/settings/visitor-count — Increment visitor count
+router.post('/visitor-count', async (req, res) => {
+    try {
+        const settings = await SiteSetting.getSettings();
+        settings.visitorCount = (settings.visitorCount || 0) + 1;
+        await settings.save();
+
+        res.json({ visitorCount: settings.visitorCount });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
 // PUT /api/settings — Update site settings (super_admin only)
 router.put('/', protect, authorize('super_admin'), async (req, res) => {
     try {

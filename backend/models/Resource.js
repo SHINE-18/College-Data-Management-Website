@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { normalizeDepartment } = require('../utils/departmentUtils');
 
 const resourceSchema = new mongoose.Schema({
     title: {
@@ -39,7 +40,8 @@ const resourceSchema = new mongoose.Schema({
             'Electronics And Instrumentation Engineering',
             'Information and Communication Technology'
         ],
-        default: 'Computer Engineering'
+        default: 'Computer Engineering',
+        set: normalizeDepartment
     },
     fileUrl: {
         type: String // Required if type is NOT 'Link'

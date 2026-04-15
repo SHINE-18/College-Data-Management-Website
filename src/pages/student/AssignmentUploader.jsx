@@ -142,9 +142,9 @@ const AssignmentUploader = () => {
                                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                                             <FaCloudUploadAlt className="w-8 h-8 mb-2 text-primary/60" />
                                             <p className="text-xs text-primary font-medium">Upload submission</p>
-                                            <p className="text-[10px] text-gray-500 mt-1">PDF, ZIP files only</p>
+                                            <p className="text-[10px] text-gray-500 mt-1">PDF, DOC, DOCX, ZIP, RAR files</p>
                                         </div>
-                                        <input type="file" className="hidden" onChange={handleFileChange} accept=".pdf,.zip,.rar" />
+                                        <input type="file" className="hidden" onChange={handleFileChange} accept=".pdf,.doc,.docx,.zip,.rar" />
                                     </label>
                                     {file && <p className="mt-2 text-xs text-green-600 font-medium truncate">Selected: {file.name}</p>}
                                 </div>

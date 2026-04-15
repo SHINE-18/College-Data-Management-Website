@@ -3,6 +3,7 @@
 // ============================================
 
 const mongoose = require('mongoose');
+const { normalizeDepartment } = require('../utils/departmentUtils');
 
 const leaveSchema = new mongoose.Schema({
     facultyId: {
@@ -30,7 +31,8 @@ const leaveSchema = new mongoose.Schema({
             'Computer Science and Engineering (Data Science)',
             'Electronics And Instrumentation Engineering',
             'Information and Communication Technology'
-        ]
+        ],
+        set: normalizeDepartment
     },
     leaveType: {
         type: String,

@@ -6,41 +6,20 @@
 
 const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
-const multer = require('multer');
-const path = require('path');
 const router = express.Router();
-// Router is like a mini-app that handles a group of related routes
 
 // Import models
 const Faculty = require('../models/Faculty');
 const User = require('../models/User');
 const { protect, authorize } = require('../middleware/authMiddleware');
+const { uploadFaculty } = require('../middleware/upload');
+const {
+    buildDepartmentMatch,
+    departmentsMatch,
+    normalizeDepartment,
+} = require('../utils/departmentUtils');
 
-// Configure Multer for profile photo upload
-const photoStorage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/faculty/');
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'faculty-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
-
-// Filter to only accept image files
-const imageFilter = (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-        cb(null, true);
-    } else {
-        cb(new Error('Only image files are allowed!'), false);
-    }
-};
-
-const uploadPhoto = multer({
-    storage: photoStorage,
-    fileFilter: imageFilter,
-    limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
-});
+const mapDesignationToUserRole = (designation) => (designation === 'HOD' ? 'hod' : 'faculty');
 
 // Validation middleware
 const validate = (req, res, next) => {
@@ -83,7 +62,10 @@ router.get('/', [
             searchQuery.designation = req.query.designation;
         }
         if (req.query.department) {
-            searchQuery.department = req.query.department;
+            const departmentMatch = buildDepartmentMatch(req.query.department);
+            if (departmentMatch) {
+                searchQuery.department = departmentMatch;
+            }
         }
 
         // Execute query with pagination
@@ -117,13 +99,25 @@ router.get('/admin/all', protect, authorize('hod', 'super_admin'), async (req, r
         const query = {};
 
         if (req.user.role === 'hod') {
-            query.department = req.user.department;
+            query.department = buildDepartmentMatch(req.user.department);
         } else if (req.query.department) {
-            query.department = req.query.department;
+            query.department = buildDepartmentMatch(req.query.department);
         }
 
-        const faculty = await Faculty.find(query).sort({ name: 1 });
-        res.json(faculty);
+        const faculty = await Faculty.find(query).sort({ department: 1, name: 1 });
+        const facultyIds = faculty.map((member) => member._id);
+        const users = await User.find({ facultyId: { $in: facultyIds } })
+            .select('facultyId role isActive');
+        const userByFacultyId = new Map(users.map((member) => [String(member.facultyId), member]));
+
+        res.json(faculty.map((member) => {
+            const linkedUser = userByFacultyId.get(String(member._id));
+            return {
+                ...member.toObject(),
+                portalRole: linkedUser?.role || mapDesignationToUserRole(member.designation),
+                userActive: linkedUser?.isActive ?? true
+            };
+        }));
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -156,7 +150,7 @@ router.get('/:id', [
 // ────────────────────────────────────────────
 // POST = sending data TO the server (like submitting a form)
 // The data comes in req.body (parsed by express.json() middleware)
-router.post('/', protect, authorize('hod', 'super_admin'), uploadPhoto.single('profilePhoto'), [
+router.post('/', protect, authorize('hod', 'super_admin'), uploadFaculty.single('profilePhoto'), [
     body('name').trim().notEmpty().withMessage('Name is required'),
     body('designation').isIn(['Professor', 'Associate Professor', 'Assistant Professor', 'HOD', 'Lecturer']).withMessage('Invalid designation'),
     body('email').isEmail().withMessage('Valid email is required'),
@@ -170,11 +164,13 @@ router.post('/', protect, authorize('hod', 'super_admin'), uploadPhoto.single('p
         const facultyData = { ...req.body };
 
         if (req.user.role === 'hod') {
-            facultyData.department = req.user.department;
+            facultyData.department = normalizeDepartment(req.user.department);
+        } else if (facultyData.department) {
+            facultyData.department = normalizeDepartment(facultyData.department);
         }
 
         if (req.file) {
-            facultyData.profilePhoto = `/uploads/faculty/${req.file.filename}`;
+            facultyData.profilePhoto = req.file.path || req.file.secure_url || req.file.location;
         }
 
         // 1. Create Faculty Profile
@@ -188,11 +184,19 @@ router.post('/', protect, authorize('hod', 'super_admin'), uploadPhoto.single('p
                 name: facultyData.name,
                 email: facultyData.email,
                 password: 'Faculty@VGEC123', // Default password
-                role: 'faculty',
+                role: mapDesignationToUserRole(facultyData.designation),
                 department: facultyData.department,
                 designation: facultyData.designation,
                 facultyId: savedFaculty._id
             });
+        } else {
+            userExists.name = facultyData.name;
+            userExists.email = facultyData.email.toLowerCase();
+            userExists.department = facultyData.department;
+            userExists.designation = facultyData.designation;
+            userExists.role = mapDesignationToUserRole(facultyData.designation);
+            userExists.facultyId = savedFaculty._id;
+            await userExists.save();
         }
 
         res.status(201).json(savedFaculty);
@@ -210,7 +214,7 @@ router.post('/', protect, authorize('hod', 'super_admin'), uploadPhoto.single('p
 // PUT /api/faculty/:id — UPDATE a faculty (with optional profile photo)
 // ────────────────────────────────────────────
 // PUT = replacing/updating existing data
-router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), uploadPhoto.single('profilePhoto'), [
+router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), uploadFaculty.single('profilePhoto'), [
     param('id').isMongoId().withMessage('Invalid faculty ID'),
     body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
     body('designation').optional().isIn(['Professor', 'Associate Professor', 'Assistant Professor', 'HOD', 'Lecturer']).withMessage('Invalid designation'),
@@ -233,7 +237,7 @@ router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), uploadPh
             }
         }
 
-        if (req.user.role === 'hod' && existingFaculty.department !== req.user.department) {
+        if (req.user.role === 'hod' && !departmentsMatch(existingFaculty.department, req.user.department)) {
             return res.status(403).json({ message: 'Not authorized to update faculty outside your department' });
         }
 
@@ -245,12 +249,13 @@ router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), uploadPh
         }
 
         if (req.user.role === 'hod') {
-            updateData.department = req.user.department;
+            updateData.department = normalizeDepartment(req.user.department);
+        } else if (updateData.department) {
+            updateData.department = normalizeDepartment(updateData.department);
         }
 
-        // Add new profile photo URL if uploaded
         if (req.file) {
-            updateData.profilePhoto = `/uploads/faculty/${req.file.filename}`;
+            updateData.profilePhoto = req.file.path || req.file.secure_url || req.file.location;
         }
 
         // findByIdAndUpdate does 3 things:
@@ -263,6 +268,26 @@ router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), uploadPh
             updateData,
             { new: true, runValidators: true }
         );
+
+        const linkedUser = await User.findOne({
+            $or: [
+                { facultyId: updated._id },
+                { email: existingFaculty.email.toLowerCase() }
+            ]
+        });
+
+        if (linkedUser) {
+            linkedUser.name = updated.name;
+            linkedUser.email = updated.email.toLowerCase();
+            linkedUser.designation = updated.designation;
+            linkedUser.department = updated.department;
+            linkedUser.role = mapDesignationToUserRole(updated.designation);
+            if (typeof updateData.isActive === 'boolean') {
+                linkedUser.isActive = updateData.isActive;
+            }
+            linkedUser.facultyId = updated._id;
+            await linkedUser.save();
+        }
 
         res.json(updated);
     } catch (error) {
@@ -287,10 +312,11 @@ router.delete('/:id', protect, authorize('hod', 'super_admin'), [
             return res.status(404).json({ message: 'Faculty not found' });
         }
 
-        if (req.user.role === 'hod' && faculty.department !== req.user.department) {
+        if (req.user.role === 'hod' && !departmentsMatch(faculty.department, req.user.department)) {
             return res.status(403).json({ message: 'Not authorized to delete faculty outside your department' });
         }
 
+        await User.deleteOne({ facultyId: faculty._id });
         await faculty.deleteOne();
 
         // Return success message with the deleted faculty's name

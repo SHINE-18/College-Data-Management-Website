@@ -7,6 +7,11 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const Leave = require('../models/Leave');
 const { protect, authorize } = require('../middleware/authMiddleware');
+const {
+    buildDepartmentMatch,
+    departmentsMatch,
+    normalizeDepartment,
+} = require('../utils/departmentUtils');
 
 // Validation middleware
 const validate = (req, res, next) => {
@@ -29,11 +34,11 @@ router.get('/', protect, async (req, res) => {
         }
         // HOD can see leaves from their department
         else if (req.user.role === 'hod') {
-            query.department = req.user.department;
+            query.department = buildDepartmentMatch(req.user.department);
         }
         // Admin can see all
         else if (req.user.role === 'super_admin') {
-            if (department) query.department = department;
+            if (department) query.department = buildDepartmentMatch(department);
         }
 
         if (status) query.status = status;
@@ -85,7 +90,7 @@ router.post('/', [
         const leave = new Leave({
             facultyId: req.user.facultyId || req.user._id,
             facultyName: req.user.name,
-            department: req.user.department,
+            department: normalizeDepartment(req.user.department),
             leaveType,
             startDate: start,
             endDate: end,
@@ -115,7 +120,7 @@ router.put('/:id/approve', protect, authorize('hod', 'super_admin'), async (req,
             return res.status(400).json({ message: 'Leave is not pending' });
         }
 
-        if (req.user.role === 'hod' && leave.department !== req.user.department) {
+        if (req.user.role === 'hod' && !departmentsMatch(leave.department, req.user.department)) {
             return res.status(403).json({ message: 'Not authorized to approve leave outside your department' });
         }
 
@@ -150,7 +155,7 @@ router.put('/:id/reject', protect, authorize('hod', 'super_admin'), async (req, 
             return res.status(400).json({ message: 'Leave is not pending' });
         }
 
-        if (req.user.role === 'hod' && leave.department !== req.user.department) {
+        if (req.user.role === 'hod' && !departmentsMatch(leave.department, req.user.department)) {
             return res.status(403).json({ message: 'Not authorized to reject leave outside your department' });
         }
 

@@ -3,101 +3,133 @@ import toast from 'react-hot-toast';
 import api from '../../utils/axios';
 import { useAuth } from '../../context/AuthContext';
 
-const emptyForm = { degree: '', institution: '', year: '' };
+const emptyForm = {
+    degree: '',
+    fieldOfStudy: '',
+    institution: '',
+    degreeType: 'Bachelor',
+    endYear: ''
+};
 
 const Qualifications = () => {
     const { user } = useAuth();
     const [facultyId, setFacultyId] = useState(null);
     const [qualifications, setQualifications] = useState([]);
-
-    // UI State
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [showModal, setShowModal] = useState(false);
-    const [editIndex, setEditIndex] = useState(null);
+    const [editingQualification, setEditingQualification] = useState(null);
     const [form, setForm] = useState(emptyForm);
+
+    const loadQualifications = async (resolvedFacultyId) => {
+        const response = await api.get(`/qualifications/faculty/${resolvedFacultyId}`);
+        setQualifications(Array.isArray(response.data) ? response.data : []);
+    };
 
     useEffect(() => {
         const fetchQualifications = async () => {
-            if (!user?.email) return;
-            try {
-                const response = await api.get(`/faculty?search=${encodeURIComponent(user.email)}`);
-                const facultyList = response.data.data;
+            if (!user?.email) {
+                setLoading(false);
+                return;
+            }
 
-                if (facultyList && facultyList.length > 0) {
-                    const myProfile = facultyList.find(f => f.email === user.email);
-                    if (myProfile) {
-                        setFacultyId(myProfile._id);
-                        setQualifications(myProfile.qualifications || []);
-                    }
+            try {
+                const facultyResponse = await api.get(`/faculty?search=${encodeURIComponent(user.email)}`);
+                const facultyList = facultyResponse.data.data || [];
+                const myProfile = facultyList.find(faculty => faculty.email === user.email);
+
+                if (myProfile) {
+                    setFacultyId(myProfile._id);
+                    await loadQualifications(myProfile._id);
                 }
             } catch (error) {
-                console.error("Failed to fetch qualifications", error);
-                toast.error("Failed to load qualifications");
+                console.error('Failed to fetch qualifications', error);
+                toast.error('Failed to load qualifications');
             } finally {
                 setLoading(false);
             }
         };
+
         fetchQualifications();
     }, [user]);
 
-    const openAdd = () => { setForm(emptyForm); setEditIndex(null); setShowModal(true); };
+    const closeModal = () => {
+        setShowModal(false);
+        setEditingQualification(null);
+        setForm(emptyForm);
+    };
 
-    const openEdit = (qualification, index) => {
-        setForm({
-            degree: qualification.degree,
-            institution: qualification.institution,
-            year: qualification.year
-        });
-        setEditIndex(index);
+    const openAdd = () => {
+        setEditingQualification(null);
+        setForm(emptyForm);
         setShowModal(true);
     };
 
-    const closeModal = () => { setShowModal(false); setEditIndex(null); setForm(emptyForm); };
+    const openEdit = (qualification) => {
+        setEditingQualification(qualification);
+        setForm({
+            degree: qualification.degree || '',
+            fieldOfStudy: qualification.fieldOfStudy || '',
+            institution: qualification.institution || '',
+            degreeType: qualification.degreeType || 'Bachelor',
+            endYear: qualification.endYear ? String(qualification.endYear) : ''
+        });
+        setShowModal(true);
+    };
 
-    const updateBackend = async (newQualificationsArray, successMessage) => {
+    const handleSave = async () => {
         if (!facultyId) {
-            toast.error("Faculty profile not found. Cannot save changes.");
+            toast.error('Faculty profile not found. Cannot save qualifications.');
+            return;
+        }
+
+        if (!form.degree || !form.fieldOfStudy || !form.institution || !form.endYear) {
+            toast.error('Please fill all required fields.');
             return;
         }
 
         try {
             setSaving(true);
-            await api.put(`/faculty/${facultyId}`, { qualifications: newQualificationsArray });
-            setQualifications(newQualificationsArray);
-            toast.success(successMessage);
+            const payload = {
+                degree: form.degree.trim(),
+                fieldOfStudy: form.fieldOfStudy.trim(),
+                institution: form.institution.trim(),
+                degreeType: form.degreeType,
+                endYear: Number(form.endYear)
+            };
+
+            if (editingQualification?._id) {
+                await api.put(`/qualifications/${editingQualification._id}`, payload);
+                toast.success('Qualification updated!');
+            } else {
+                await api.post('/qualifications', payload);
+                toast.success('Qualification added!');
+            }
+
+            await loadQualifications(facultyId);
             closeModal();
         } catch (error) {
-            console.error("Update failed", error);
-            toast.error("Failed to save changes");
+            console.error('Qualification save failed', error);
+            toast.error(error.response?.data?.message || 'Failed to save qualification');
         } finally {
             setSaving(false);
         }
     };
 
-    const handleSave = () => {
-        if (!form.degree || !form.institution || !form.year) {
-            toast.error('Please fill all required fields (Degree, Institution, Year).');
+    const handleDelete = async (qualificationId) => {
+        if (!window.confirm('Are you sure you want to delete this qualification?')) {
             return;
         }
 
-        let updatedQuals = [...qualifications];
-
-        if (editIndex !== null) {
-            // Edit existing
-            updatedQuals[editIndex] = { ...updatedQuals[editIndex], ...form };
-            updateBackend(updatedQuals, 'Qualification updated!');
-        } else {
-            // Add new
-            updatedQuals.push({ ...form });
-            updateBackend(updatedQuals, 'Qualification added!');
-        }
-    };
-
-    const handleDelete = (index) => {
-        if (window.confirm("Are you sure you want to delete this qualification?")) {
-            const updatedQuals = qualifications.filter((_, i) => i !== index);
-            updateBackend(updatedQuals, 'Qualification deleted.');
+        try {
+            await api.delete(`/qualifications/${qualificationId}`);
+            toast.success('Qualification deleted.');
+            if (facultyId) {
+                await loadQualifications(facultyId);
+            }
+        } catch (error) {
+            console.error('Qualification delete failed', error);
+            toast.error(error.response?.data?.message || 'Failed to delete qualification');
         }
     };
 
@@ -117,12 +149,12 @@ const Qualifications = () => {
                     <p className="text-gray-500 text-sm mt-1">Manage your academic qualifications and degrees.</p>
                 </div>
                 <button onClick={openAdd} disabled={!facultyId} className="bg-primary text-white px-5 py-2.5 rounded-lg text-sm font-semibold hover:bg-primary-700 transition shadow-md flex items-center space-x-2 disabled:opacity-50">
-                    <svg className="w-4 h-4" flex="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
                     <span>Add Qualification</span>
                 </button>
             </div>
 
-            {!facultyId && !loading && (
+            {!facultyId && (
                 <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-4 text-sm font-medium">
                     Warning: Your logged-in email does not currently match any faculty records in the public directory. Please ask the HOD to add a faculty profile for you before adding qualifications.
                 </div>
@@ -132,22 +164,26 @@ const Qualifications = () => {
                 <table className="w-full">
                     <thead>
                         <tr className="bg-gray-50 border-b border-gray-100">
-                            <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase w-1/4">Degree</th>
-                            <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase w-2/4">Institution</th>
-                            <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase w-1/4">Year</th>
+                            <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Degree</th>
+                            <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Field</th>
+                            <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Institution</th>
+                            <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Type</th>
+                            <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Year</th>
                             <th className="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {qualifications.map((q, i) => (
-                            <tr key={i} className={`${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition`}>
-                                <td className="px-6 py-4 text-sm font-medium text-gray-900">{q.degree}</td>
-                                <td className="px-6 py-4 text-sm text-gray-600">{q.institution}</td>
-                                <td className="px-6 py-4 text-sm text-gray-600">{q.year}</td>
+                        {qualifications.map((qualification, index) => (
+                            <tr key={qualification._id || index} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition`}>
+                                <td className="px-6 py-4 text-sm font-medium text-gray-900">{qualification.degree}</td>
+                                <td className="px-6 py-4 text-sm text-gray-600">{qualification.fieldOfStudy}</td>
+                                <td className="px-6 py-4 text-sm text-gray-600">{qualification.institution}</td>
+                                <td className="px-6 py-4 text-sm text-gray-600">{qualification.degreeType}</td>
+                                <td className="px-6 py-4 text-sm text-gray-600">{qualification.endYear || '-'}</td>
                                 <td className="px-6 py-4">
                                     <div className="flex items-center space-x-3">
-                                        <button onClick={() => openEdit(q, i)} className="text-accent hover:text-accent-600 transition text-sm font-medium">Edit</button>
-                                        <button onClick={() => handleDelete(i)} className="text-red-500 hover:text-red-700 transition text-sm font-medium">Delete</button>
+                                        <button onClick={() => openEdit(qualification)} className="text-accent hover:text-accent-600 transition text-sm font-medium">Edit</button>
+                                        <button onClick={() => handleDelete(qualification._id)} className="text-red-500 hover:text-red-700 transition text-sm font-medium">Delete</button>
                                     </div>
                                 </td>
                             </tr>
@@ -161,23 +197,34 @@ const Qualifications = () => {
                 )}
             </div>
 
-            {/* Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={closeModal}>
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6" onClick={e => e.stopPropagation()}>
-                        <h2 className="text-lg font-bold text-gray-900 mb-4">{editIndex !== null ? 'Edit' : 'Add'} Qualification</h2>
+                        <h2 className="text-lg font-bold text-gray-900 mb-4">{editingQualification ? 'Edit' : 'Add'} Qualification</h2>
                         <div className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Degree *</label>
-                                <input value={form.degree} onChange={e => setForm({ ...form, degree: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none" placeholder="e.g., Ph.D. in Computer Science" />
+                                <input value={form.degree} onChange={e => setForm({ ...form, degree: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none" placeholder="e.g., Ph.D." />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Field of Study *</label>
+                                <input value={form.fieldOfStudy} onChange={e => setForm({ ...form, fieldOfStudy: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none" placeholder="e.g., Computer Engineering" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Institution *</label>
-                                <input value={form.institution} onChange={e => setForm({ ...form, institution: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none" placeholder="e.g., IIT Delhi" />
+                                <input value={form.institution} onChange={e => setForm({ ...form, institution: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none" placeholder="e.g., GTU" />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Year of Completion *</label>
-                                <input type="number" value={form.year} onChange={e => setForm({ ...form, year: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none" placeholder="2020" />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Degree Type *</label>
+                                    <select value={form.degreeType} onChange={e => setForm({ ...form, degreeType: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none bg-white">
+                                        {['Bachelor', 'Master', 'Doctorate', 'Diploma', 'Certificate', 'Other'].map(type => <option key={type}>{type}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Year of Completion *</label>
+                                    <input type="number" value={form.endYear} onChange={e => setForm({ ...form, endYear: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none" placeholder="2024" />
+                                </div>
                             </div>
                         </div>
                         <div className="flex justify-end space-x-3 mt-6">

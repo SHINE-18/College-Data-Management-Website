@@ -3,6 +3,7 @@
 // ============================================
 
 const mongoose = require('mongoose');
+const { normalizeDepartment } = require('../utils/departmentUtils');
 
 const noticeSchema = new mongoose.Schema({
     title: {
@@ -37,10 +38,32 @@ const noticeSchema = new mongoose.Schema({
             'All'
         ],
         default: 'All',
+        set: normalizeDepartment,
     },
     postedBy: {
         type: String,
         required: true,
+    },
+    source: {
+        type: String,
+        enum: ['Internal', 'GTU'],
+        default: 'Internal',
+    },
+    sourceUrl: {
+        type: String,
+        default: null,
+    },
+    sourcePage: {
+        type: String,
+        default: null,
+    },
+    externalId: {
+        type: String,
+        default: null,
+    },
+    publishedAt: {
+        type: Date,
+        default: Date.now,
     },
     // attachment URL (if any PDF/file is attached)
     attachment: {
@@ -63,6 +86,9 @@ noticeSchema.index({ category: 1 });
 noticeSchema.index({ department: 1 });
 noticeSchema.index({ isActive: 1 });
 noticeSchema.index({ createdAt: -1 });
+noticeSchema.index({ publishedAt: -1 });
+noticeSchema.index({ source: 1, publishedAt: -1 });
+noticeSchema.index({ externalId: 1 }, { unique: true, sparse: true });
 // Compound index for common query patterns
 noticeSchema.index({ isActive: 1, category: 1, createdAt: -1 });
 

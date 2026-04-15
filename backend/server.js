@@ -1,96 +1,92 @@
 // ============================================
 // server.js — The main entry point of your backend
-// Think of this as the "App.jsx" of your backend
 // ============================================
 
-// Step 1: Import the packages we installed
-const express = require('express');   // The web framework (creates the server)
-const cors = require('cors');         // Allows React frontend to talk to this backend
-const dotenv = require('dotenv');     // Loads secret config from .env file
-const connectDB = require('./config/database'); // Our MongoDB connection function
-const path = require('path');         // For file path handling
-const fs = require('fs');             // For file system operations
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const connectDB = require('./config/database');
+const path = require('path');
+const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
+const { startGtuSyncScheduler } = require('./services/gtuSyncService');
 
-// Import error handling middleware
+// Import error handling and rate limiting middleware
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
-// Import rate limiting middleware
 const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
 
-// Step 2: Load environment variables from .env file
-// This is where we'll store database URL, secrets, etc.
+// Load environment variables FIRST
 dotenv.config();
 
-// Step 3: Create an Express application
-// This is like calling createRoot() in React — it initializes everything
-const app = express();
+// ── Startup env variable validation ──
+const REQUIRED_ENV = ['MONGODB_URI', 'JWT_SECRET', 'PORT'];
+const missing = REQUIRED_ENV.filter(k => !process.env[k]);
+if (missing.length) {
+    console.error(`❌ Missing required environment variables: ${missing.join(', ')}`);
+    process.exit(1);
+}
 
-// Step 4: Set the port number
-// The backend will run on port 5000 (React runs on 5173)
-// process.env.PORT lets hosting services like Render set their own port
+// Create Express application
+const app = express();
 const PORT = process.env.PORT || 5000;
 
 // ============================================
-// MIDDLEWARE — Functions that run on EVERY request
-// Think of them as "wrappers" that process all incoming requests
+// MIDDLEWARE
 // ============================================
 
-// Middleware 1: CORS
-// Without this, your React app (localhost:5173) would be BLOCKED from
-// calling your backend (localhost:5000) — it's a browser security feature.
-// cors() tells the browser: "It's okay, let the frontend talk to me"
+// Security headers (must be before CORS)
+app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow images from Cloudinary
+    contentSecurityPolicy: false // Disable CSP to avoid breaking React app served in production
+}));
+
+// CORS
+const envOrigins = process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.split(',').map(u => u.trim())
+    : ['http://localhost:5173'];
+
 const allowedOrigins = [
-    process.env.FRONTEND_URL || 'http://localhost:5173',
+    ...envOrigins,
     process.env.PRODUCTION_URL
 ].filter(Boolean);
 
 app.use(cors({
     origin: function (origin, callback) {
-        // Allow requests with no origin (mobile apps, curl, etc.)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin)) {
-            return callback(null, true);
-        }
+        if (allowedOrigins.includes(origin)) return callback(null, true);
         return callback(new Error('Not allowed by CORS'));
     },
     credentials: true
 }));
 
-// Middleware 2: JSON Parser
-// When React sends data (like a new notice), it sends it as JSON.
-// This middleware parses that JSON so we can use it in our code.
-// Without this, req.body would be undefined!
+// Cookie parser (needed for JWT refresh tokens)
+app.use(cookieParser());
+
+// JSON body parser
 app.use(express.json());
 
+// Serve legacy local uploads when present
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 // ============================================
-// ROUTES — The API endpoints your frontend will call
-// Think of these as the "menu items" in our restaurant
+// ROUTES
 // ============================================
 
-// A simple test route to check if the server is running
-// When you visit http://localhost:5000/ in your browser, you'll see this
 app.get('/', (req, res) => {
     res.json({
         message: 'Welcome to VGEC CE Department API! 🚀',
         status: 'Server is running',
-        endpoints: {
-            // faculty: '/api/faculty',
-            // notices: '/api/notices',
-            // events: '/api/events',
-        }
     });
 });
 
-// ── Register Route Files ──
-// app.use('/api/faculty', ...) means:
-//   "Any request starting with /api/faculty → send it to facultyRoutes.js"
-// Inside facultyRoutes.js, '/' means '/api/faculty' and '/:id' means '/api/faculty/:id'
-
-// Apply general rate limiter to all API routes
+// Rate limiting
 app.use('/api', apiLimiter);
-// Apply stricter rate limiter to auth endpoints (prevent brute-force)
 app.use('/api/auth', authLimiter);
 app.use('/api/student-auth', authLimiter);
 
+// ── Existing routes ──
+
+app.use('/api/faculty', require('./routes/facultyStudentRoutes'));
 app.use('/api/faculty', require('./routes/facultyRoutes'));
 app.use('/api/notices', require('./routes/noticeRoutes'));
 app.use('/api/events', require('./routes/eventRoutes'));
@@ -103,74 +99,23 @@ app.use('/api/qualifications', require('./routes/qualificationRoutes'));
 app.use('/api/circulars', require('./routes/circularRoutes'));
 app.use('/api/student-auth', require('./routes/studentAuthRoutes'));
 app.use('/api/student', require('./routes/studentRoutes'));
-app.use('/api/faculty/portal', require('./routes/facultyStudentRoutes')); // Specialized faculty-student portal routes
-app.use('/api/academics', require('./routes/academicRoutes')); // Syllabi and Resources
-app.use('/api/admin', require('./routes/adminRoutes'));           // Admin dashboard stats
-app.use('/api/settings', require('./routes/siteSettingRoutes'));  // Site settings
-app.use('/api/departments', require('./routes/departmentRoutes')); // Departments Mngmt
+app.use('/api/faculty/portal', require('./routes/facultyStudentRoutes'));
+app.use('/api/academics', require('./routes/academicRoutes'));
+app.use('/api/admin', require('./routes/adminRoutes'));
+app.use('/api/settings', require('./routes/siteSettingRoutes'));
+app.use('/api/departments', require('./routes/departmentRoutes'));
 
-// Create uploads directory if it doesn't exist
-const uploadsDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-const timetablesDir = path.join(uploadsDir, 'timetables');
-if (!fs.existsSync(timetablesDir)) {
-    fs.mkdirSync(timetablesDir, { recursive: true });
-}
-
-const eventsDir = path.join(uploadsDir, 'events');
-if (!fs.existsSync(eventsDir)) {
-    fs.mkdirSync(eventsDir, { recursive: true });
-}
-
-const facultyDir = path.join(uploadsDir, 'faculty');
-if (!fs.existsSync(facultyDir)) {
-    fs.mkdirSync(facultyDir, { recursive: true });
-}
-
-const circularsDir = path.join(uploadsDir, 'circulars');
-if (!fs.existsSync(circularsDir)) {
-    fs.mkdirSync(circularsDir, { recursive: true });
-}
-
-const noticesDir = path.join(uploadsDir, 'notices');
-if (!fs.existsSync(noticesDir)) {
-    fs.mkdirSync(noticesDir, { recursive: true });
-}
-
-const assignmentsDir = path.join(uploadsDir, 'assignments');
-if (!fs.existsSync(assignmentsDir)) {
-    fs.mkdirSync(assignmentsDir, { recursive: true });
-}
-
-const submissionsDir = path.join(uploadsDir, 'submissions');
-if (!fs.existsSync(submissionsDir)) {
-    fs.mkdirSync(submissionsDir, { recursive: true });
-}
-
-const syllabiDir = path.join(uploadsDir, 'syllabi');
-if (!fs.existsSync(syllabiDir)) {
-    fs.mkdirSync(syllabiDir, { recursive: true });
-}
-
-const resourcesDir = path.join(uploadsDir, 'resources');
-if (!fs.existsSync(resourcesDir)) {
-    fs.mkdirSync(resourcesDir, { recursive: true });
-}
-
-// Serve uploaded timetable PDFs statically
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// ── New routes ──
+app.use('/api/placements', require('./routes/placementRoutes'));
+app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/search', require('./routes/searchRoutes'));
+app.use('/api/reports', require('./routes/reportRoutes'));
+app.use('/api/feedback', require('./routes/feedbackRoutes'));
 
 // ── Production: Serve React Frontend ──
-// In production, Express serves the built React app from dist/
 if (process.env.NODE_ENV === 'production') {
     const distPath = path.join(__dirname, '..', 'dist');
     app.use(express.static(distPath));
-
-    // Any route that is NOT an /api or /uploads route → serve React's index.html
-    // This lets React Router handle client-side routing
     app.get(/(.*)/, (req, res) => {
         res.sendFile(path.resolve(distPath, 'index.html'));
     });
@@ -183,16 +128,15 @@ app.use(errorHandler);
 // ============================================
 // START THE SERVER
 // ============================================
-// We connect to MongoDB FIRST, then start the server
-// This ensures the database is ready before we accept any requests
 if (process.env.NODE_ENV !== 'test') {
     connectDB().then(() => {
         app.listen(PORT, () => {
             console.log(`\n🚀 Backend server is running!`);
             console.log(`📍 Local: http://localhost:${PORT}`);
-            console.log(`📍 API:   http://localhost:${PORT}/api/faculty`);
+            // console.log(`📍 API:   http://localhost:${PORT}/api/faculty`);
             console.log(`\nPress Ctrl+C to stop the server\n`);
         });
+        startGtuSyncScheduler(console);
     });
 }
 

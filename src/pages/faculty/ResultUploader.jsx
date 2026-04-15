@@ -22,8 +22,6 @@ const ResultUploader = () => {
         }
         setLoading(true);
         try {
-            // Placeholder: Assume new student fetch endpoint
-            const { data } = await api.get('/auth/users'); // we need a real /students endpoint here
             const response = await api.get(`/faculty/portal/students?semester=${semester}`);
 
             setStudents(response.data);
@@ -58,26 +56,58 @@ const ResultUploader = () => {
 
         try {
             const records = students
-                .filter(st => marksMap[st._id].marksObtained !== '') // Only submit entered marks
+                .filter(st => marksMap[st._id]?.marksObtained !== '' && marksMap[st._id]?.marksObtained !== undefined)
                 .map(st => ({
                     student: st._id,
-                    subject,
-                    examType,
-                    semester: Number(semester),
-                    marksObtained: Number(marksMap[st._id].marksObtained),
-                    totalMarks: Number(totalMarks),
-                    remarks: marksMap[st._id].remarks
+                    subject: subject.trim(),
+                    examType: examType.trim(),
+                    semester: parseInt(semester, 10),
+                    marksObtained: parseFloat(marksMap[st._id].marksObtained),
+                    totalMarks: parseFloat(totalMarks),
+                    remarks: (marksMap[st._id].remarks || '').trim()
                 }));
 
             if (records.length === 0) {
                 return toast.error('No marks entered to save');
             }
 
-            // Mock endpoint for submitting batch results
-            await api.post('/faculty/portal/results', { records });
-            toast.success(`${records.length} results saved successfully!`);
+            console.log('Saving records:', records);
+
+            // Validate marks are within range
+            for (const record of records) {
+                if (!record.student) {
+                    return toast.error('Invalid student data');
+                }
+                if (isNaN(record.marksObtained)) {
+                    return toast.error('All marks must be valid numbers');
+                }
+                if (record.marksObtained > record.totalMarks) {
+                    return toast.error(`Marks cannot exceed ${record.totalMarks}`);
+                }
+                if (record.marksObtained < 0) {
+                    return toast.error('Marks cannot be negative');
+                }
+            }
+
+            const response = await api.post('/faculty/portal/results', { records });
+            console.log('Save response:', response.data);
+            toast.success(`✓ ${records.length} results saved successfully!`);
+            
+            // Reset form
+            setMarksMap({});
+            setStudents([]);
+            setSemester('1');
+            setSubject('');
+            setExamType('Mid-Sem');
+            setTotalMarks('30');
         } catch (error) {
-            toast.error(error.response?.data?.message || 'Failed to save results');
+            console.error('Save results error:', error);
+            const errorMsg = error.response?.data?.error 
+                || error.response?.data?.message 
+                || error.response?.statusText
+                || error.message 
+                || 'Failed to save results';
+            toast.error(errorMsg);
         }
     };
 

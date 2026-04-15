@@ -5,6 +5,7 @@ const Attendance = require('../models/Attendance');
 const Result = require('../models/Result');
 const Assignment = require('../models/Assignment');
 const Submission = require('../models/Submission');
+const { getDepartmentAliases } = require('../utils/departmentUtils');
 
 // Sub-routes for the logged in student
 
@@ -21,7 +22,7 @@ router.get('/dashboard', protectStudent, async (req, res) => {
 
         const assignmentsPending = await Assignment.countDocuments({
             semester: req.student.semester,
-            department: { $in: [req.student.department, 'All'] },
+            department: { $in: [...getDepartmentAliases(req.student.department), 'All'] },
             _id: { $nin: await Submission.distinct('assignment', { student: studentId }) }
         });
 
@@ -48,18 +49,8 @@ router.get('/attendance', protectStudent, async (req, res) => {
     }
 });
 
-const multer = require('multer');
-const path = require('path');
-
-// Configure upload for student submissions
-const submissionStorage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, 'uploads/submissions/'),
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'sub-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
-const uploadSub = multer({ storage: submissionStorage });
+const { uploadSubmission } = require('../middleware/upload');
+const Student = require('../models/Student');
 
 // GET /api/student/results - All results
 router.get('/results', protectStudent, async (req, res) => {
@@ -79,7 +70,7 @@ router.get('/assignments', protectStudent, async (req, res) => {
 
         const assignments = await Assignment.find({
             semester: studentSemester,
-            department: { $in: [req.student.department, 'All'] }
+            department: { $in: [...getDepartmentAliases(req.student.department), 'All'] }
         }).sort('-dueDate').lean();
 
         // Check if student has submitted each assignment
@@ -98,7 +89,7 @@ router.get('/assignments', protectStudent, async (req, res) => {
 });
 
 // POST /api/student/submissions - Upload submission
-router.post('/submissions', protectStudent, uploadSub.single('submissionFile'), async (req, res) => {
+router.post('/submissions', protectStudent, uploadSubmission.single('submissionFile'), async (req, res) => {
     try {
         const { assignmentId } = req.body;
         if (!assignmentId) return res.status(400).json({ message: 'Assignment ID is required' });
@@ -106,7 +97,7 @@ router.post('/submissions', protectStudent, uploadSub.single('submissionFile'), 
         const submission = new Submission({
             assignment: assignmentId,
             student: req.student._id,
-            fileUrl: req.file ? `/uploads/submissions/${req.file.filename}` : '',
+            fileUrl: req.file ? (req.file.path || req.file.secure_url || req.file.location) : '',
             submittedAt: new Date()
         });
 
@@ -114,6 +105,25 @@ router.post('/submissions', protectStudent, uploadSub.single('submissionFile'), 
         res.status(201).json(submission);
     } catch (error) {
         res.status(400).json({ message: 'Submission failed', error: error.message });
+    }
+});
+
+// PATCH /api/student/profile — Edit student profile
+router.patch('/profile', protectStudent, async (req, res) => {
+    try {
+        const { phone, address, guardianName, guardianContact } = req.body;
+        const student = await Student.findById(req.student._id);
+        if (!student) return res.status(404).json({ message: 'Student not found' });
+
+        if (phone !== undefined) student.phone = phone;
+        if (address !== undefined) student.address = address;
+        if (guardianName !== undefined) student.guardianName = guardianName;
+        if (guardianContact !== undefined) student.guardianContact = guardianContact;
+
+        const updated = await student.save();
+        res.json({ message: 'Profile updated successfully', student: updated });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
 
