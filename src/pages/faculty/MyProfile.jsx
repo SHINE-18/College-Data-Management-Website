@@ -79,39 +79,36 @@ const MyProfile = () => {
         e.preventDefault();
         if (!form.name || !form.email) { toast.error('Name and Email are required.'); return; }
 
-        if (!facultyId) {
-            toast.error("Cannot update profile: Faculty record not found linking to this email.");
-            return;
-        }
-
         try {
             setSaving(true);
             const formData = new FormData();
-
-            // Append all form fields to FormData
             Object.keys(form).forEach(key => {
-                if (key !== 'profilePhoto') {
-                    formData.append(key, form[key]);
-                }
+                if (key !== 'profilePhoto') formData.append(key, form[key]);
             });
+            if (selectedFile) formData.append('profilePhoto', selectedFile);
 
-            // Append selected file if exists
-            if (selectedFile) {
-                formData.append('profilePhoto', selectedFile);
+            let response;
+            if (!facultyId) {
+                // Initialize new profile
+                response = await api.post('/faculty/initialize', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                setFacultyId(response.data._id);
+                toast.success('Faculty profile initialized successfully!');
+            } else {
+                // Update existing
+                response = await api.put(`/faculty/${facultyId}`, formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' }
+                });
+                toast.success('Profile updated successfully!');
             }
-
-            const response = await api.put(`/faculty/${facultyId}`, formData, {
-                headers: { 'Content-Type': 'multipart/form-data' }
-            });
 
             setForm(prev => ({ ...prev, profilePhoto: response.data.profilePhoto }));
             setPreviewUrl(getAssetUrl(response.data.profilePhoto));
             setSelectedFile(null);
-
-            toast.success('Profile updated successfully!');
         } catch (error) {
-            console.error("Failed to update profile", error);
-            toast.error(error.response?.data?.message || "Failed to update profile");
+            console.error("Failed to save profile", error);
+            toast.error(error.response?.data?.message || "Failed to save profile");
         } finally {
             setSaving(false);
         }
@@ -132,11 +129,14 @@ const MyProfile = () => {
                 <p className="text-gray-500 text-sm mt-1">Update your personal and professional information.</p>
             </div>
 
-            {!facultyId && (
-                <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-4 text-sm font-medium">
-                    Warning: Your logged-in email does not currently match any faculty records in the public directory. Please ask the HOD to add a faculty profile for you.
+            {!facultyId ? (
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-5 flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div>
+                        <p className="font-bold text-base">Faculty Profile Not Found</p>
+                        <p className="text-sm opacity-90 mt-1">Your account is not yet linked to a faculty record in the public directory. Please complete the form below to initialize your public profile.</p>
+                    </div>
                 </div>
-            )}
+            ) : null}
 
             <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 lg:p-8">
                 {/* Photo */}
@@ -203,7 +203,7 @@ const MyProfile = () => {
                 </div>
 
                 <div className="mt-8 flex justify-end">
-                    <button disabled={saving || !facultyId} type="submit" className="bg-primary text-white px-8 py-2.5 rounded-lg text-sm font-semibold hover:bg-primary-700 transition shadow-lg shadow-primary/25 disabled:opacity-70 flex items-center gap-2">
+                    <button disabled={saving} type="submit" className="bg-primary text-white px-8 py-2.5 rounded-lg text-sm font-semibold hover:bg-primary-700 transition shadow-lg shadow-primary/25 disabled:opacity-70 flex items-center gap-2">
                         {saving ? (
                             <><span className="animate-spin w-4 h-4 border-2 border-white/20 border-t-white rounded-full"></span> Saving...</>
                         ) : 'Save Changes'}
