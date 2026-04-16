@@ -29,31 +29,25 @@ const MyProfile = () => {
             if (!user?.email) return;
 
             try {
-                // Find the faculty record matching the logged-in user's email
-                const response = await api.get(`/faculty?search=${encodeURIComponent(user.email)}`);
-                const facultyList = response.data.data;
+                // Directly fetch the profile linked to the current user
+                const response = await api.get('/faculty/me');
+                const myProfile = response.data;
 
-                // If a matching faculty object is found, populate the form
-                if (facultyList && facultyList.length > 0) {
-                    // Match exact email
-                    const myProfile = facultyList.find(f => f.email === user.email);
-
-                    if (myProfile) {
-                        setFacultyId(myProfile._id);
-                        setForm({
-                            name: myProfile.name || '',
-                            email: myProfile.email || '',
-                            phone: myProfile.phone || '',
-                            designation: myProfile.designation || '',
-                            department: myProfile.department || '',
-                            joiningDate: myProfile.joiningDate ? new Date(myProfile.joiningDate).toISOString().split('T')[0] : '',
-                            specialization: myProfile.specialization || '',
-                            bio: myProfile.bio || '',
-                            profilePhoto: myProfile.profilePhoto || ''
-                        });
-                        if (myProfile.profilePhoto) {
-                            setPreviewUrl(getAssetUrl(myProfile.profilePhoto));
-                        }
+                if (myProfile) {
+                    setFacultyId(myProfile._id);
+                    setForm({
+                        name: myProfile.name || '',
+                        email: myProfile.email || '',
+                        phone: myProfile.phone || '',
+                        designation: myProfile.designation || '',
+                        department: myProfile.department || '',
+                        joiningDate: myProfile.joiningDate ? new Date(myProfile.joiningDate).toISOString().split('T')[0] : '',
+                        specialization: myProfile.specialization || '',
+                        bio: myProfile.bio || '',
+                        profilePhoto: myProfile.profilePhoto || ''
+                    });
+                    if (myProfile.profilePhoto) {
+                        setPreviewUrl(getAssetUrl(myProfile.profilePhoto));
                     }
                 }
             } catch (error) {
@@ -187,7 +181,7 @@ const MyProfile = () => {
                         <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
                         <select name="designation" value={form.designation} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none bg-white">
                             <option value="">Select Designation...</option>
-                            {['Professor', 'Associate Professor', 'Assistant Professor', 'Lecturer'].map(d => <option key={d}>{d}</option>)}
+                            {['Professor', 'Associate Professor', 'Assistant Professor', 'HOD', 'Lecturer'].map(d => <option key={d}>{d}</option>)}
                         </select>
                     </div>
                     <div>

@@ -32,6 +32,10 @@ const siteSettingSchema = new mongoose.Schema({
     visitorCount: {
         type: Number,
         default: 0
+    },
+    academicCalendarPdf: {
+        type: String,
+        default: ''
     }
 }, {
     timestamps: true

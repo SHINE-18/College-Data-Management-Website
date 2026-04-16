@@ -50,17 +50,18 @@ const Publications = () => {
             }
 
             try {
-                const facultyResponse = await api.get(`/faculty?search=${encodeURIComponent(user.email)}`);
-                const facultyList = facultyResponse.data.data || [];
-                const myProfile = facultyList.find(faculty => faculty.email === user.email);
+                // Directly fetch the profile linked to the current user
+                const response = await api.get('/faculty/me');
+                const myProfile = response.data;
 
                 if (myProfile) {
                     setFacultyId(myProfile._id);
                     await loadPublications(myProfile._id);
                 }
             } catch (error) {
-                console.error('Failed to fetch publications', error);
-                toast.error('Failed to load publications');
+                console.error('Failed to fetch faculty profile', error);
+                // If 404, it means the user's email isn't in the Faculty collection yet.
+                // We'll let the facultyId be null, which triggers the warning UI.
             } finally {
                 setLoading(false);
             }

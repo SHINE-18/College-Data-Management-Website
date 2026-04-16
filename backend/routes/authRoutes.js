@@ -60,14 +60,28 @@ router.post('/register', [
         }
 
         // Create user
+        const assignDepartment = req.user.role === 'hod'
+            ? normalizeDepartment(req.user.department)
+            : (normalizedDepartment || 'All');
+
+        // Enforce ONE HOD per department rule
+        if (role === 'hod' && assignDepartment !== 'All') {
+            const existingHOD = await User.findOne({
+                department: assignDepartment,
+                role: 'hod',
+                isActive: true
+            });
+            
+            if (existingHOD) {
+                return res.status(400).json({ message: `An HOD already exists for the ${assignDepartment} department.` });
+            }
+        }
         const user = await User.create({
             name,
             email,
             password,
             role,
-            department: req.user.role === 'hod'
-                ? normalizeDepartment(req.user.department)
-                : (normalizedDepartment || 'All'),
+            department: assignDepartment,
             designation
         });
 
@@ -270,6 +284,55 @@ router.put('/users/:id/toggle', protect, authorize('super_admin'), async (req, r
         });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+// PUT /api/auth/users/:id - Edit User (Super Admin only)
+router.put('/users/:id', protect, authorize('super_admin'), async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        
+        const { name, role, department, designation } = req.body;
+        const normalizedDept = department ? normalizeDepartment(department) : user.department;
+
+        // One HOD per department check
+        if (role === 'hod' && normalizedDept !== 'All') {
+            const existingHOD = await User.findOne({
+                department: normalizedDept,
+                role: 'hod',
+                isActive: true,
+                _id: { $ne: req.params.id }
+            });
+            if (existingHOD) {
+                return res.status(400).json({ message: `An HOD already exists for the ${normalizedDept} department.` });
+            }
+        }
+
+        user.name = name || user.name;
+        user.role = role || user.role;
+        user.department = normalizedDept;
+        user.designation = designation !== undefined ? designation : user.designation;
+
+        await user.save();
+
+        // Also update correspondingly in Faculty collection if exists
+        const Faculty = require('../models/Faculty');
+        const faculty = await Faculty.findOne({ email: user.email });
+        if (faculty) {
+            faculty.name = user.name;
+            if (user.role === 'hod') {
+                faculty.designation = 'HOD';
+            } else if (designation !== undefined) {
+                faculty.designation = designation;
+            }
+            faculty.department = user.department;
+            await faculty.save();
+        }
+
+        res.json(user);
+    } catch(err) {
+        res.status(500).json({ message: 'Server error', error: err.message });
     }
 });
 

@@ -73,7 +73,7 @@ const AppRoutes = () => (
         {/* Public Routes */}
         <Route element={<PublicLayout />}>
             <Route path="/" element={<Home />} />
-            {/* <Route path="/departments" element={<Departments />} /> temporarily removed */}
+            <Route path="/departments" element={<Departments />} />
             <Route path="/department/:id" element={<DepartmentDetail />} />
             <Route path="/faculty" element={<FacultyDirectory />} />
             <Route path="/faculty/:id" element={<FacultyProfile />} />
@@ -83,8 +83,8 @@ const AppRoutes = () => (
             <Route path="/events" element={<Events />} />
             <Route path="/calendar" element={<AcademicCalendar />} />
             <Route path="/syllabi" element={<SyllabusArchive />} />
-            {/* <Route path="/placements" element={<Placements />} />
-            <Route path="/feedback" element={<Feedback />} /> */}
+            <Route path="/placements" element={<Placements />} />
+            <Route path="/feedback" element={<Feedback />} />
         </Route>
 
         {/* Auth */}
@@ -132,6 +132,10 @@ const AppRoutes = () => (
             <Route path="result-uploader" element={<ResultUploader />} />
             <Route path="assignments" element={<AssignmentPoster />} />
             <Route path="academics" element={<AcademicsManager />} />
+            <Route path="profile" element={<MyProfile />} />
+            <Route path="qualifications" element={<Qualifications />} />
+            <Route path="publications" element={<Publications />} />
+            <Route path="achievements" element={<Achievements />} />
         </Route>
 
         {/* Admin Portal */}
@@ -143,6 +147,7 @@ const AppRoutes = () => (
             <Route path="departments" element={<ManageDepartments />} />
             <Route path="settings" element={<SiteSettings />} />
             <Route path="import-students" element={<AdminImportStudents />} />
+            <Route path="profile" element={<MyProfile />} />
         </Route>
 
         {/* 404 — catches all unmatched routes */}

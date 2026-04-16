@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { getAssetUrl } from '../utils/axios';
 
 const specializations = {
     'Artificial Intelligence': { color: 'bg-red-600', label: 'AI/ML' },
@@ -45,7 +46,7 @@ const FacultyCard = ({ faculty }) => {
                     <div className="w-28 h-28 mx-auto rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform duration-300 ring-4 ring-white overflow-hidden">
                         {facultyPhoto ? (
                             <img 
-                                src={facultyPhoto} 
+                                src={getAssetUrl(facultyPhoto)} 
                                 alt={facultyName}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {

@@ -111,7 +111,7 @@ router.post('/import-students', protect, authorize('super_admin'), async (req, r
                         continue;
                     }
 
-                    const defaultPassword = `Vgec@${enrollmentNumber}`;
+                    const defaultPassword = row.password || `Vgec@${enrollmentNumber}`;
                     const student = await Student.create({
                         name: name.trim(),
                         email: email.trim().toLowerCase(),

@@ -6,6 +6,9 @@ const express = require('express');
 const router = express.Router();
 const { protect, authorize } = require('../middleware/authMiddleware');
 const SiteSetting = require('../models/SiteSetting');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
+const { uploadToCloudinary, deleteFromCloudinary, getPublicIdFromUrl } = require('../utils/cloudinary');
 
 // GET /api/settings — Get current site settings (public)
 router.get('/', async (req, res) => {
@@ -57,6 +60,36 @@ router.put('/', protect, authorize('super_admin'), async (req, res) => {
         res.json(settings);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+// POST /api/settings/calendar — Upload academic calendar PDF (HOD, Super Admin)
+router.post('/calendar', protect, authorize('hod', 'super_admin'), upload.single('calendarPdf'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: 'No PDF file provided.' });
+        }
+
+        let settings = await SiteSetting.getSettings();
+
+        // If there's an existing calendar, try to delete it from Cloudinary
+        if (settings.academicCalendarPdf) {
+            const oldPublicId = getPublicIdFromUrl(settings.academicCalendarPdf);
+            if (oldPublicId) {
+                await deleteFromCloudinary(oldPublicId, 'raw').catch(console.error);
+            }
+        }
+
+        // Upload new file to Cloudinary as 'raw' (good for PDFs)
+        const uploadResult = await uploadToCloudinary(req.file.buffer, 'academic_calendar', 'raw');
+
+        // Save URL
+        settings.academicCalendarPdf = uploadResult.secure_url;
+        await settings.save();
+
+        res.json({ message: 'Academic calendar updated', url: uploadResult.secure_url });
+    } catch (error) {
+        res.status(500).json({ message: 'Upload failed', error: error.message });
     }
 });
 

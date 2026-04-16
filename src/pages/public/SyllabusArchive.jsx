@@ -1,19 +1,26 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import api, { getAssetUrl } from '../../utils/axios';
 import { FaDownload, FaSearch, FaBookOpen } from 'react-icons/fa';
 
 const SyllabusArchive = () => {
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const initialDept = queryParams.get('dept') || '';
+
     const [syllabi, setSyllabi] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isOffline, setIsOffline] = useState(false);
     const [semester, setSemester] = useState('');
     const [search, setSearch] = useState('');
+    const [department, setDepartment] = useState(initialDept);
 
     useEffect(() => {
         const fetchSyllabi = async () => {
             setLoading(true);
             try {
-                const { data } = await api.get(`/academics/syllabi?semester=${semester}&search=${search}`);
+                const url = `/academics/syllabi?semester=${semester}&search=${search}&department=${encodeURIComponent(department)}`;
+                const { data } = await api.get(url);
                 setSyllabi(data);
             } catch (error) {
                 console.error("Failed to load syllabi", error);
@@ -26,7 +33,7 @@ const SyllabusArchive = () => {
 
         const timeoutId = setTimeout(fetchSyllabi, 300);
         return () => clearTimeout(timeoutId);
-    }, [semester, search]);
+    }, [semester, search, department]);
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 animate-fade-in">
@@ -64,6 +71,18 @@ const SyllabusArchive = () => {
                                 <option key={sem} value={sem}>Semester {sem}</option>
                             ))}
                         </select>
+                    </div>
+
+                    <div className="lg:col-span-12">
+                        {department && (
+                            <div className="flex items-center gap-2 mt-2">
+                                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Department:</span>
+                                <span className="bg-primary/10 text-primary text-xs font-bold px-3 py-1 rounded-full flex items-center gap-2">
+                                    {department}
+                                    <button onClick={() => setDepartment('')} className="hover:text-red-500">×</button>
+                                </span>
+                            </div>
+                        )}
                     </div>
 
                     <div className="lg:col-span-5 text-right">

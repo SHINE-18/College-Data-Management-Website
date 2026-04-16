@@ -137,7 +137,7 @@ const Footer = () => {
                             ))}
                         </div>
 
-                         <div className="inline-flex items-center my-6 gap-2 rounded-md bg-primary-800 px-3 py-1 shadow-sm">
+                         <div className="inline-flex items-center my-6 gap-2 rounded-md bg-blue-900 px-3 py-1 shadow-sm">
                             <span className="font-bold tracking-[0.20em] text-[8px] text-primary-200 uppercase">Visitors</span>
                             <span className="text-sm font-semibold text-white">
                                 {visitorCount === null ? 'Loading...' : visitorCount.toLocaleString('en-IN')}

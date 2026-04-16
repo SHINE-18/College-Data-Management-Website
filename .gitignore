@@ -28,3 +28,15 @@ npm-debug.log*
 
 # Coverage
 coverage/
+
+# Thesis
+thesis/
+
+student_template.csv
+importStudents.js
+seedAdmin.js
+student_import.js
+admin_seed.js
+
+output.json
+output.txt

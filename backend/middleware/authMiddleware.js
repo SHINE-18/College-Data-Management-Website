@@ -59,10 +59,10 @@ const authorize = (...roles) => {
     };
 };
 
-// Generate short-lived access token (15 minutes)
+// Generate short-lived access token (7 days)
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
-        expiresIn: '15m'
+        expiresIn: '7d'
     });
 };
 

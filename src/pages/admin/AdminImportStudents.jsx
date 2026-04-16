@@ -63,9 +63,9 @@ const AdminImportStudents = () => {
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6 text-sm text-blue-800 dark:text-blue-300">
                 <p className="font-semibold mb-1">📋 Required CSV columns:</p>
                 <code className="block bg-white/60 dark:bg-black/20 px-2 py-1 rounded text-xs font-mono">
-                    name, email, enrollmentNo, semester, department
+                    name, email, enrollmentNo, semester, department, [password (optional)]
                 </code>
-                <p className="mt-2 text-xs">Default password for each student will be: <code>Vgec@{'{enrollmentNo}'}</code></p>
+                <p className="mt-2 text-xs">If no password column is present, default will be: <code>Vgec@{'{enrollmentNo}'}</code></p>
                 <button onClick={downloadSample} className="mt-2 text-blue-600 dark:text-blue-400 font-medium hover:underline text-xs">
                     ⬇ Download Sample Template
                 </button>

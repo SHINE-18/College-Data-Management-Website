@@ -123,6 +123,28 @@ router.get('/admin/all', protect, authorize('hod', 'super_admin'), async (req, r
     }
 });
 
+// GET /api/faculty/me — Get the current logged-in user's faculty profile
+router.get('/me', protect, async (req, res) => {
+    try {
+        // Try finding by facultyId first, then by email
+        let faculty = null;
+        if (req.user.facultyId) {
+            faculty = await Faculty.findById(req.user.facultyId);
+        }
+        
+        if (!faculty) {
+            faculty = await Faculty.findOne({ email: req.user.email.toLowerCase() });
+        }
+
+        if (!faculty) {
+            return res.status(404).json({ message: 'Faculty profile not found' });
+        }
+        res.json(faculty);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
 // ────────────────────────────────────────────
 // GET /api/faculty/:id — Get ONE faculty by ID
 // ────────────────────────────────────────────
@@ -171,6 +193,18 @@ router.post('/', protect, authorize('hod', 'super_admin'), uploadFaculty.single(
 
         if (req.file) {
             facultyData.profilePhoto = req.file.path || req.file.secure_url || req.file.location;
+        }
+
+        // Enforce ONE HOD per department constraint
+        if (facultyData.designation === 'HOD' && facultyData.department) {
+            const existingHOD = await Faculty.findOne({
+                department: facultyData.department,
+                designation: 'HOD',
+                isActive: true
+            });
+            if (existingHOD) {
+                return res.status(400).json({ message: `An HOD already exists for the ${facultyData.department} department.` });
+            }
         }
 
         // 1. Create Faculty Profile
@@ -256,6 +290,22 @@ router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), uploadFa
 
         if (req.file) {
             updateData.profilePhoto = req.file.path || req.file.secure_url || req.file.location;
+        }
+
+        // Enforce ONE HOD per department constraint during updates
+        const checkDesignation = updateData.designation || existingFaculty.designation;
+        const checkDepartment = updateData.department || existingFaculty.department;
+
+        if (checkDesignation === 'HOD' && checkDepartment) {
+            const existingHOD = await Faculty.findOne({
+                department: checkDepartment,
+                designation: 'HOD',
+                isActive: true,
+                _id: { $ne: req.params.id }
+            });
+            if (existingHOD) {
+                return res.status(400).json({ message: `An HOD already exists for the ${checkDepartment} department.` });
+            }
         }
 
         // findByIdAndUpdate does 3 things:

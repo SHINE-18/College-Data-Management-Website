@@ -1,15 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import api from '../../utils/axios';
 import toast from 'react-hot-toast';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import vgec_logo from '../../assets/vgec_hd.png';
 import usePageTitle from '../../utils/usePageTitle';
-
-const mockUsers = {
-
-};
-import api from '../../utils/axios';
 
 const Login = () => {
     const [isStudentLogin, setIsStudentLogin] = useState(true);
@@ -163,23 +159,6 @@ const Login = () => {
                         </button>
                     </form>
 
-                    {/* Demo Credentials */}
-                    {/* <div className="mt-6 pt-6 border-t border-gray-100">
-                        <p className="text-xs text-gray-400 text-center mb-3">Demo Credentials</p>
-                        <div className="space-y-2">
-                            {[
-                                { label: 'Faculty', email: 'faculty@college.edu', pass: 'faculty123' },
-                                { label: 'HOD', email: 'hod@college.edu', pass: 'hod123' },
-                                { label: 'Admin', email: 'admin@college.edu', pass: 'admin123' },
-                            ].map(cred => (
-                                <button key={cred.label} onClick={() => { setEmail(cred.email); setPassword(cred.pass); setError(''); }}
-                                    className="w-full text-left text-xs bg-gray-50 hover:bg-gray-100 rounded-lg p-2.5 transition flex items-center justify-between group">
-                                    <span className="font-medium text-gray-600">{cred.label}: <span className="text-gray-400">{cred.email}</span></span>
-                                    <span className="text-accent opacity-0 group-hover:opacity-100 transition text-[10px]">Click to fill</span>
-                                </button>
-                            ))}
-                        </div>
-                    </div> */}
                 </div>
 
                 <p className="text-center text-blue-200 text-sm mt-6">

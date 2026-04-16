@@ -13,7 +13,7 @@ const Faculty = require('./models/Faculty');
 
 dotenv.config();
 
-const DEFAULT_PASSWORD = 'Vgec@2026'; // Default password - faculty should change this on first login
+const DEFAULT_PASSWORD = process.env.FACULTY_PASS; // Default password - faculty should change this on first login
 
 const importFaculty = async () => {
     try {

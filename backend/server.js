@@ -99,7 +99,6 @@ app.use('/api/qualifications', require('./routes/qualificationRoutes'));
 app.use('/api/circulars', require('./routes/circularRoutes'));
 app.use('/api/student-auth', require('./routes/studentAuthRoutes'));
 app.use('/api/student', require('./routes/studentRoutes'));
-app.use('/api/faculty/portal', require('./routes/facultyStudentRoutes'));
 app.use('/api/academics', require('./routes/academicRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/settings', require('./routes/siteSettingRoutes'));

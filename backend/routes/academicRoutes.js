@@ -8,12 +8,13 @@ const { uploadSyllabus, uploadResource } = require('../middleware/upload');
 // ── SYLLABUS ROUTES ──
 
 // GET /api/academics/syllabi - Accessible to both users and students
-router.get('/syllabi', protectBoth, async (req, res) => {
+router.get('/syllabi', async (req, res) => {
     try {
-        const { semester, search } = req.query;
+        const { semester, search, department } = req.query;
         let query = { isActive: true };
         if (semester) query.semester = Number(semester);
         if (search) query.courseTitle = new RegExp(search, 'i');
+        if (department) query.department = department;
 
         const syllabi = await Syllabus.find(query).sort('semester courseTitle');
         res.json(syllabi);

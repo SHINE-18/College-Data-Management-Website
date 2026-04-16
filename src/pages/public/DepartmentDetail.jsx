@@ -9,6 +9,7 @@ import AnnouncementTicker from '../../components/AnnouncementTicker';
 const DepartmentDetail = () => {
     const { id } = useParams();
     const [faculty, setFaculty] = useState([]);
+    const [hodProfile, setHodProfile] = useState(null);
     const [dept, setDept] = useState(null);
     const [loading, setLoading] = useState(true);
     const hodVideo = id === 'cp'
@@ -34,6 +35,12 @@ const DepartmentDetail = () => {
                     // Fetch faculty for this department
                     const facRes = await api.get(`/faculty?department=${encodeURIComponent(currentDept.name)}&limit=6`);
                     setFaculty(facRes.data.data);
+
+                    // Specifically look for HOD in the faculty data or fetch separately
+                    const hodRes = await api.get(`/faculty?department=${encodeURIComponent(currentDept.name)}&designation=HOD&limit=1`);
+                    if (hodRes.data.data && hodRes.data.data.length > 0) {
+                        setHodProfile(hodRes.data.data[0]);
+                    }
                 }
             } catch (error) {
                 console.error('Error fetching department details, falling back to local data:', error);
@@ -141,13 +148,33 @@ const DepartmentDetail = () => {
                                 <div className="w-48 h-56 shrink-0 relative">
                                     <div className="absolute inset-0 bg-primary/10 rounded-2xl rotate-3"></div>
                                     <div className="absolute inset-0 bg-accent/20 rounded-2xl -rotate-3"></div>
-                                    <div className="relative w-full h-full bg-gradient-to-br from-slate-200 to-slate-300 rounded-2xl flex items-center justify-center overflow-hidden shadow-lg border-4 border-white text-4xl text-white font-black">
-                                        {dept.hod?.name ? dept.hod.name[0] : 'H'}
+                                    <div className="relative w-full h-full bg-slate-200 rounded-2xl overflow-hidden shadow-lg border-4 border-white">
+                                        {hodProfile?.profilePhoto ? (
+                                            <img 
+                                                src={api.defaults.baseURL + hodProfile.profilePhoto} 
+                                                alt={hodProfile.name}
+                                                className="w-full h-full object-cover"
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = '/assets/placeholder-avatar.png';
+                                                }}
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full bg-gradient-to-br from-slate-200 to-slate-300 flex items-center justify-center text-4xl text-white font-black">
+                                                {dept.hod?.name ? dept.hod.name[0] : 'H'}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="space-y-4">
                                     <div>
-                                        <h2 className="text-2xl font-black text-slate-800 tracking-tight">{dept.hod?.name || 'Unassigned'}</h2>
+                                        <h2 className="text-2xl font-black text-slate-800 tracking-tight">
+                                            {hodProfile ? (
+                                                <Link to={`/faculty/${hodProfile._id}`} className="hover:text-primary transition">
+                                                    {hodProfile.name}
+                                                </Link>
+                                            ) : (dept.hod?.name || 'Unassigned')}
+                                        </h2>
                                         <p className="text-accent font-bold text-xs uppercase tracking-widest">Head of Department</p>
                                     </div>
                                     <p className="text-slate-600 leading-relaxed italic text-lg font-medium">
