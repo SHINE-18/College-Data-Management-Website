@@ -95,9 +95,11 @@ const InteractiveMap = () => {
 
     return (
         <div className="flex flex-col space-y-6">
+            {/* Mobile hint */}
+            <p className="text-xs text-slate-400 text-center sm:hidden">Tap a building to explore its department</p>
             <div
                 ref={containerRef}
-                className="relative w-full rounded-[2rem] overflow-hidden shadow-2xl border border-slate-200 bg-slate-100 cursor-crosshair touch-none select-none"
+                className="relative w-full rounded-[2rem] overflow-hidden shadow-2xl border border-slate-200 bg-slate-100 cursor-crosshair touch-auto select-none"
                 onMouseMove={handleMouseMove}
             >
                 {/* 1. Base Image Layer */}

@@ -27,11 +27,15 @@ const AnnouncementTicker = ({ department = 'All' }) => {
 
     return (
         <div className="bg-primary-700 text-white overflow-hidden">
-            <div className="max-w-9xl sm:px-6 lg:px-8 flex items-center h-9">
-                <div className="font-heading font-bold text-sm uppercase tracking-wider mr-4 whitespace-nowrap bg-primary-900 px-3 py-1 rounded shrink-0">
-                    {department === 'All' ? 'Latest Announcements' : 'Department Updates'}
+            <div className="px-3 sm:px-6 lg:px-8 flex items-center h-9">
+                {/* Label: short on mobile, full on sm+ */}
+                <div className="font-heading font-bold text-[10px] sm:text-xs uppercase tracking-wider mr-2 sm:mr-4 whitespace-nowrap bg-primary-900 px-2 sm:px-3 py-1 rounded shrink-0">
+                    <span className="sm:hidden">Updates</span>
+                    <span className="hidden sm:inline">
+                        {department === 'All' ? 'Latest Announcements' : 'Department Updates'}
+                    </span>
                 </div>
-                <div className="overflow-hidden flex-1">
+                <div className="overflow-hidden flex-1 min-w-0">
                     <div className="animate-marquee whitespace-nowrap flex space-x-12">
                         {notices.map((n, i) => (
                             <a
@@ -39,11 +43,11 @@ const AnnouncementTicker = ({ department = 'All' }) => {
                                 href={n.attachment ? getAssetUrl(n.attachment) : (n.sourceUrl || '/notices')}
                                 target={n.attachment || n.sourceUrl ? "_blank" : "_self"}
                                 rel="noreferrer"
-                                className="text-sm hover:text-primary-200 transition inline-flex items-center"
+                                className="text-xs sm:text-sm hover:text-primary-200 transition inline-flex items-center"
                             >
                                 <span className="text-primary-300 mr-2">▸</span>
                                 {n.title}
-                                <span className="text-primary-400 ml-2 text-xs">
+                                <span className="text-primary-400 ml-2 text-[10px] sm:text-xs">
                                     ({new Date(n.publishedAt || n.createdAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).replace(/ /g, '-')})
                                 </span>
                             </a>
@@ -56,4 +60,3 @@ const AnnouncementTicker = ({ department = 'All' }) => {
 };
 
 export default AnnouncementTicker;
-

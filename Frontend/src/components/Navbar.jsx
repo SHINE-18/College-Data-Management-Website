@@ -11,6 +11,8 @@ const Navbar = () => {
     const [open, setOpen] = useState(false);
     const [peopleOpen, setPeopleOpen] = useState(false);
     const [academicsOpen, setAcademicsOpen] = useState(false);
+    const [visible, setVisible] = useState(true);
+    const lastScrollY = useRef(0);
     const { isAuthenticated, role, logout } = useAuth();
     const { isDark, toggleTheme } = useTheme();
     const location = useLocation();
@@ -51,35 +53,64 @@ const Navbar = () => {
         return () => document.removeEventListener('mousedown', handler);
     }, []);
 
+    // Hide navbar on scroll down, show on scroll up
+    useEffect(() => {
+        const handleScroll = () => {
+            const currentY = window.scrollY;
+            const delta = currentY - lastScrollY.current;
+
+            // Dead-zone of 8px to avoid jitter on small scrolls
+            if (Math.abs(delta) < 8) return;
+
+            if (currentY > 80 && delta > 0) {
+                // Scrolling DOWN past 80px — hide
+                setVisible(false);
+                setOpen(false); // also close mobile menu
+            } else {
+                // Scrolling UP or near top — show
+                setVisible(true);
+            }
+            lastScrollY.current = currentY;
+        };
+
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
     const isActive = (path) => location.pathname === path;
 
     return (
-        <header className="sticky top-0 z-50 shadow-lg">
+        <header
+            className={`sticky top-0 z-50 shadow-lg transition-transform duration-300 ease-in-out ${
+                visible ? 'translate-y-0' : '-translate-y-full'
+            }`}
+        >
 
             <div className="bg-primary-700 text-white">
-                <div className="max-w-9xl px-4 sm:px-6 lg:px-8 flex justify-between items-center h-7 text-xs">
-                    <span className="font-medium tracking-wide">Vishwakarma Government Engineering College, Ahmedabad</span>
-                    <div className="hidden sm:flex items-center space-x-4 text-primary-200">
-                        <span>GTU Affiliated</span>
-                        <span>•</span>
+                <div className="px-3 sm:px-6 lg:px-8 flex justify-between items-center h-7 text-xs">
+                    <span className="font-medium tracking-wide truncate max-w-[60%] sm:max-w-none">
+                        <span className="hidden sm:inline">Vishwakarma Government Engineering College, Ahmedabad</span>
+                        <span className="sm:hidden">VGEC, Ahmedabad</span>
+                    </span>
+                    <div className="flex items-center space-x-2 sm:space-x-4 text-primary-200 shrink-0">
+                        <span className="hidden xs:inline">GTU Affiliated</span>
+                        <span className="hidden sm:inline">•</span>
                         <span>AICTE Approved</span>
-                        {/* <span>•</span> */}
-
                     </div>
                 </div>
             </div>
 
 
             <div className="bg-white border-b border-gray-200">
-                <div className="max-w-8xl px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-                    <Link to="/" className="flex items-center space-x-4">
-                        <img src={vgec_hd} alt="VGEC Logo" className="w-14 h-14 object-contain" />
-                        <div>
-                            <h1 className="font-heading font-bold text-lg md:text-xl text-gray-900 uppercase tracking-wide leading-tight">
-                                {activeDept ? `VGEC - ${activeDept}` : 'VGEC Department Portal  '}
+                <div className="px-3 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
+                    <Link to="/" className="flex items-center space-x-2 sm:space-x-4 min-w-0">
+                        <img src={vgec_hd} alt="VGEC Logo" className="w-10 h-10 sm:w-14 sm:h-14 object-contain shrink-0" />
+                        <div className="min-w-0">
+                            <h1 className="font-heading font-bold text-sm sm:text-lg md:text-xl text-gray-900 uppercase tracking-wide leading-tight truncate">
+                                {activeDept ? `VGEC - ${activeDept}` : 'VGEC Department Portal'}
                             </h1>
-                            <p className="text-xs md:text-sm text-gray-500 font-medium tracking-wider uppercase">
-                                {activeDept ? 'Building the Future Together' : 'Vishwakarma Government Engineering College'}
+                            <p className="text-[10px] sm:text-xs md:text-sm text-gray-500 font-medium tracking-wider uppercase truncate">
+                                {activeDept ? 'Building the Future Together' : 'Vishwakarma Govt. Engineering College'}
                             </p>
                         </div>
                     </Link>
@@ -201,24 +232,27 @@ const Navbar = () => {
             {open && (
                 <div className="lg:hidden bg-white border-t border-gray-200 animate-slide-down shadow-xl">
                     <div className="px-4 py-3 space-y-1">
-                        <Link to="/" onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Home</Link>
-                        <Link to={getDeptLink("/faculty")} onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/faculty') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Faculty</Link>
-                        <Link to={getDeptLink("/notices")} onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/notices') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Notices</Link>
-                        <Link to={getDeptLink("/gtu-circulars")} onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/gtu-circulars') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>GTU Circulars</Link>
-                        <Link to={getDeptLink("/timetable")} onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/timetable') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Timetable</Link>
-                        <Link to={getDeptLink("/events")} onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/events') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'}`}>Events</Link>
-                        <Link to={getDeptLink("/syllabi")} onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/syllabi') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'}`}>Syllabus Archive</Link>
-                        <Link to={getDeptLink("/calendar")} onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/calendar') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'}`}>Calendar</Link>
-                        {/* <Link to="/placements" onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/placements') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'}`}>Placements</Link>
-                        <Link to="/feedback" onClick={() => setOpen(false)} className={`block px-3 py-2 rounded-lg text-sm font-medium transition ${isActive('/feedback') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-700'}`}>Feedback</Link> */}
-                        <div className="pt-3 border-t border-gray-200">
+                        <Link to="/" onClick={() => setOpen(false)} className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive('/') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>🏠 Home</Link>
+                        <Link to={getDeptLink("/faculty")} onClick={() => setOpen(false)} className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive('/faculty') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>👨‍🏫 Faculty</Link>
+                        <Link to={getDeptLink("/notices")} onClick={() => setOpen(false)} className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive('/notices') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>📋 Notices</Link>
+                        <Link to={getDeptLink("/gtu-circulars")} onClick={() => setOpen(false)} className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive('/gtu-circulars') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>📜 GTU Circulars</Link>
+                        <Link to={getDeptLink("/timetable")} onClick={() => setOpen(false)} className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive('/timetable') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>🗓️ Timetable</Link>
+                        <Link to={getDeptLink("/events")} onClick={() => setOpen(false)} className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive('/events') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>🎉 Events</Link>
+                        <Link to={getDeptLink("/syllabi")} onClick={() => setOpen(false)} className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive('/syllabi') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>📚 Syllabus Archive</Link>
+                        <Link to={getDeptLink("/calendar")} onClick={() => setOpen(false)} className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive('/calendar') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>📅 Calendar</Link>
+
+                        <div className="pt-3 border-t border-gray-200 space-y-2">
                             {isAuthenticated ? (
                                 <>
-                                    <Link to={portalLink} onClick={() => setOpen(false)} className="block px-3 py-2 text-primary font-medium text-sm">Dashboard</Link>
-                                    <button onClick={() => { logout(); setOpen(false); }} className="block px-3 py-2 text-gray-500 text-sm">Logout</button>
+                                    <div className="flex items-center px-3 py-2">
+                                        <NotificationBell />
+                                        <span className="ml-2 text-sm text-gray-600 font-medium">Notifications</span>
+                                    </div>
+                                    <Link to={portalLink} onClick={() => setOpen(false)} className="block px-3 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold text-center">Dashboard</Link>
+                                    <button onClick={() => { logout(); setOpen(false); }} className="block w-full px-3 py-2.5 text-red-500 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-50 transition text-center">Logout</button>
                                 </>
                             ) : (
-                                <Link to="/login" onClick={() => setOpen(false)} className="block px-3 py-2 bg-primary text-white rounded-lg text-sm font-semibold text-center">Faculty Login</Link>
+                                <Link to="/login" onClick={() => setOpen(false)} className="block px-3 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold text-center">Faculty Login</Link>
                             )}
                         </div>
                     </div>

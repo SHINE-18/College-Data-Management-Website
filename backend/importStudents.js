@@ -3,7 +3,7 @@ const fs = require("fs");
 const path = require("path");
 const csv = require("csv-parser");
 const dotenv = require("dotenv");
-dotenv.config();
+dotenv.config({ path: require("path").resolve(__dirname, ".env") });
 
 // ── Config ────────────────────────────────────────────────────────────────────
 // Update this to match your MongoDB connection string / .env setup

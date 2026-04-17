@@ -106,22 +106,23 @@ const Events = () => {
             </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-                {/* Filters */}
-                <div className="flex flex-col md:flex-row gap-4 mb-8">
-                    <select
-                        id="event-type"
-                        value={typeFilter}
-                        onChange={e => {
-                            setTypeFilter(e.target.value);
-                            setPagination(prev => ({ ...prev, page: 1 }));
-                        }}
-                        className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary outline-none bg-white"
-                    >
-                        {eventTypes.map(t => <option key={t} value={t}>{t === 'All' ? 'All Types' : t}</option>)}
-                    </select>
+                {/* Type filter chips — scrollable on mobile */}
+                <div className="flex gap-2 overflow-x-auto pb-2 mb-4 no-scrollbar">
+                    {eventTypes.map(t => (
+                        <button
+                            key={t}
+                            onClick={() => { setTypeFilter(t); setPagination(prev => ({ ...prev, page: 1 })); }}
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition ${typeFilter === t ? 'bg-primary text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
+                        >
+                            {t === 'All' ? 'All Types' : t}
+                        </button>
+                    ))}
+                </div>
 
+                {/* Dept + Search filters */}
+                <div className="flex flex-col sm:flex-row gap-4 mb-8">
                     <select
-                        id="event-dept"
+                        id="event-dept-filter"
                         value={deptFilter}
                         onChange={e => {
                             setDeptFilter(e.target.value);
@@ -149,6 +150,7 @@ const Events = () => {
                         />
                     </div>
                 </div>
+
 
                 {loading ? (
                     <div className="flex items-center justify-center py-16">

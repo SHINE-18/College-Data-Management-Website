@@ -46,7 +46,7 @@ const Home = () => {
 
             {/* ═══════ HERO BANNER ═══════ */}
             <section className="relative">
-                <div className="w-full h-[500px] md:h-[650px] overflow-hidden">
+                <div className="w-full h-[380px] sm:h-[500px] md:h-[650px] overflow-hidden">
                     <img src={collegemain} alt="Vishwakarma Government Engineering College" className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/20 to-transparent"></div>
                 </div>
@@ -54,20 +54,20 @@ const Home = () => {
                 {/* Hero Text */}
                 <div className="absolute min-h-full inset-0 flex flex-col justify-center px-4 md:px-12 pointer-events-none">
                     <div className="max-w-3xl pointer-events-auto">
-                        <span className="bg-accent text-slate-900 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-[0.3em] mb-6 inline-block shadow-xl">Chandkheda, Ahmedabad</span>
-                        <h1 className="text-5xl md:text-7xl font-black text-white leading-[1.1] mb-6 drop-shadow-2xl">
+                        <span className="bg-accent text-slate-900 px-3 sm:px-4 py-1 rounded-full text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] mb-4 sm:mb-6 inline-block shadow-xl">Chandkheda, Ahmedabad</span>
+                        <h1 className="text-3xl sm:text-5xl md:text-7xl font-black text-white leading-[1.1] mb-3 sm:mb-6 drop-shadow-2xl">
                             Vishwakarma <br />
-                            <span className="text-accent underline decoration-8 underline-offset-[12px] decoration-white/10">Government</span> Engineering
+                            <span className="text-accent underline decoration-4 sm:decoration-8 underline-offset-[8px] sm:underline-offset-[12px] decoration-white/10">Government</span> Engineering
                         </h1>
-                        <p className="text-white/70 text-lg md:text-xl font-medium max-w-xl mb-10 drop-shadow-md">
+                        <p className="hidden sm:block text-white/70 text-base md:text-xl font-medium max-w-xl mb-6 sm:mb-10 drop-shadow-md">
                             Empowering the next generation of engineers through innovation, research, and technical excellence since 1994.
-                        </p> 
+                        </p>
 
-                        <div className="flex flex-wrap gap-4">
-                            <Link to="https://www.vgecg.ac.in/admissions.php" className="bg-white text-slate-900 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-accent transition transform hover:-translate-y-1 shadow-2xl">
+                        <div className="flex flex-wrap gap-2 sm:gap-4">
+                            <Link to="https://www.vgecg.ac.in/admissions.php" className="bg-white text-slate-900 px-5 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-widest hover:bg-accent transition transform hover:-translate-y-1 shadow-2xl">
                                 Admission 2026
                             </Link>
-                            <Link to="https://www.vgecg.ac.in/" className="bg-white/10 backdrop-blur-md text-white border border-white/20 px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-white/20 transition transform hover:-translate-y-1">
+                            <Link to="https://www.vgecg.ac.in/" className="bg-white/10 backdrop-blur-md text-white border border-white/20 px-5 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-black text-[10px] sm:text-xs uppercase tracking-widest hover:bg-white/20 transition transform hover:-translate-y-1">
                                 Discover VGEC
                             </Link>
                         </div>
