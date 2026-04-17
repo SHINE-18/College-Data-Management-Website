@@ -47,6 +47,7 @@ const envOrigins = process.env.FRONTEND_URL
 
 const allowedOrigins = [
     ...envOrigins,
+    'https://college-data-management-website.vercel.app',
     process.env.PRODUCTION_URL
 ].filter(Boolean);
 
