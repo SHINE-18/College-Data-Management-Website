@@ -49,7 +49,7 @@ import TimetableBuilder from '../pages/hod/TimetableBuilder';
 import TimetableUpload from '../pages/hod/TimetableUpload';
 import LeaveApprovals from '../pages/hod/LeaveApprovals';
 import PostCircular from '../pages/hod/PostCircular';
-import Reports from '../pages/hod/Reports';
+// import Reports from '../pages/hod/Reports';/
 
 // Admin
 import SuperAdminDashboard from '../pages/admin/SuperAdminDashboard';
@@ -59,9 +59,7 @@ import SiteSettings from '../pages/admin/SiteSettings';
 import AdminImportStudents from '../pages/admin/AdminImportStudents';
 
 // New Feature Pages
-import Placements from '../pages/Placements';
-import Feedback from '../pages/Feedback';
-import HODReports from '../pages/HODReports';
+
 import StudentProfile from '../pages/student/StudentProfile';
 
 // Layouts
@@ -83,8 +81,8 @@ const AppRoutes = () => (
             <Route path="/events" element={<Events />} />
             <Route path="/calendar" element={<AcademicCalendar />} />
             <Route path="/syllabi" element={<SyllabusArchive />} />
-            <Route path="/placements" element={<Placements />} />
-            <Route path="/feedback" element={<Feedback />} />
+            {/* <Route path="/placements" element={<Placements />} /> */}
+            {/* <Route path="/feedback" element={<Feedback />} /> */}
         </Route>
 
         {/* Auth */}
@@ -126,8 +124,8 @@ const AppRoutes = () => (
             <Route path="timetable-upload" element={<TimetableUpload />} />
             <Route path="leave" element={<LeaveApprovals />} />
             <Route path="circular" element={<PostCircular />} />
-            <Route path="reports" element={<Reports />} />
-            <Route path="hod-reports" element={<HODReports />} />
+            {/* <Route path="reports" element={<Reports />} /> */}
+            {/* <Route path="hod-reports" element={<HODReports />} /> */}
             <Route path="attendance-manager" element={<AttendanceManager />} />
             <Route path="result-uploader" element={<ResultUploader />} />
             <Route path="assignments" element={<AssignmentPoster />} />

@@ -1,16 +1,16 @@
 # Dependencies
-node_modules/
+**/node_modules/
 
 # Build output
-dist/
+**/dist/
 build/
 
 # Environment variables
 .env
 .env.local
 .env.*.local
-.env.production
-backend/.env
+**/.env.production
+Backend/.env
 
 # IDE
 .vscode/
@@ -32,11 +32,11 @@ coverage/
 # Thesis
 thesis/
 
-student_template.csv
-importStudents.js
-seedAdmin.js
-student_import.js
-admin_seed.js
+Backend/student_template.csv
+Backend/importStudents.js
+Backend/seedAdmin.js
+Backend/student_import.js
+Backend/admin_seed.js
 
-output.json
-output.txt
+Backend/output.json
+Backend/output.txt

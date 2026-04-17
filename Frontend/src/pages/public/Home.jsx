@@ -163,7 +163,7 @@ const Home = () => {
             </section> */}
 
             {/* ═══════ LATEST NOTICES (Horizontal Feed) ═══════ */}
-            <section className="bg-white py-24 mb-12">
+            <section className="bg-white py-24 mb-5">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between mb-12">
                         <div>

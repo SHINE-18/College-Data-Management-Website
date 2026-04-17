@@ -113,7 +113,7 @@ app.use('/api/feedback', require('./routes/feedbackRoutes'));
 
 // ── Production: Serve React Frontend ──
 if (process.env.NODE_ENV === 'production') {
-    const distPath = path.join(__dirname, '..', 'dist');
+    const distPath = path.join(__dirname, '..', 'Frontend', 'dist');
     app.use(express.static(distPath));
     app.get(/(.*)/, (req, res) => {
         res.sendFile(path.resolve(distPath, 'index.html'));
