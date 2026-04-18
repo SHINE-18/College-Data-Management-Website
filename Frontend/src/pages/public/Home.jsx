@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import NoticeCard from '../../components/NoticeCard';
 import InteractiveMap from '../../components/InteractiveMap';
-import collegemain from '../../assets/collegemain.jpg';
+import collegemain from '../../assets/collegemain.png';
 import api from '../../utils/axios';
 import usePageTitle from '../../utils/usePageTitle';
 import AnnouncementTicker from '../../components/AnnouncementTicker';

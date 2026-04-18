@@ -41,10 +41,12 @@ app.use(helmet({
 }));
 
 // CORS — supports localhost dev, all Vercel preview/production deployments,
-// and any extra origins set via FRONTEND_URL / PRODUCTION_URL env vars on Render.
+// Netlify preview/production deployments, and any extra origins set via
+// FRONTEND_URL / PRODUCTION_URL env vars on Render.
 const allowedOriginPatterns = [
     /^http:\/\/localhost:\d+$/,            // any localhost port (local dev)
     /^https:\/\/.*\.vercel\.app$/,        // all Vercel domains (preview + production)
+    /^https:\/\/.*\.netlify\.app$/,       // all Netlify domains (preview + production)
     /^https:\/\/.*\.onrender\.com$/,      // Render itself if needed
 ];
 

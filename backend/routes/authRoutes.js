@@ -9,6 +9,18 @@ const User = require('../models/User');
 const { protect, authorize, generateToken, generateRefreshToken } = require('../middleware/authMiddleware');
 const { normalizeDepartment, isKnownDepartment } = require('../utils/departmentUtils');
 
+const getRefreshCookieOptions = () => {
+    const isProduction = process.env.NODE_ENV === 'production';
+
+    return {
+        httpOnly: true,
+        secure: isProduction,
+        // Netlify frontend + separate API host need cross-site cookies in production.
+        sameSite: isProduction ? 'none' : 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000
+    };
+};
+
 // Validation middleware
 const validate = (req, res, next) => {
     const errors = validationResult(req);
@@ -131,12 +143,7 @@ router.post('/login', [
 
         // Issue refresh token as httpOnly cookie
         const refreshToken = generateRefreshToken(user._id);
-        res.cookie('refreshToken', refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
+        res.cookie('refreshToken', refreshToken, getRefreshCookieOptions());
 
         res.json({
             _id: user._id,
@@ -442,11 +449,8 @@ router.post('/refresh', async (req, res) => {
 
 // POST /api/auth/logout — Clear refresh token cookie
 router.post('/logout', (req, res) => {
-    res.clearCookie('refreshToken', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
-    });
+    const { maxAge, ...clearCookieOptions } = getRefreshCookieOptions();
+    res.clearCookie('refreshToken', clearCookieOptions);
     res.json({ message: 'Logged out successfully' });
 });
 
