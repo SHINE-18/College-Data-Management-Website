@@ -13,7 +13,7 @@ const AcademicsManager = () => {
 
     // Resource State
     const [resData, setResData] = useState({ title: '', subject: '', semester: '1', resourceType: 'PPT', description: '', externalLink: '' });
-    const [resFile, setResFile] = useState(null);
+    const [resFiles, setResFiles] = useState([]);
 
     // Calendar State
     const [calFile, setCalFile] = useState(null);
@@ -44,22 +44,25 @@ const AcademicsManager = () => {
 
     const handleResSubmit = async (e) => {
         e.preventDefault();
-        if (resData.resourceType !== 'Link' && !resFile) return toast.error("Please select a file");
+        if (resData.resourceType !== 'Link' && resFiles.length === 0) return toast.error("Please select at least one file");
 
         setLoading(true);
         const formData = new FormData();
         Object.keys(resData).forEach(key => formData.append(key, resData[key]));
-        if (resFile) formData.append('resourceFile', resFile);
+        if (resFiles.length > 0) {
+            Array.from(resFiles).forEach(file => formData.append('resourceFiles', file));
+        }
 
         try {
             await api.post('/academics/resources', formData, {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
-            toast.success("Resource added successfully!");
+            toast.success("Resource(s) added successfully!");
             setResData({ title: '', subject: '', semester: '1', resourceType: 'PPT', description: '', externalLink: '' });
-            setResFile(null);
+            setResFiles([]);
         } catch (error) {
-            toast.error("Upload failed");
+            toast.error(error.response?.data?.error || error.response?.data?.message || "Upload failed");
+            console.error(error.response?.data || error);
         } finally { setLoading(false); }
     };
 
@@ -182,11 +185,13 @@ const AcademicsManager = () => {
                                 </div>
                             ) : (
                                 <div className="md:col-span-2">
-                                    <label className="block text-sm font-bold text-gray-700 mb-3">Upload File</label>
+                                    <label className="block text-sm font-bold text-gray-700 mb-3">Upload File(s)</label>
                                     <div className="relative border-2 border-dashed border-gray-200 rounded-2xl p-8 hover:border-orange-200 transition bg-gray-50/50 flex flex-col items-center">
                                         <FaCloudUploadAlt className="text-4xl text-gray-300 mb-3" />
-                                        <p className="text-sm text-gray-500 font-medium">{resFile ? resFile.name : 'Select file (PPT, PDF, ZIP)'}</p>
-                                        <input type="file" onChange={e => setResFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer" />
+                                        <p className="text-sm text-gray-500 font-medium">
+                                            {resFiles.length > 0 ? `${resFiles.length} file(s) selected` : 'Select files (PPT, PDF, ZIP)'}
+                                        </p>
+                                        <input type="file" onChange={e => setResFiles(e.target.files)} className="absolute inset-0 opacity-0 cursor-pointer" multiple />
                                     </div>
                                 </div>
                             )}

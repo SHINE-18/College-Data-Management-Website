@@ -60,10 +60,24 @@ router.post('/', protect, authorize('super_admin'), async (req, res) => {
 // @access  Private/SuperAdmin
 router.put('/:id', protect, authorize('super_admin'), async (req, res) => {
     try {
-        const department = await Department.findByIdAndUpdate(req.params.id, req.body, {
-            new: true,
-            runValidators: true
-        });
+        // Flatten nested objects so partial updates (e.g. only mapCoordinates.showOnMap)
+        // don't wipe sibling fields.
+        const updatePayload = {};
+        for (const [key, value] of Object.entries(req.body)) {
+            if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+                for (const [subKey, subVal] of Object.entries(value)) {
+                    updatePayload[`${key}.${subKey}`] = subVal;
+                }
+            } else {
+                updatePayload[key] = value;
+            }
+        }
+
+        const department = await Department.findByIdAndUpdate(
+            req.params.id,
+            { $set: updatePayload },
+            { new: true, runValidators: true }
+        );
 
         if (!department) {
             return res.status(404).json({ success: false, message: 'Department not found' });

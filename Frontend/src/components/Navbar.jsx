@@ -107,10 +107,10 @@ const Navbar = () => {
                         <img src={vgec_hd} alt="VGEC Logo" className="w-10 h-10 sm:w-14 sm:h-14 object-contain shrink-0" />
                         <div className="min-w-0">
                             <h1 className="font-heading font-bold text-sm sm:text-lg md:text-xl text-gray-900 uppercase tracking-wide leading-tight truncate">
-                                {activeDept ? `VGEC - ${activeDept}` : 'VGEC Department Portal'}
+                                {activeDept ? `Department of ${activeDept}` : 'VGEC Department Portal'}
                             </h1>
                             <p className="text-[10px] sm:text-xs md:text-sm text-gray-500 font-medium tracking-wider uppercase truncate">
-                                {activeDept ? 'Building the Future Together' : 'Vishwakarma Govt. Engineering College'}
+                                Vishwakarma Govt. Engineering College
                             </p>
                         </div>
                     </Link>

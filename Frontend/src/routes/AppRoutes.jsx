@@ -41,6 +41,7 @@ import AttendanceManager from '../pages/faculty/AttendanceManager';
 import ResultUploader from '../pages/faculty/ResultUploader';
 import AssignmentPoster from '../pages/faculty/AssignmentPoster';
 import AcademicsManager from '../pages/faculty/AcademicsManager';
+import EventManager from '../pages/faculty/EventManager';
 
 // HOD
 import HODDashboard from '../pages/hod/HODDashboard';
@@ -114,6 +115,7 @@ const AppRoutes = () => (
             <Route path="assignments" element={<AssignmentPoster />} />
             <Route path="resources" element={<ResourceLibrary />} />
             <Route path="academics" element={<AcademicsManager />} />
+            <Route path="events" element={<EventManager />} />
         </Route>
 
         {/* HOD Portal */}
@@ -130,6 +132,7 @@ const AppRoutes = () => (
             <Route path="result-uploader" element={<ResultUploader />} />
             <Route path="assignments" element={<AssignmentPoster />} />
             <Route path="academics" element={<AcademicsManager />} />
+            <Route path="events" element={<EventManager />} />
             <Route path="profile" element={<MyProfile />} />
             <Route path="qualifications" element={<Qualifications />} />
             <Route path="publications" element={<Publications />} />

@@ -177,12 +177,12 @@ const DepartmentDetail = () => {
                                         </h2>
                                         <p className="text-accent font-bold text-xs uppercase tracking-widest">Head of Department</p>
                                     </div>
-                                    <p className="text-slate-600 leading-relaxed italic text-lg font-medium">
+                                    <p className="text-slate-600 leading-relaxed italic text-lg font-medium text-center">
                                         "{dept.hod?.message || 'Welcome to our department. We are dedicated to nurturing excellence.'}"
                                     </p>
                                     {hodVideo && (
                                         <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 shadow-sm">
-                                            <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-slate-500">
+                                            <p className="mb-3 text-xs font-black uppercase tracking-[0.2em] text-slate-500 text-center">
                                                 Watch The HOD Message
                                             </p>
                                             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-900 shadow-lg">
@@ -212,11 +212,11 @@ const DepartmentDetail = () => {
                             <section className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 md:p-10">
                                 <h2 className="text-2xl font-black text-slate-800 tracking-tight mb-8 flex items-center">
                                     <span className="w-1.5 h-6 bg-accent rounded-full mr-3"></span>
-                                    Research Horizons
+                                    Research Areas
                                 </h2>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     {dept.researchAreas.map((area, i) => (
-                                        <div key={i} className="group p-6 rounded-2xl border border-slate-100 bg-slate-50 hover:bg-white hover:border-primary/20 hover:shadow-xl transition-all duration-300">
+                                        <div key={i} className="group p-6 rounded-3xl border border-slate-100 bg-slate-50 hover:bg-white hover:border-primary/20 hover:shadow-xl transition-all duration-300">
                                             <h4 className="font-bold text-primary mb-4 group-hover:text-accent transition">{area.title}</h4>
                                             <div className="flex justify-between items-center text-[10px] font-black tracking-widest text-slate-400">
                                                 <span>{area.faculty} FACULTY</span>

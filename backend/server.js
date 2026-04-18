@@ -40,25 +40,41 @@ app.use(helmet({
     contentSecurityPolicy: false // Disable CSP to avoid breaking React app served in production
 }));
 
-// CORS
-const envOrigins = process.env.FRONTEND_URL
-    ? process.env.FRONTEND_URL.split(',').map(u => u.trim())
-    : ['http://localhost:5173'];
+// CORS — supports localhost dev, all Vercel preview/production deployments,
+// and any extra origins set via FRONTEND_URL / PRODUCTION_URL env vars on Render.
+const allowedOriginPatterns = [
+    /^http:\/\/localhost:\d+$/,            // any localhost port (local dev)
+    /^https:\/\/.*\.vercel\.app$/,        // all Vercel domains (preview + production)
+    /^https:\/\/.*\.onrender\.com$/,      // Render itself if needed
+];
 
-const allowedOrigins = [
-    ...envOrigins,
+// Exact origins from env (comma-separated) + hardcoded production domain
+const exactAllowedOrigins = [
+    process.env.FRONTEND_URL,
+    process.env.PRODUCTION_URL,
     'https://college-data-management-website.vercel.app',
-    process.env.PRODUCTION_URL
-].filter(Boolean);
+]
+    .filter(Boolean)
+    .flatMap(u => u.split(',').map(s => s.trim()));
 
 app.use(cors({
     origin: function (origin, callback) {
+        // Allow server-to-server / same-origin requests (no Origin header)
         if (!origin) return callback(null, true);
-        if (allowedOrigins.includes(origin)) return callback(null, true);
-        return callback(new Error('Not allowed by CORS'));
+        // Exact match
+        if (exactAllowedOrigins.includes(origin)) return callback(null, true);
+        // Pattern match (handles Vercel preview URLs like project-xyz-abc.vercel.app)
+        if (allowedOriginPatterns.some(p => p.test(origin))) return callback(null, true);
+        console.warn(`CORS blocked origin: ${origin}`);
+        return callback(new Error(`CORS: origin '${origin}' not allowed`));
     },
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
+// Handle preflight OPTIONS requests explicitly
+app.options('*', cors());
 
 // Cookie parser (needed for JWT refresh tokens)
 app.use(cookieParser());
@@ -133,10 +149,19 @@ if (process.env.NODE_ENV !== 'test') {
         app.listen(PORT, () => {
             console.log(`\n🚀 Backend server is running!`);
             console.log(`📍 Local: http://localhost:${PORT}`);
-            // console.log(`📍 API:   http://localhost:${PORT}/api/faculty`);
             console.log(`\nPress Ctrl+C to stop the server\n`);
         });
         startGtuSyncScheduler(console);
+
+        // Keep-alive ping for Render free tier (spins down after 15 min of inactivity)
+        if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {
+            const https = require('https');
+            setInterval(() => {
+                https.get(process.env.RENDER_EXTERNAL_URL, () => {
+                    console.log('🏓 Keep-alive ping sent');
+                }).on('error', () => {});
+            }, 14 * 60 * 1000); // every 14 minutes
+        }
     });
 }
 

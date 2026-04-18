@@ -58,20 +58,32 @@ router.get('/resources', protectBoth, async (req, res) => {
 });
 
 // POST /api/academics/resources - Faculty upload
-router.post('/resources', protect, authorize('faculty', 'hod', 'super_admin'), uploadResource.single('resourceFile'), async (req, res) => {
+router.post('/resources', protect, authorize('faculty', 'hod', 'super_admin'), uploadResource.array('resourceFiles', 10), async (req, res) => {
     try {
-        const resourceData = {
+        const resourceBaseData = {
             ...req.body,
             uploadedBy: req.user._id
         };
 
-        if (req.file) {
-            resourceData.fileUrl = req.file.path || req.file.secure_url || req.file.location;
+        let createdResources = [];
+
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                const resource = new Resource({
+                    ...resourceBaseData,
+                    title: req.files.length > 1 ? `${resourceBaseData.title} - ${file.originalname}` : resourceBaseData.title,
+                    fileUrl: file.path || file.secure_url || file.location
+                });
+                await resource.save();
+                createdResources.push(resource);
+            }
+        } else {
+            const resource = new Resource(resourceBaseData);
+            await resource.save();
+            createdResources.push(resource);
         }
 
-        const resource = new Resource(resourceData);
-        await resource.save();
-        res.status(201).json(resource);
+        res.status(201).json(createdResources);
     } catch (error) {
         res.status(400).json({ message: 'Upload failed', error: error.message });
     }

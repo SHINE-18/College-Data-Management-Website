@@ -108,7 +108,7 @@ router.get('/:id', [
 });
 
 // POST /api/events â€” Create a new event (with optional image)
-router.post('/', protect, authorize('hod', 'super_admin'), uploadImage.single('image'), [
+router.post('/', protect, authorize('faculty', 'hod', 'super_admin'), uploadImage.single('image'), [
     body('title').trim().notEmpty().withMessage('Title is required'),
     body('description').trim().notEmpty().withMessage('Description is required'),
     body('date').isISO8601().withMessage('Valid date is required'),
@@ -124,7 +124,7 @@ router.post('/', protect, authorize('hod', 'super_admin'), uploadImage.single('i
             description,
             date,
             type: type || 'Other',
-            department: req.user.role === 'hod' ? req.user.department : (department || 'All'),
+            department: (req.user.role === 'hod' || req.user.role === 'faculty') ? req.user.department : (department || 'All'),
             venue,
         };
 
@@ -141,7 +141,7 @@ router.post('/', protect, authorize('hod', 'super_admin'), uploadImage.single('i
 });
 
 // PUT /api/events/:id â€” Update an event (with optional image update)
-router.put('/:id', protect, authorize('hod', 'super_admin'), uploadImage.single('image'), [
+router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), uploadImage.single('image'), [
     param('id').isMongoId().withMessage('Invalid event ID'),
     body('title').optional().trim().notEmpty().withMessage('Title cannot be empty'),
     body('description').optional().trim().notEmpty().withMessage('Description cannot be empty'),
@@ -155,13 +155,13 @@ router.put('/:id', protect, authorize('hod', 'super_admin'), uploadImage.single(
             return res.status(404).json({ message: 'Event not found' });
         }
 
-        if (req.user.role === 'hod' && existingEvent.department !== req.user.department) {
+        if ((req.user.role === 'hod' || req.user.role === 'faculty') && existingEvent.department !== req.user.department) {
             return res.status(403).json({ message: 'Not authorized to update events outside your department' });
         }
 
         const updateData = { ...req.body };
 
-        if (req.user.role === 'hod') {
+        if (req.user.role === 'hod' || req.user.role === 'faculty') {
             updateData.department = req.user.department;
         }
 
@@ -177,7 +177,7 @@ router.put('/:id', protect, authorize('hod', 'super_admin'), uploadImage.single(
 });
 
 // DELETE /api/events/:id â€” Delete an event
-router.delete('/:id', protect, authorize('hod', 'super_admin'), [
+router.delete('/:id', protect, authorize('faculty', 'hod', 'super_admin'), [
     param('id').isMongoId().withMessage('Invalid event ID')
 ], validate, async (req, res) => {
     try {

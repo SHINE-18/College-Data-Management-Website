@@ -55,6 +55,11 @@ const departmentSchema = new mongoose.Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    mapCoordinates: {
+        points: { type: String, default: '' },       // SVG polygon points string e.g. "100,200,300,200..."
+        color: { type: String, default: '' },         // Optional custom highlight colour
+        showOnMap: { type: Boolean, default: false }  // Whether to render this dept on the campus map
     }
 }, {
     timestamps: true
