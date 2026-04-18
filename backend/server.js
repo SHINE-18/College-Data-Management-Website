@@ -74,7 +74,7 @@ app.use(cors({
 }));
 
 // Handle preflight OPTIONS requests explicitly
-app.options('*', cors());
+app.options('/{*path}', cors());
 
 // Cookie parser (needed for JWT refresh tokens)
 app.use(cookieParser());
