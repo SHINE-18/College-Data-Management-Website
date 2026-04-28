@@ -6,12 +6,26 @@ import { useState, useEffect } from 'react';
 import api from '../../utils/axios';
 
 const StudentProfile = () => {
+    // Auth stores student in sessionStorage (tab-scoped), not localStorage
     const [student, setStudent] = useState(() => {
-        try { return JSON.parse(localStorage.getItem('student') || 'null'); } catch { return null; }
+        try { return JSON.parse(sessionStorage.getItem('user') || 'null'); } catch { return null; }
     });
     const [form, setForm] = useState({ phone: '', address: '', guardianName: '', guardianContact: '' });
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState({ text: '', type: '' });
+
+    // Fetch fresh student data from the server on mount
+    useEffect(() => {
+        const fetchMe = async () => {
+            try {
+                const { data } = await api.get('/student-auth/me');
+                setStudent(data);
+            } catch (err) {
+                console.error('Failed to fetch student profile', err);
+            }
+        };
+        fetchMe();
+    }, []);
 
     useEffect(() => {
         if (student) {
@@ -35,7 +49,7 @@ const StudentProfile = () => {
         try {
             const { data } = await api.patch('/student/profile', form);
             setStudent(data.student);
-            localStorage.setItem('student', JSON.stringify(data.student));
+            sessionStorage.setItem('user', JSON.stringify(data.student));
             setMessage({ text: 'Profile updated successfully!', type: 'success' });
         } catch (err) {
             setMessage({ text: err?.response?.data?.message || 'Update failed.', type: 'error' });
