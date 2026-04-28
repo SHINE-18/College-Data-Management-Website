@@ -16,9 +16,10 @@ export const getAssetUrl = (assetPath) => {
     return `${normalizedApiUrl.replace(/\/api$/, '')}${assetPath}`;
 };
 
-// Add access token from memory/localStorage to every request
+// Add access token from sessionStorage to every request
+// sessionStorage is tab-isolated so each browser tab maintains its own independent session
 api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('token');
+    const token = sessionStorage.getItem('token');
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
 });
@@ -64,7 +65,7 @@ api.interceptors.response.use(
             try {
                 const { data } = await api.post('/auth/refresh');
                 const newToken = data.token;
-                localStorage.setItem('token', newToken);
+                sessionStorage.setItem('token', newToken);
                 api.defaults.headers.common.Authorization = `Bearer ${newToken}`;
                 processQueue(null, newToken);
                 originalRequest.headers.Authorization = `Bearer ${newToken}`;
@@ -72,8 +73,8 @@ api.interceptors.response.use(
             } catch (refreshError) {
                 processQueue(refreshError, null);
                 // Refresh failed — clear state and redirect to login
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
+                sessionStorage.removeItem('token');
+                sessionStorage.removeItem('user');
                 window.location.href = '/login';
                 return Promise.reject(refreshError);
             } finally {

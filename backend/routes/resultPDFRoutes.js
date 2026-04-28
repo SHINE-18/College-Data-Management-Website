@@ -11,7 +11,7 @@ const cloudinary = require('../config/cloudinary');
 router.post(
     '/result-pdfs',
     protect,
-    authorize('faculty', 'hod', 'admin'),
+    authorize('faculty', 'hod', 'super_admin'),
     uploadResult.single('resultPdf'),
     async (req, res) => {
         try {
@@ -53,12 +53,12 @@ router.post(
 // ──────────────────────────────────────────────────────────
 // GET /api/faculty/result-pdfs — List all result PDFs uploaded by this faculty
 // ──────────────────────────────────────────────────────────
-router.get('/result-pdfs', protect, authorize('faculty', 'hod', 'admin'), async (req, res) => {
+router.get('/result-pdfs', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res) => {
     try {
         const filter = {};
 
         // Admin sees all; faculty sees their own department
-        if (req.user.role !== 'admin') {
+        if (req.user.role !== 'super_admin') {
             filter.department = req.user.department || 'CE';
         }
 
@@ -75,14 +75,14 @@ router.get('/result-pdfs', protect, authorize('faculty', 'hod', 'admin'), async 
 // ──────────────────────────────────────────────────────────
 // DELETE /api/faculty/result-pdfs/:id — Delete a result PDF
 // ──────────────────────────────────────────────────────────
-router.delete('/result-pdfs/:id', protect, authorize('faculty', 'hod', 'admin'), async (req, res) => {
+router.delete('/result-pdfs/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res) => {
     try {
         const pdf = await ResultPDF.findById(req.params.id);
         if (!pdf) return res.status(404).json({ message: 'Result PDF not found' });
 
         // Only uploader or admin can delete
         if (
-            req.user.role !== 'admin' &&
+            req.user.role !== 'super_admin' &&
             pdf.uploadedBy.toString() !== req.user._id.toString()
         ) {
             return res.status(403).json({ message: 'Not authorised to delete this PDF' });

@@ -176,4 +176,89 @@ router.post('/assignments', protect, authorize('faculty', 'hod'), uploadAssignme
     }
 });
 
+// GET /api/faculty/attendance/stats - Aggregate attendance statistics for a semester/range
+router.get('/attendance/stats', protect, authorize('faculty', 'hod'), async (req, res) => {
+    try {
+        const { semester, range } = req.query;
+        const now = new Date();
+        let startDate;
+        if (range === 'week') startDate = new Date(now - 7 * 24 * 60 * 60 * 1000);
+        else if (range === 'semester') startDate = new Date(now.getFullYear(), now.getMonth() >= 6 ? 6 : 0, 1);
+        else startDate = new Date(now - 30 * 24 * 60 * 60 * 1000); // default month
+
+        const query = { date: { $gte: startDate } };
+        if (semester) query.semester = Number(semester);
+        if (req.user.department) {
+            const { buildDepartmentMatch } = require('../utils/departmentUtils');
+            // filter via student department
+        }
+
+        const records = await Attendance.find(query);
+        const bySubject = {};
+        let totalPresent = 0, totalAbsent = 0, totalLate = 0, totalExcused = 0;
+
+        records.forEach(r => {
+            if (r.status === 'Present') totalPresent++;
+            else if (r.status === 'Absent') totalAbsent++;
+            else if (r.status === 'Late') totalLate++;
+            else if (r.status === 'Excused') totalExcused++;
+
+            if (r.subject) {
+                if (!bySubject[r.subject]) bySubject[r.subject] = { present: 0, absent: 0, late: 0, excused: 0 };
+                const key = (r.status || 'present').toLowerCase();
+                bySubject[r.subject][key] = (bySubject[r.subject][key] || 0) + 1;
+            }
+        });
+
+        res.json({
+            totalRecords: records.length,
+            totalPresent, totalAbsent, totalLate, totalExcused,
+            bySubject
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+// GET /api/faculty/attendance/absent-students - Students with high absence for a semester/range
+router.get('/attendance/absent-students', protect, authorize('faculty', 'hod'), async (req, res) => {
+    try {
+        const { semester, range } = req.query;
+        const now = new Date();
+        let startDate;
+        if (range === 'week') startDate = new Date(now - 7 * 24 * 60 * 60 * 1000);
+        else if (range === 'semester') startDate = new Date(now.getFullYear(), now.getMonth() >= 6 ? 6 : 0, 1);
+        else startDate = new Date(now - 30 * 24 * 60 * 60 * 1000);
+
+        const query = { date: { $gte: startDate } };
+        if (semester) query.semester = Number(semester);
+
+        const records = await Attendance.find(query).populate('student', 'name enrollmentNumber');
+
+        const studentMap = {};
+        records.forEach(r => {
+            if (!r.student) return;
+            const id = r.student._id.toString();
+            if (!studentMap[id]) {
+                studentMap[id] = {
+                    name: r.student.name,
+                    enrollmentNumber: r.student.enrollmentNumber,
+                    totalClasses: 0, absentCount: 0
+                };
+            }
+            studentMap[id].totalClasses++;
+            if (r.status === 'Absent') studentMap[id].absentCount++;
+        });
+
+        const result = Object.values(studentMap)
+            .filter(s => s.absentCount > 0)
+            .sort((a, b) => (b.absentCount / b.totalClasses) - (a.absentCount / a.totalClasses))
+            .slice(0, 20);
+
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
 module.exports = router;

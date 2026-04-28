@@ -13,11 +13,11 @@ const AttendanceStats = () => {
     const fetchStats = async () => {
         setLoading(true);
         try {
-            const response = await api.get(`/faculty/portal/attendance/stats?semester=${semester}&range=${dateRange}`);
+            const response = await api.get(`/faculty/attendance/stats?semester=${semester}&range=${dateRange}`);
             setStats(response.data);
             
             // Fetch top absent students
-            const absentResponse = await api.get(`/faculty/portal/attendance/absent-students?semester=${semester}&range=${dateRange}`);
+            const absentResponse = await api.get(`/faculty/attendance/absent-students?semester=${semester}&range=${dateRange}`);
             setTopAbsentStudents(absentResponse.data || []);
         } catch (error) {
             toast.error('Failed to load statistics');

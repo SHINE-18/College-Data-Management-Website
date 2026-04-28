@@ -33,7 +33,7 @@ const AttendanceManager = () => {
         }
         setLoading(true);
         try {
-            const response = await api.get(`/faculty/portal/students?semester=${semester}`);
+            const response = await api.get(`/faculty/students?semester=${semester}`);
             setStudents(response.data);
 
             // Initialize map with default Present
@@ -104,7 +104,7 @@ const AttendanceManager = () => {
                 semester: Number(semester)
             }));
 
-            await api.post('/faculty/portal/attendance', { records });
+            await api.post('/faculty/attendance', { records });
             setOriginalAttendanceMap(JSON.parse(JSON.stringify(attendanceMap)));
             setShowConfirmModal(false);
             toast.success('✓ Attendance saved successfully!');

@@ -145,6 +145,22 @@ router.get('/me', protect, async (req, res) => {
     }
 });
 
+// POST /api/faculty/initialize — Faculty creates their own profile if missing (self-service)
+router.post('/initialize', protect, uploadFaculty.single('profilePhoto'), async (req, res) => {
+    try {
+        const existing = await Faculty.findOne({ email: req.user.email.toLowerCase() });
+        if (existing) return res.status(400).json({ message: 'Profile already exists' });
+        const facultyData = { ...req.body, email: req.user.email.toLowerCase(), department: req.user.department, isActive: true };
+        if (req.file) facultyData.profilePhoto = req.file.path || req.file.secure_url || req.file.location;
+        const saved = await new Faculty(facultyData).save();
+        await User.findByIdAndUpdate(req.user._id, { facultyId: saved._id });
+        res.status(201).json(saved);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+
 // ────────────────────────────────────────────
 // GET /api/faculty/:id — Get ONE faculty by ID
 // ────────────────────────────────────────────
@@ -377,20 +393,6 @@ router.delete('/:id', protect, authorize('hod', 'super_admin'), [
     }
 });
 
-// POST /api/faculty/initialize — Create own profile if missing
-router.post('/initialize', protect, uploadFaculty.single('profilePhoto'), async (req, res) => {
-    try {
-        const existing = await Faculty.findOne({ email: req.user.email.toLowerCase() });
-        if (existing) return res.status(400).json({ message: 'Profile already exists' });
-        const facultyData = { ...req.body, email: req.user.email.toLowerCase(), department: req.user.department, isActive: true };
-        if (req.file) facultyData.profilePhoto = req.file.path || req.file.secure_url || req.file.location;
-        const saved = await new Faculty(facultyData).save();
-        await User.findByIdAndUpdate(req.user._id, { facultyId: saved._id });
-        res.status(201).json(saved);
-    } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
-    }
-});
 
 // Export the router so server.js can use it
 module.exports = router;
