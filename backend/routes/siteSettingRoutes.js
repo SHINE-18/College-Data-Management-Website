@@ -84,8 +84,8 @@ router.post('/calendar', protect, authorize('hod', 'super_admin'), upload.single
             }
         }
 
-        // Upload new file to Cloudinary as 'raw' (good for PDFs)
-        const uploadResult = await uploadToCloudinary(req.file.buffer, 'academic_calendar', 'raw');
+        // Upload new file to Cloudinary as 'raw' with 'inline' flag (browser-viewable)
+        const uploadResult = await uploadToCloudinary(req.file.buffer, 'academic_calendar', 'raw', 'inline');
 
         // Save URL
         settings.academicCalendarPdf = uploadResult.secure_url;

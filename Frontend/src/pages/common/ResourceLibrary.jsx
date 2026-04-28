@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
 import api, { getAssetUrl } from '../../utils/axios';
-import { FaFilePowerpoint, FaFileAlt, FaVideo, FaLink, FaDownload, FaFilter } from 'react-icons/fa';
+import { FaFilePowerpoint, FaFileAlt, FaVideo, FaLink, FaDownload, FaFilter, FaEye } from 'react-icons/fa';
+import { usePdfPreview } from '../../utils/pdfViewer';
 
 const ResourceLibrary = () => {
     const [resources, setResources] = useState([]);
     const [loading, setLoading] = useState(true);
     const [semester, setSemester] = useState('');
     const [type, setType] = useState('');
+    const { openPreview, PdfModal } = usePdfPreview();
 
     useEffect(() => {
         const fetchResources = async () => {
@@ -88,15 +90,28 @@ const ResourceLibrary = () => {
                                         View Content
                                     </a>
                                 ) : (
-                                    <a href={getAssetUrl(res.fileUrl)} target="_blank" rel="noopener noreferrer" className="block w-full text-center py-2.5 rounded-xl bg-primary text-white font-bold hover:bg-primary-700 transition shadow-md shadow-primary/20">
-                                        Download {res.resourceType}
-                                    </a>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => openPreview(getAssetUrl(res.fileUrl), res.title)}
+                                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary/10 hover:bg-primary hover:text-white text-primary font-bold text-sm transition"
+                                        >
+                                            <FaEye /> View
+                                        </button>
+                                        <a
+                                            href={getAssetUrl(res.fileUrl)}
+                                            download
+                                            className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-primary text-white font-bold text-sm hover:bg-primary-700 transition shadow-md shadow-primary/20"
+                                        >
+                                            <FaDownload /> Save
+                                        </a>
+                                    </div>
                                 )}
                             </div>
                         </div>
                     ))}
                 </div>
             )}
+            <PdfModal />
         </div>
     );
 };

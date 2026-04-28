@@ -111,9 +111,9 @@ app.use('/api/student-auth', authLimiter);
 
 // ── Existing routes ──
 
+app.use('/api/faculty', require('./routes/resultPDFRoutes'));
 app.use('/api/faculty', require('./routes/facultyStudentRoutes'));
 app.use('/api/faculty', require('./routes/facultyRoutes'));
-app.use('/api/faculty', require('./routes/resultPDFRoutes'));
 app.use('/api/notices', require('./routes/noticeRoutes'));
 
 app.use('/api/events', require('./routes/eventRoutes'));

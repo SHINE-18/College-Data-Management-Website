@@ -4,6 +4,7 @@ import {
     FiFileText, FiDownload, FiEye, FiFilter,
     FiBookOpen, FiCalendar, FiUser, FiChevronDown, FiInbox
 } from 'react-icons/fi';
+import { usePdfPreview } from '../../utils/pdfViewer';
 
 const EXAM_TYPES = ['All', 'Mid-Sem', 'Final', 'Practical', 'Internal', 'Viva', 'University'];
 const SEMESTERS = ['All', 1, 2, 3, 4, 5, 6, 7, 8];
@@ -17,17 +18,12 @@ const examTypeColors = {
     'University':'bg-gray-50 text-gray-700 border border-gray-200',
 };
 
-// Use Google Docs Viewer to embed PDFs that Cloudinary serves as raw attachments.
-// The viewer fetches the PDF server-side and renders it inline inside the iframe.
-const googleDocsViewerUrl = (url) =>
-    `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
-
 const GradesViewer = () => {
     const [pdfs, setPdfs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filterSem, setFilterSem] = useState('All');
     const [filterExam, setFilterExam] = useState('All');
-    const [previewUrl, setPreviewUrl] = useState(null);
+    const { openPreview, PdfModal } = usePdfPreview();
 
     useEffect(() => {
         const fetchResultPdfs = async () => {
@@ -175,10 +171,10 @@ const GradesViewer = () => {
                                         {/* Actions */}
                                         <div className="flex items-center gap-2 shrink-0">
                                             <button
-                                                onClick={() => setPreviewUrl(previewUrl === pdf.pdfUrl ? null : pdf.pdfUrl)}
+                                                onClick={() => openPreview(pdf.pdfUrl, pdf.title)}
                                                 className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition font-medium"
                                             >
-                                                <FiEye /> {previewUrl === pdf.pdfUrl ? 'Close' : 'View'}
+                                                <FiEye /> View
                                             </button>
                                             <a
                                                 href={pdf.pdfUrl}
@@ -197,45 +193,7 @@ const GradesViewer = () => {
                     ))}
                 </div>
             )}
-
-            {/* Inline PDF Preview Modal */}
-            {previewUrl && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setPreviewUrl(null)}>
-                    <div
-                        className="bg-white rounded-2xl overflow-hidden shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col"
-                        onClick={e => e.stopPropagation()}
-                    >
-                        <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
-                            <p className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                <FiFileText className="text-red-500" /> Result PDF Preview
-                            </p>
-                            <div className="flex items-center gap-2">
-                                <a
-                                    href={previewUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    download
-                                    className="text-xs bg-green-50 text-green-700 hover:bg-green-100 px-3 py-1.5 rounded-lg transition flex items-center gap-1 font-medium"
-                                >
-                                    <FiDownload /> Download
-                                </a>
-                                <button
-                                    onClick={() => setPreviewUrl(null)}
-                                    className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg transition"
-                                >
-                                    Close ✕
-                                </button>
-                            </div>
-                        </div>
-                        <iframe
-                            src={googleDocsViewerUrl(previewUrl)}
-                            title="Result PDF Preview"
-                            className="flex-1 w-full"
-                            style={{ minHeight: '70vh' }}
-                        />
-                    </div>
-                </div>
-            )}
+            <PdfModal />
         </div>
     );
 };

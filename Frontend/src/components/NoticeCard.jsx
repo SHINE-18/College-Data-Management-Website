@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { getAssetUrl } from '../utils/axios';
+import { usePdfPreview } from '../utils/pdfViewer';
 
 const categoryColors = {
     General: 'bg-gray-50 text-gray-700 border border-gray-200',
@@ -32,6 +33,7 @@ const formatDate = (dateValue) => {
 
 const NoticeCard = ({ notice }) => {
     const [isExpanded, setIsExpanded] = useState(false);
+    const { openPreview, PdfModal } = usePdfPreview();
 
     // Handle synced notices, API format (createdAt), and legacy format (date)
     const displayDate = notice.publishedAt || notice.createdAt || notice.date;
@@ -108,18 +110,16 @@ const NoticeCard = ({ notice }) => {
                                 </a>
                             )}
                             {hasAttachment && fileUrl && (
-                                <a
-                                    href={fileUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    onClick={handleDownloadClick}
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); openPreview(fileUrl, displayTitle); }}
                                     className="text-xs text-primary font-semibold hover:text-primary-700 transition flex items-center space-x-1"
                                 >
                                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                     </svg>
-                                    <span>Download</span>
-                                </a>
+                                    <span>View PDF</span>
+                                </button>
                             )}
                         </div>
                     </div>
@@ -183,25 +183,38 @@ const NoticeCard = ({ notice }) => {
 
                         {/* Modal Footer / Attachments */}
                         {hasAttachment && fileUrl && (
-                            <div className="p-6 sm:p-8 border-t border-gray-100 bg-gray-50 rounded-b-2xl flex justify-between items-center">
+                            <div className="p-6 sm:p-8 border-t border-gray-100 bg-gray-50 rounded-b-2xl flex flex-wrap justify-between items-center gap-3">
                                 <span className="text-sm font-medium text-gray-500">Attachment Available</span>
-                                <a
-                                    href={fileUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center px-6 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition shadow-lg shadow-primary/30"
-                                >
-                                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                                    Download PDF
-                                </a>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => openPreview(fileUrl, displayTitle)}
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-50 text-blue-700 text-sm font-semibold rounded-lg hover:bg-blue-100 transition"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                        View PDF
+                                    </button>
+                                    <a
+                                        href={fileUrl}
+                                        download
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white text-sm font-semibold rounded-lg hover:bg-primary-700 transition shadow-lg shadow-primary/30"
+                                    >
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                        </svg>
+                                        Download
+                                    </a>
+                                </div>
                             </div>
                         )}
                     </div>
                 </div>
             )}
+            <PdfModal />
         </>
     );
 };
 
 export default NoticeCard;
-

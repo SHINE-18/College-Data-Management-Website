@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
-import api from '../../utils/axios';
+import api, { getAssetUrl } from '../../utils/axios';
 import toast from 'react-hot-toast';
 import {
     FiUploadCloud, FiTrash2, FiFile, FiChevronDown,
     FiCalendar, FiBookOpen, FiUser, FiEye
 } from 'react-icons/fi';
+import { usePdfPreview } from '../../utils/pdfViewer';
 
 const EXAM_TYPES = ['Mid-Sem', 'Final', 'Practical', 'Internal', 'Viva', 'University'];
 const SEMESTERS = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -31,14 +32,17 @@ const ResultUploader = () => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [dragOver, setDragOver] = useState(false);
     const [filterSem, setFilterSem] = useState('all');
+    const { openPreview, PdfModal } = usePdfPreview();
 
     const fetchPdfs = async () => {
         try {
             setLoading(true);
             const { data } = await api.get('/faculty/result-pdfs');
             setPdfs(data);
-        } catch {
-            toast.error('Failed to load uploaded result PDFs');
+        } catch (err) {
+            console.error('Fetch error:', err);
+            const msg = err.response?.data?.message || err.message || 'Failed to load uploaded result PDFs';
+            toast.error(msg);
         } finally {
             setLoading(false);
         }
@@ -301,14 +305,12 @@ const ResultUploader = () => {
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2 shrink-0">
-                                    <a
-                                        href={pdf.pdfUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
+                                    <button
+                                        onClick={() => openPreview(getAssetUrl(pdf.pdfUrl), pdf.title)}
                                         className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition font-medium"
                                     >
                                         <FiEye /> View
-                                    </a>
+                                    </button>
                                     <button
                                         onClick={() => handleDelete(pdf._id)}
                                         className="flex items-center gap-1 text-xs text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-lg transition font-medium"
@@ -321,6 +323,7 @@ const ResultUploader = () => {
                     </ul>
                 )}
             </div>
+            <PdfModal />
         </div>
     );
 };

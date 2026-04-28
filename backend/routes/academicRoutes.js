@@ -39,6 +39,24 @@ router.post('/syllabi', protect, authorize('faculty', 'hod', 'super_admin'), upl
     }
 });
 
+// DELETE /api/academics/syllabi/:id - Delete syllabus
+router.delete('/syllabi/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res) => {
+    try {
+        const syllabus = await Syllabus.findById(req.params.id);
+        if (!syllabus) return res.status(404).json({ message: 'Syllabus not found' });
+
+        // Only HOD, Super Admin, or the uploader can delete
+        if (req.user.role !== 'hod' && req.user.role !== 'super_admin' && syllabus.uploadedBy.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Not authorized to delete this syllabus' });
+        }
+
+        await syllabus.deleteOne();
+        res.json({ message: 'Syllabus deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
 // ── RESOURCE ROUTES ──
 
 // GET /api/academics/resources - Filtered resources (accessible to both users and students)
@@ -86,6 +104,24 @@ router.post('/resources', protect, authorize('faculty', 'hod', 'super_admin'), u
         res.status(201).json(createdResources);
     } catch (error) {
         res.status(400).json({ message: 'Upload failed', error: error.message });
+    }
+});
+
+// DELETE /api/academics/resources/:id - Delete resource
+router.delete('/resources/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res) => {
+    try {
+        const resource = await Resource.findById(req.params.id);
+        if (!resource) return res.status(404).json({ message: 'Resource not found' });
+
+        // Only HOD, Super Admin, or the uploader can delete
+        if (req.user.role !== 'hod' && req.user.role !== 'super_admin' && resource.uploadedBy.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ message: 'Not authorized to delete this resource' });
+        }
+
+        await resource.deleteOne();
+        res.json({ message: 'Resource deleted successfully' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
 

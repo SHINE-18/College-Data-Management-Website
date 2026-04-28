@@ -34,6 +34,7 @@ const createStorage = (folder, allowedFormats) =>
         cloudinary,
         params: async (req, file) => {
             const isImage = IMAGE_MIME_TYPES.includes(file.mimetype);
+            const isPdf = file.mimetype === 'application/pdf';
             const extension = file.originalname.includes('.')
                 ? file.originalname.split('.').pop().toLowerCase()
                 : undefined;
@@ -41,6 +42,9 @@ const createStorage = (folder, allowedFormats) =>
                 folder: `vgec/${folder}`,
                 allowed_formats: allowedFormats,
                 resource_type: isImage ? 'image' : 'raw',
+                // 'inline' flag makes Cloudinary send Content-Disposition: inline
+                // so PDFs open in the browser instead of being force-downloaded.
+                flags: isPdf ? 'inline' : undefined,
                 // Preserve file extension for raw uploads so downloads keep the correct type.
                 public_id: !isImage && extension
                     ? `${file.originalname.replace(/\.[^/.]+$/, "")}_${Date.now()}.${extension}`

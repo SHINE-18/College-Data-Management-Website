@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import api, { getAssetUrl } from '../../utils/axios';
-import { FaDownload, FaSearch, FaBookOpen } from 'react-icons/fa';
+import { FaDownload, FaSearch, FaBookOpen, FaEye } from 'react-icons/fa';
+import { usePdfPreview } from '../../utils/pdfViewer';
 
 const SyllabusArchive = () => {
     const location = useLocation();
@@ -14,6 +15,7 @@ const SyllabusArchive = () => {
     const [semester, setSemester] = useState('');
     const [search, setSearch] = useState('');
     const [department, setDepartment] = useState(initialDept);
+    const { openPreview, PdfModal } = usePdfPreview();
 
     useEffect(() => {
         const fetchSyllabi = async () => {
@@ -113,7 +115,7 @@ const SyllabusArchive = () => {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                     {syllabi.map((syllabus) => (
-                        <div key={syllabus._id} className="group bg-white rounded-2xl shadow-sm hover:shadow-2xl hover:-translate-y-1 border border-gray-100 p-6 transition-all duration-300">
+                        <div key={syllabus._id} className="group bg-white rounded-2xl shadow-sm hover:shadow-2xl hover:-translate-y-1 border border-gray-100 p-6 transition-all duration-300 flex flex-col">
                             <div className="flex justify-between items-start mb-4">
                                 <span className="bg-primary/10 text-primary px-3 py-1 rounded-full text-xs font-bold tracking-wider">
                                     SEM {syllabus.semester}
@@ -127,18 +129,26 @@ const SyllabusArchive = () => {
                             </h3>
                             <p className="text-sm font-mono text-gray-400 mb-6">{syllabus.courseCode}</p>
 
-                            <a
-                                href={getAssetUrl(syllabus.syllabusUrl)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="w-full flex items-center justify-center space-x-2 bg-gray-900 hover:bg-primary text-white py-3 rounded-xl transition font-bold shadow-lg shadow-gray-200 hover:shadow-primary/30"
-                            >
-                                <FaDownload className="text-sm" /> <span>Download PDF</span>
-                            </a>
+                            <div className="flex gap-2 mt-auto">
+                                <button
+                                    onClick={() => openPreview(getAssetUrl(syllabus.syllabusUrl), syllabus.courseTitle)}
+                                    className="flex-1 flex items-center justify-center gap-2 bg-primary/10 hover:bg-primary hover:text-white text-primary py-2.5 rounded-xl transition font-bold text-sm"
+                                >
+                                    <FaEye /> View
+                                </button>
+                                <a
+                                    href={getAssetUrl(syllabus.syllabusUrl)}
+                                    download
+                                    className="flex-1 flex items-center justify-center gap-2 bg-gray-900 hover:bg-primary text-white py-2.5 rounded-xl transition font-bold text-sm shadow-lg shadow-gray-200 hover:shadow-primary/30"
+                                >
+                                    <FaDownload /> Download
+                                </a>
+                            </div>
                         </div>
                     ))}
                 </div>
             )}
+            <PdfModal />
         </div>
     );
 };

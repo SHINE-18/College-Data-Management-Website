@@ -1,25 +1,53 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from '../../utils/axios';
 import toast from 'react-hot-toast';
-import { FaCloudUploadAlt, FaBook, FaFolderOpen, FaCalendarAlt } from 'react-icons/fa';
+import { FaCloudUploadAlt, FaBook, FaFolderOpen, FaCalendarAlt, FaTrash, FaFilePdf, FaLink, FaExternalLinkAlt } from 'react-icons/fa';
 import { useAuth } from '../../context/AuthContext';
 
 const AcademicsManager = () => {
-    const [mode, setMode] = useState('syllabus'); // 'syllabus' or 'resource'
+    const [mode, setMode] = useState('syllabus'); // 'syllabus' or 'resource' or 'calendar'
 
     // Syllabus State
     const [sylData, setSylData] = useState({ courseTitle: '', courseCode: '', semester: '1', credits: '4' });
     const [sylFile, setSylFile] = useState(null);
+    const [syllabi, setSyllabi] = useState([]);
 
     // Resource State
     const [resData, setResData] = useState({ title: '', subject: '', semester: '1', resourceType: 'PPT', description: '', externalLink: '' });
     const [resFiles, setResFiles] = useState([]);
+    const [resources, setResources] = useState([]);
 
     // Calendar State
     const [calFile, setCalFile] = useState(null);
 
     const [loading, setLoading] = useState(false);
+    const [fetching, setFetching] = useState(false);
     const { user } = useAuth();
+
+    useEffect(() => {
+        if (mode === 'syllabus') fetchSyllabi();
+        if (mode === 'resource') fetchResources();
+    }, [mode]);
+
+    const fetchSyllabi = async () => {
+        setFetching(true);
+        try {
+            const { data } = await api.get('/academics/syllabi');
+            setSyllabi(data);
+        } catch (error) {
+            console.error("Failed to fetch syllabi", error);
+        } finally { setFetching(false); }
+    };
+
+    const fetchResources = async () => {
+        setFetching(true);
+        try {
+            const { data } = await api.get('/academics/resources');
+            setResources(data);
+        } catch (error) {
+            console.error("Failed to fetch resources", error);
+        } finally { setFetching(false); }
+    };
 
     const handleSylSubmit = async (e) => {
         e.preventDefault();
@@ -37,9 +65,21 @@ const AcademicsManager = () => {
             toast.success("Syllabus uploaded successfully!");
             setSylData({ courseTitle: '', courseCode: '', semester: '1', credits: '4' });
             setSylFile(null);
+            fetchSyllabi();
         } catch (error) {
             toast.error("Upload failed");
         } finally { setLoading(false); }
+    };
+
+    const handleDeleteSyl = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this syllabus?")) return;
+        try {
+            await api.delete(`/academics/syllabi/${id}`);
+            toast.success("Syllabus deleted");
+            setSyllabi(prev => prev.filter(s => s._id !== id));
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Delete failed");
+        }
     };
 
     const handleResSubmit = async (e) => {
@@ -60,10 +100,21 @@ const AcademicsManager = () => {
             toast.success("Resource(s) added successfully!");
             setResData({ title: '', subject: '', semester: '1', resourceType: 'PPT', description: '', externalLink: '' });
             setResFiles([]);
+            fetchResources();
         } catch (error) {
             toast.error(error.response?.data?.error || error.response?.data?.message || "Upload failed");
-            console.error(error.response?.data || error);
         } finally { setLoading(false); }
+    };
+
+    const handleDeleteRes = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this resource?")) return;
+        try {
+            await api.delete(`/academics/resources/${id}`);
+            toast.success("Resource deleted");
+            setResources(prev => prev.filter(r => r._id !== id));
+        } catch (error) {
+            toast.error(error.response?.data?.message || "Delete failed");
+        }
     };
 
     const handleCalSubmit = async (e) => {
@@ -86,121 +137,215 @@ const AcademicsManager = () => {
     };
 
     return (
-        <div className="max-w-4xl mx-auto space-y-8 animate-fade-in pb-20">
-            <div className="flex items-center justify-between">
+        <div className="max-w-5xl mx-auto space-y-12 animate-fade-in pb-20">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h1 className="text-3xl font-bold text-gray-900 font-heading tracking-tight">Academics Management</h1>
-                <div className="bg-gray-100 p-1 rounded-lg flex space-x-1 shadow-inner">
-                    <button onClick={() => setMode('syllabus')} className={`px-4 py-2 text-sm font-bold rounded-md transition ${mode === 'syllabus' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Syllabus</button>
-                    <button onClick={() => setMode('resource')} className={`px-4 py-2 text-sm font-bold rounded-md transition ${mode === 'resource' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Resources</button>
+                <div className="bg-gray-100 p-1 rounded-xl flex space-x-1 shadow-inner">
+                    <button onClick={() => setMode('syllabus')} className={`px-5 py-2 text-sm font-bold rounded-lg transition ${mode === 'syllabus' ? 'bg-white text-primary shadow-md' : 'text-gray-500 hover:text-gray-700'}`}>Syllabus</button>
+                    <button onClick={() => setMode('resource')} className={`px-5 py-2 text-sm font-bold rounded-lg transition ${mode === 'resource' ? 'bg-white text-primary shadow-md' : 'text-gray-500 hover:text-gray-700'}`}>Resources</button>
                     {(user?.role === 'hod' || user?.role === 'super_admin') && (
-                        <button onClick={() => setMode('calendar')} className={`px-4 py-2 text-sm font-bold rounded-md transition ${mode === 'calendar' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Calendar</button>
+                        <button onClick={() => setMode('calendar')} className={`px-5 py-2 text-sm font-bold rounded-lg transition ${mode === 'calendar' ? 'bg-white text-primary shadow-md' : 'text-gray-500 hover:text-gray-700'}`}>Calendar</button>
                     )}
                 </div>
             </div>
 
             {mode === 'syllabus' ? (
-                <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-                    <div className="bg-primary/5 p-6 border-b border-gray-100 flex items-center space-x-3">
-                        <FaBook className="text-primary text-xl" />
-                        <h2 className="text-xl font-bold text-gray-900">Upload New Syllabus Document</h2>
-                    </div>
-                    <form onSubmit={handleSylSubmit} className="p-8 space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Detailed Course Title</label>
-                                <input type="text" value={sylData.courseTitle} onChange={e => setSylData({ ...sylData, courseTitle: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" placeholder="e.g. Data Structures & Algorithms" required />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Subject Code</label>
-                                <input type="text" value={sylData.courseCode} onChange={e => setSylData({ ...sylData, courseCode: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" placeholder="e.g. 3130702" required />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Semester</label>
-                                    <select value={sylData.semester} onChange={e => setSylData({ ...sylData, semester: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none">
-                                        {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <option key={s} value={s}>Sem {s}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Credits</label>
-                                    <input type="number" value={sylData.credits} onChange={e => setSylData({ ...sylData, credits: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" required />
-                                </div>
-                            </div>
+                <div className="space-y-8">
+                    {/* Upload Form */}
+                    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                        <div className="bg-primary/5 p-6 border-b border-gray-100 flex items-center space-x-3">
+                            <FaBook className="text-primary text-xl" />
+                            <h2 className="text-xl font-bold text-gray-900">Upload New Syllabus Document</h2>
                         </div>
-
-                        <div>
-                            <label className="block text-sm font-bold text-gray-700 mb-3">Syllabus PDF File</label>
-                            <div className="relative border-2 border-dashed border-gray-200 rounded-2xl p-8 hover:border-primary/50 transition bg-gray-50/50 flex flex-col items-center">
-                                <FaCloudUploadAlt className="text-4xl text-gray-300 mb-3" />
-                                <p className="text-sm text-gray-500 font-medium">{sylFile ? sylFile.name : 'Select or drop syllabus PDF'}</p>
-                                <input type="file" onChange={e => setSylFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer" accept=".pdf" />
-                            </div>
-                        </div>
-
-                        <button disabled={loading} className="w-full bg-primary hover:bg-primary-700 text-white py-4 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all active:scale-[0.98] disabled:opacity-50">
-                            {loading ? 'Uploading...' : 'Publish Syllabus'}
-                        </button>
-                    </form>
-                </div>
-            ) : mode === 'resource' ? (
-                <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
-                    <div className="bg-orange-50 p-6 border-b border-gray-100 flex items-center space-x-3">
-                        <FaFolderOpen className="text-orange-500 text-xl" />
-                        <h2 className="text-xl font-bold text-gray-900">Add E-Resource / Study Material</h2>
-                    </div>
-                    <form onSubmit={handleResSubmit} className="p-8 space-y-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Resource Title</label>
-                                <input type="text" value={resData.title} onChange={e => setResData({ ...resData, title: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" placeholder="e.g. Unit 2: Stack & Queues PPT" required />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Subject Name</label>
-                                <input type="text" value={resData.subject} onChange={e => setResData({ ...resData, subject: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" placeholder="e.g. Data Structures" required />
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Semester</label>
-                                    <select value={resData.semester} onChange={e => setResData({ ...resData, semester: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none">
-                                        {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <option key={s} value={s}>Sem {s}</option>)}
-                                    </select>
+                        <form onSubmit={handleSylSubmit} className="p-8 space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Detailed Course Title</label>
+                                    <input type="text" value={sylData.courseTitle} onChange={e => setSylData({ ...sylData, courseTitle: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" placeholder="e.g. Data Structures & Algorithms" required />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">Type</label>
-                                    <select value={resData.resourceType} onChange={e => setResData({ ...resData, resourceType: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none font-bold text-primary">
-                                        {['PPT', 'Notes', 'Video', 'Link', 'Other'].map(t => <option key={t} value={t}>{t}</option>)}
-                                    </select>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Subject Code</label>
+                                    <input type="text" value={sylData.courseCode} onChange={e => setSylData({ ...sylData, courseCode: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary/20 outline-none" placeholder="e.g. 3130702" required />
                                 </div>
-                            </div>
-
-                            <div className="md:col-span-2">
-                                <label className="block text-sm font-bold text-gray-700 mb-2">Short Description</label>
-                                <textarea value={resData.description} onChange={e => setResData({ ...resData, description: e.target.value })} rows="2" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none resize-none" placeholder="Brief about the content..."></textarea>
-                            </div>
-
-                            {resData.resourceType === 'Link' ? (
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-bold text-gray-700 mb-2">External URL (Drive, YouTube, etc.)</label>
-                                    <input type="url" value={resData.externalLink} onChange={e => setResData({ ...resData, externalLink: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none text-blue-600 font-medium" placeholder="https://..." required />
-                                </div>
-                            ) : (
-                                <div className="md:col-span-2">
-                                    <label className="block text-sm font-bold text-gray-700 mb-3">Upload File(s)</label>
-                                    <div className="relative border-2 border-dashed border-gray-200 rounded-2xl p-8 hover:border-orange-200 transition bg-gray-50/50 flex flex-col items-center">
-                                        <FaCloudUploadAlt className="text-4xl text-gray-300 mb-3" />
-                                        <p className="text-sm text-gray-500 font-medium">
-                                            {resFiles.length > 0 ? `${resFiles.length} file(s) selected` : 'Select files (PPT, PDF, ZIP)'}
-                                        </p>
-                                        <input type="file" onChange={e => setResFiles(e.target.files)} className="absolute inset-0 opacity-0 cursor-pointer" multiple />
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Semester</label>
+                                        <select value={sylData.semester} onChange={e => setSylData({ ...sylData, semester: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none">
+                                            {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <option key={s} value={s}>Sem {s}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Credits</label>
+                                        <input type="number" value={sylData.credits} onChange={e => setSylData({ ...sylData, credits: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" required />
                                     </div>
                                 </div>
-                            )}
-                        </div>
+                            </div>
 
-                        <button disabled={loading} className="w-full bg-gray-900 hover:bg-black text-white py-4 rounded-xl font-bold shadow-lg transition-all active:scale-[0.98] disabled:opacity-50">
-                            {loading ? 'Adding...' : 'Add to Library'}
-                        </button>
-                    </form>
+                            <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-3">Syllabus PDF File</label>
+                                <div className="relative border-2 border-dashed border-gray-200 rounded-2xl p-8 hover:border-primary/50 transition bg-gray-50/50 flex flex-col items-center">
+                                    <FaCloudUploadAlt className="text-4xl text-gray-300 mb-3" />
+                                    <p className="text-sm text-gray-500 font-medium">{sylFile ? sylFile.name : 'Select or drop syllabus PDF'}</p>
+                                    <input type="file" onChange={e => setSylFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer" accept=".pdf" />
+                                </div>
+                            </div>
+
+                            <button disabled={loading} className="w-full bg-primary hover:bg-primary-700 text-white py-4 rounded-xl font-bold shadow-lg shadow-primary/20 transition-all active:scale-[0.98] disabled:opacity-50">
+                                {loading ? 'Uploading...' : 'Publish Syllabus'}
+                            </button>
+                        </form>
+                    </div>
+
+                    {/* Management List */}
+                    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                        <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="font-bold text-gray-900">Manage Published Syllabi</h3>
+                            <span className="text-xs bg-primary/10 text-primary px-2 py-1 rounded-full font-bold">{syllabi.length} Found</span>
+                        </div>
+                        {fetching ? (
+                            <div className="p-10 text-center animate-pulse text-gray-400">Loading published syllabi...</div>
+                        ) : syllabi.length === 0 ? (
+                            <div className="p-10 text-center text-gray-400 italic">No syllabi published yet.</div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500 font-bold">
+                                            <th className="px-6 py-4">Course</th>
+                                            <th className="px-6 py-4 text-center">Sem</th>
+                                            <th className="px-6 py-4 text-center">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50">
+                                        {syllabi.map(syl => (
+                                            <tr key={syl._id} className="hover:bg-gray-50/50 transition">
+                                                <td className="px-6 py-4">
+                                                    <div className="font-bold text-gray-900">{syl.courseTitle}</div>
+                                                    <div className="text-xs text-gray-400">{syl.courseCode}</div>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className="bg-blue-50 text-blue-600 px-2.5 py-1 rounded-lg text-xs font-bold">S{syl.semester}</span>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <button onClick={() => handleDeleteSyl(syl._id)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
+                                                        <FaTrash />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            ) : mode === 'resource' ? (
+                <div className="space-y-8">
+                    {/* Upload Form */}
+                    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                        <div className="bg-orange-50 p-6 border-b border-gray-100 flex items-center space-x-3">
+                            <FaFolderOpen className="text-orange-500 text-xl" />
+                            <h2 className="text-xl font-bold text-gray-900">Add E-Resource / Study Material</h2>
+                        </div>
+                        <form onSubmit={handleResSubmit} className="p-8 space-y-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Resource Title</label>
+                                    <input type="text" value={resData.title} onChange={e => setResData({ ...resData, title: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" placeholder="e.g. Unit 2: Stack & Queues PPT" required />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Subject Name</label>
+                                    <input type="text" value={resData.subject} onChange={e => setResData({ ...resData, subject: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none" placeholder="e.g. Data Structures" required />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Semester</label>
+                                        <select value={resData.semester} onChange={e => setResData({ ...resData, semester: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none">
+                                            {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <option key={s} value={s}>Sem {s}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">Type</label>
+                                        <select value={resData.resourceType} onChange={e => setResData({ ...resData, resourceType: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none font-bold text-primary">
+                                            {['PPT', 'Notes', 'Video', 'Link', 'Other'].map(t => <option key={t} value={t}>{t}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="md:col-span-2">
+                                    <label className="block text-sm font-bold text-gray-700 mb-2">Short Description</label>
+                                    <textarea value={resData.description} onChange={e => setResData({ ...resData, description: e.target.value })} rows="2" className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none resize-none" placeholder="Brief about the content..."></textarea>
+                                </div>
+
+                                {resData.resourceType === 'Link' ? (
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-bold text-gray-700 mb-2">External URL (Drive, YouTube, etc.)</label>
+                                        <input type="url" value={resData.externalLink} onChange={e => setResData({ ...resData, externalLink: e.target.value })} className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none text-blue-600 font-medium" placeholder="https://..." required />
+                                    </div>
+                                ) : (
+                                    <div className="md:col-span-2">
+                                        <label className="block text-sm font-bold text-gray-700 mb-3">Upload File(s)</label>
+                                        <div className="relative border-2 border-dashed border-gray-200 rounded-2xl p-8 hover:border-orange-200 transition bg-gray-50/50 flex flex-col items-center">
+                                            <FaCloudUploadAlt className="text-4xl text-gray-300 mb-3" />
+                                            <p className="text-sm text-gray-500 font-medium">
+                                                {resFiles.length > 0 ? `${resFiles.length} file(s) selected` : 'Select files (PPT, PDF, ZIP)'}
+                                            </p>
+                                            <input type="file" onChange={e => setResFiles(e.target.files)} className="absolute inset-0 opacity-0 cursor-pointer" multiple />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <button disabled={loading} className="w-full bg-gray-900 hover:bg-black text-white py-4 rounded-xl font-bold shadow-lg transition-all active:scale-[0.98] disabled:opacity-50">
+                                {loading ? 'Adding...' : 'Add to Library'}
+                            </button>
+                        </form>
+                    </div>
+
+                    {/* Management List */}
+                    <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">
+                        <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+                            <h3 className="font-bold text-gray-900">Manage Library Resources</h3>
+                            <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full font-bold">{resources.length} Total</span>
+                        </div>
+                        {fetching ? (
+                            <div className="p-10 text-center animate-pulse text-gray-400">Loading library resources...</div>
+                        ) : resources.length === 0 ? (
+                            <div className="p-10 text-center text-gray-400 italic">No resources added yet.</div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500 font-bold">
+                                            <th className="px-6 py-4">Title</th>
+                                            <th className="px-6 py-4">Type</th>
+                                            <th className="px-6 py-4 text-center">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-gray-50">
+                                        {resources.map(res => (
+                                            <tr key={res._id} className="hover:bg-gray-50/50 transition">
+                                                <td className="px-6 py-4">
+                                                    <div className="font-bold text-gray-900 line-clamp-1">{res.title}</div>
+                                                    <div className="text-xs text-gray-400">{res.subject} - Sem {res.semester}</div>
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <span className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-tight ${res.resourceType === 'Link' ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-600'}`}>
+                                                        {res.resourceType === 'Link' ? <FaExternalLinkAlt /> : <FaFilePdf />} {res.resourceType}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <button onClick={() => handleDeleteRes(res._id)} className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
+                                                        <FaTrash />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
                 </div>
             ) : (
                 <div className="bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden">

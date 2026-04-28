@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import api from '../../utils/axios';
-import { getAssetUrl } from '../../utils/axios';
+import api, { getAssetUrl } from '../../utils/axios';
 import toast from 'react-hot-toast';
-import { FaCloudUploadAlt, FaFilePdf, FaCheckCircle, FaClock } from 'react-icons/fa';
+import { FaCloudUploadAlt, FaFilePdf, FaCheckCircle, FaClock, FaEye } from 'react-icons/fa';
+import { usePdfPreview } from '../../utils/pdfViewer';
 
 const AssignmentUploader = () => {
     const [assignments, setAssignments] = useState([]);
@@ -10,6 +10,7 @@ const AssignmentUploader = () => {
     const [selectedAssignment, setSelectedAssignment] = useState(null);
     const [file, setFile] = useState(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const { openPreview, PdfModal } = usePdfPreview();
 
     useEffect(() => {
         fetchAssignments();
@@ -94,9 +95,17 @@ const AssignmentUploader = () => {
                                 <p className="text-xs text-gray-500 line-clamp-2 bg-gray-50 p-3 rounded-lg">{assignment.description || "No description provided."}</p>
 
                                 {assignment.fileUrl && (
-                                    <a href={getAssetUrl(assignment.fileUrl)} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center space-x-2 text-xs text-primary hover:underline font-medium">
-                                        <FaFilePdf /> <span>Download Reference file</span>
-                                    </a>
+                                    <div className="mt-3 flex items-center gap-3">
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); openPreview(getAssetUrl(assignment.fileUrl), assignment.title); }}
+                                            className="inline-flex items-center space-x-1.5 text-xs text-blue-600 hover:underline font-medium"
+                                        >
+                                            <FaEye /> <span>View Reference</span>
+                                        </button>
+                                        <a href={getAssetUrl(assignment.fileUrl)} download className="inline-flex items-center space-x-1.5 text-xs text-primary hover:underline font-medium">
+                                            <FaFilePdf /> <span>Download</span>
+                                        </a>
+                                    </div>
                                 )}
                             </div>
                         ))
@@ -165,6 +174,7 @@ const AssignmentUploader = () => {
                 </div>
 
             </div>
+            <PdfModal />
         </div>
     );
 };

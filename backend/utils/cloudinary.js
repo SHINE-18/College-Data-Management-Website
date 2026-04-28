@@ -7,12 +7,13 @@ const cloudinary = require('../config/cloudinary');
  * @param {string} resourceType - The type of resource ('image', 'raw', 'video')
  * @returns {Promise<Object>} - The Cloudinary upload result
  */
-const uploadToCloudinary = (buffer, folder, resourceType = 'auto') => {
+const uploadToCloudinary = (buffer, folder, resourceType = 'auto', flags = undefined) => {
     return new Promise((resolve, reject) => {
         const uploadStream = cloudinary.uploader.upload_stream(
             {
                 folder: `vgec/${folder}`,
                 resource_type: resourceType,
+                ...(flags ? { flags } : {}),
             },
             (error, result) => {
                 if (error) return reject(error);
