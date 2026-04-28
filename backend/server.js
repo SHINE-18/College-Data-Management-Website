@@ -30,6 +30,12 @@ if (missing.length) {
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Trust the first proxy hop (required on Render / Heroku so that
+// express-rate-limit reads the real client IP from X-Forwarded-For
+// instead of Render's internal load-balancer IP, which would cause
+// ALL users to share a single rate-limit counter).
+app.set('trust proxy', 1);
+
 // ============================================
 // MIDDLEWARE
 // ============================================

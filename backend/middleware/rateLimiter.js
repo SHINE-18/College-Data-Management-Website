@@ -16,10 +16,10 @@ const apiLimiter = rateLimit({
     legacyHeaders: false,  // Disable the `X-RateLimit-*` headers
 });
 
-// Stricter rate limiter for auth endpoints — 10 attempts per 15 minutes
+// Stricter rate limiter for auth endpoints — 20 attempts per 15 minutes
 const authLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 10,
+    max: 20,
     message: {
         success: false,
         message: 'Too many login attempts from this IP, please try again after 15 minutes.'
