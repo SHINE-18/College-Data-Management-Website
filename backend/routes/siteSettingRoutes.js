@@ -46,7 +46,7 @@ router.post('/visitor-count', async (req, res) => {
 // PUT /api/settings — Update site settings (super_admin only)
 router.put('/', protect, authorize('super_admin'), async (req, res) => {
     try {
-        const { collegeName, email, phone, address, website } = req.body;
+        const { collegeName, email, phone, address, website, established, ugBranches, totalStudents, naacGrade } = req.body;
 
         let settings = await SiteSetting.getSettings();
 
@@ -55,6 +55,10 @@ router.put('/', protect, authorize('super_admin'), async (req, res) => {
         if (phone !== undefined) settings.phone = phone;
         if (address !== undefined) settings.address = address;
         if (website !== undefined) settings.website = website;
+        if (established !== undefined) settings.established = established;
+        if (ugBranches !== undefined) settings.ugBranches = ugBranches;
+        if (totalStudents !== undefined) settings.totalStudents = totalStudents;
+        if (naacGrade !== undefined) settings.naacGrade = naacGrade;
 
         await settings.save();
         res.json(settings);

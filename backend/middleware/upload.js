@@ -95,6 +95,11 @@ const uploadSubmission = multer({
     fileFilter: makeFileFilter(DOCUMENT_MIME_TYPES, 'Only PDF, DOC, DOCX, PPT, PPTX, ZIP, and RAR files are allowed'),
     limits: { fileSize: 20 * 1024 * 1024 }
 });
+const uploadResult = multer({
+    storage: createStorage('results', ['pdf']),
+    fileFilter: makeFileFilter(PDF_MIME_TYPES, 'Only PDF files are allowed'),
+    limits: { fileSize: 20 * 1024 * 1024 }
+});
 
 module.exports = {
     uploadFaculty,
@@ -106,4 +111,5 @@ module.exports = {
     uploadResource,
     uploadEvent,
     uploadSubmission,
+    uploadResult,
 };

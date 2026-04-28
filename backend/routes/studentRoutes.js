@@ -5,6 +5,8 @@ const Attendance = require('../models/Attendance');
 const Result = require('../models/Result');
 const Assignment = require('../models/Assignment');
 const Submission = require('../models/Submission');
+const Student = require('../models/Student');
+const { uploadSubmission } = require('../middleware/upload');
 const { getDepartmentAliases } = require('../utils/departmentUtils');
 
 // Sub-routes for the logged in student
@@ -14,7 +16,6 @@ router.get('/dashboard', protectStudent, async (req, res) => {
     try {
         const studentId = req.student._id;
 
-        // Fetch overview metrics
         const attendanceRecords = await Attendance.find({ student: studentId });
         const presentCount = attendanceRecords.filter(a => a.status === 'Present').length;
         const totalClasses = attendanceRecords.length;
@@ -40,23 +41,37 @@ router.get('/dashboard', protectStudent, async (req, res) => {
 router.get('/attendance', protectStudent, async (req, res) => {
     try {
         const records = await Attendance.find({ student: req.student._id }).sort('-date');
-
-        // Group by subject logic could go here or on frontend
-
         res.json(records);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
 });
 
-const { uploadSubmission } = require('../middleware/upload');
-const Student = require('../models/Student');
-
-// GET /api/student/results - All results
+// GET /api/student/results - All results (legacy marks-based)
 router.get('/results', protectStudent, async (req, res) => {
     try {
         const results = await Result.find({ student: req.student._id }).sort('-createdAt');
         res.json(results);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error', error: error.message });
+    }
+});
+
+// GET /api/student/result-pdfs - Result PDFs for student's semester & department
+router.get('/result-pdfs', protectStudent, async (req, res) => {
+    try {
+        const ResultPDF = require('../models/ResultPDF');
+        const semFilter = req.query.semester ? { semester: Number(req.query.semester) } : {};
+        const deptAliases = getDepartmentAliases(req.student.department);
+
+        const pdfs = await ResultPDF.find({
+            ...semFilter,
+            department: { $in: deptAliases }
+        })
+            .populate('uploadedBy', 'name')
+            .sort('-createdAt');
+
+        res.json(pdfs);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -73,7 +88,6 @@ router.get('/assignments', protectStudent, async (req, res) => {
             department: { $in: [...getDepartmentAliases(req.student.department), 'All'] }
         }).sort('-dueDate').lean();
 
-        // Check if student has submitted each assignment
         const submissions = await Submission.find({ student: studentId });
         const submittedMap = new Set(submissions.map(s => s.assignment.toString()));
 

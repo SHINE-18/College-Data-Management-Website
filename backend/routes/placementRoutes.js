@@ -76,11 +76,18 @@ router.post('/', [
     }
 });
 
-// DELETE /api/placements/:id — Admin only
-router.delete('/:id', protect, authorize('super_admin'), async (req, res) => {
+// DELETE /api/placements/:id — Admin or HOD (for own dept)
+router.delete('/:id', protect, authorize('super_admin', 'hod'), async (req, res) => {
     try {
-        const placement = await Placement.findByIdAndDelete(req.params.id);
+        const placement = await Placement.findById(req.params.id);
         if (!placement) return res.status(404).json({ message: 'Placement not found' });
+
+        // HOD can only delete records for their own department
+        if (req.user.role === 'hod' && placement.department !== req.user.department) {
+            return res.status(403).json({ message: 'You can only manage placements for your own department.' });
+        }
+
+        await placement.deleteOne();
         res.json({ message: 'Placement deleted successfully' });
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });

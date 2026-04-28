@@ -33,7 +33,8 @@ const departmentSchema = new mongoose.Schema({
     },
     hod: {
         name: { type: String, default: 'Unassigned' },
-        message: { type: String, default: '' }
+        message: { type: String, default: '' },
+        videoUrl: { type: String, default: '' }   // Optional YouTube embed URL set by HOD
     },
     achievements: [{
         type: String

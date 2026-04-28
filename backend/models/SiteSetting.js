@@ -36,7 +36,12 @@ const siteSettingSchema = new mongoose.Schema({
     academicCalendarPdf: {
         type: String,
         default: ''
-    }
+    },
+    // Homepage stats bar
+    established: { type: String, default: '1994' },
+    ugBranches: { type: String, default: '12' },
+    totalStudents: { type: String, default: '5000+' },
+    naacGrade: { type: String, default: 'A Grade' }
 }, {
     timestamps: true
 });

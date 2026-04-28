@@ -9,6 +9,10 @@ const SiteSettings = () => {
         phone: '',
         address: '',
         website: '',
+        established: '1994',
+        ugBranches: '12',
+        totalStudents: '5000+',
+        naacGrade: 'A Grade',
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -25,6 +29,10 @@ const SiteSettings = () => {
                     phone: data.phone || '',
                     address: data.address || '',
                     website: data.website || '',
+                    established: data.established || '1994',
+                    ugBranches: data.ugBranches || '12',
+                    totalStudents: data.totalStudents || '5000+',
+                    naacGrade: data.naacGrade || 'A Grade',
                 });
             } catch (err) {
                 console.error('Failed to load settings:', err);
@@ -132,6 +140,30 @@ const SiteSettings = () => {
                         <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Website URL</label>
                             <input name="website" value={form.website} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none" />
+                        </div>
+                    </div>
+
+                    {/* Homepage Stats Bar */}
+                    <div className="pt-6 border-t border-gray-100">
+                        <h3 className="text-sm font-bold text-gray-700 mb-1">Homepage Stats Bar</h3>
+                        <p className="text-xs text-gray-400 mb-4">These values appear in the stats section on the public homepage.</p>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Est. Year</label>
+                                <input name="established" value={form.established} onChange={handleChange} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none" placeholder="1994" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">UG Branches</label>
+                                <input name="ugBranches" value={form.ugBranches} onChange={handleChange} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none" placeholder="12" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">Total Students</label>
+                                <input name="totalStudents" value={form.totalStudents} onChange={handleChange} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none" placeholder="5000+" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-600 mb-1">NAAC Grade</label>
+                                <input name="naacGrade" value={form.naacGrade} onChange={handleChange} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-accent outline-none" placeholder="A Grade" />
+                            </div>
                         </div>
                     </div>
                 </div>

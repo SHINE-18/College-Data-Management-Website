@@ -55,6 +55,48 @@ router.post('/', protect, authorize('super_admin'), async (req, res) => {
     }
 });
 
+// @desc    HOD updates their own department's public page content
+// @route   PUT /api/departments/my
+// @access  Private/HOD
+router.put('/my', protect, authorize('hod'), async (req, res) => {
+    try {
+        const department = await Department.findOne({ name: req.user.department });
+        if (!department) {
+            return res.status(404).json({ success: false, message: 'Your department record was not found.' });
+        }
+
+        const allowed = [
+            'description', 'detailAbout', 'vision', 'mission',
+            'achievements', 'researchAreas', 'placementStats', 'stats',
+        ];
+
+        const update = {};
+        for (const key of allowed) {
+            if (req.body[key] !== undefined) {
+                update[key] = req.body[key];
+            }
+        }
+
+        // Allow HOD to update only hod.message and hod.videoUrl (not hod.name — that comes from Faculty)
+        if (req.body.hod_message !== undefined) {
+            update['hod.message'] = req.body.hod_message;
+        }
+        if (req.body.hod_videoUrl !== undefined) {
+            update['hod.videoUrl'] = req.body.hod_videoUrl;
+        }
+
+        const updated = await Department.findByIdAndUpdate(
+            department._id,
+            { $set: update },
+            { new: true, runValidators: true }
+        );
+
+        res.json({ success: true, data: updated });
+    } catch (error) {
+        res.status(400).json({ success: false, message: error.message });
+    }
+});
+
 // @desc    Update a department
 // @route   PUT /api/departments/:id
 // @access  Private/SuperAdmin

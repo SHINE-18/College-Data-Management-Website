@@ -17,15 +17,32 @@ export const AuthProvider = ({ children }) => {
     const [unreadCount, setUnreadCount] = useState(0);
     const pollIntervalRef = useRef(null);
 
-    // Restore auth state from localStorage on page refresh
+    // Verify token with backend on app load — prevents stale/invalid tokens from granting access
     useEffect(() => {
         const savedToken = localStorage.getItem('token');
-        const savedUser = localStorage.getItem('user');
-        if (savedToken && savedUser) {
-            setToken(savedToken);
-            setUser(JSON.parse(savedUser));
+        if (!savedToken) {
+            setLoading(false);
+            return;
         }
-        setLoading(false);
+
+        // Validate the token against the backend before trusting it
+        api.get('/auth/me')
+            .then(({ data }) => {
+                setToken(savedToken);
+                setUser(data);
+                // Sync localStorage with fresh user data from server
+                localStorage.setItem('user', JSON.stringify(data));
+            })
+            .catch(() => {
+                // Token is invalid, expired, or user is inactive — clear everything
+                localStorage.removeItem('token');
+                localStorage.removeItem('user');
+                setToken(null);
+                setUser(null);
+            })
+            .finally(() => {
+                setLoading(false);
+            });
     }, []);
 
     // Fetch notifications from API

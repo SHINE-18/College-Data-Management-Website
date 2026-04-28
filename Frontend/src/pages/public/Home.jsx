@@ -15,19 +15,28 @@ const Home = () => {
     const [gtuCirculars, setGtuCirculars] = useState([]);
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [siteStats, setSiteStats] = useState({ established: '1994', ugBranches: '12', totalStudents: '5000+', naacGrade: 'A Grade' });
     usePageTitle('Home');
 
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const [collegeNoticesRes, gtuCircularsRes, eventsRes] = await Promise.all([
+                const [collegeNoticesRes, gtuCircularsRes, eventsRes, settingsRes] = await Promise.all([
                     api.get('/notices?page=1&limit=3&excludeSource=GTU'),
                     api.get('/notices?page=1&limit=3&source=GTU'),
-                    api.get('/events?page=1&limit=3')
+                    api.get('/events?page=1&limit=3'),
+                    api.get('/settings'),
                 ]);
                 setCollegeNotices(collegeNoticesRes.data.data || []);
                 setGtuCirculars(gtuCircularsRes.data.data || []);
                 setEvents(eventsRes.data.data || []);
+                const s = settingsRes.data;
+                setSiteStats({
+                    established: s.established || '1994',
+                    ugBranches:  s.ugBranches  || '12',
+                    totalStudents: s.totalStudents || '5000+',
+                    naacGrade:   s.naacGrade   || 'A Grade',
+                });
             } catch (error) {
                 console.error('Error fetching home data:', error);
                 setCollegeNotices([]);
@@ -261,10 +270,10 @@ const Home = () => {
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-12 text-center">
                         {[
-                            { val: '1994', label: 'Established' },
-                            { val: '12', label: 'UG Branches' },
-                            { val: '5000+', label: 'Total Students' },
-                            { val: 'A Grade', label: 'NAAC Accredited' },
+                            { val: siteStats.established,   label: 'Established' },
+                            { val: siteStats.ugBranches,    label: 'UG Branches' },
+                            { val: siteStats.totalStudents, label: 'Total Students' },
+                            { val: siteStats.naacGrade,     label: 'NAAC Accredited' },
                         ].map((stat, i) => (
                             <div key={i}>
                                 <p className="text-4xl md:text-5xl font-black text-accent mb-2">{stat.val}</p>

@@ -50,7 +50,8 @@ import TimetableBuilder from '../pages/hod/TimetableBuilder';
 import TimetableUpload from '../pages/hod/TimetableUpload';
 import LeaveApprovals from '../pages/hod/LeaveApprovals';
 import PostCircular from '../pages/hod/PostCircular';
-// import Reports from '../pages/hod/Reports';/
+import HODDepartmentEditor from '../pages/hod/HODDepartmentEditor';
+// import Reports from '../pages/hod/Reports';
 
 // Admin
 import SuperAdminDashboard from '../pages/admin/SuperAdminDashboard';
@@ -137,6 +138,7 @@ const AppRoutes = () => (
             <Route path="qualifications" element={<Qualifications />} />
             <Route path="publications" element={<Publications />} />
             <Route path="achievements" element={<Achievements />} />
+            <Route path="department-page" element={<HODDepartmentEditor />} />
         </Route>
 
         {/* Admin Portal */}
