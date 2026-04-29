@@ -158,7 +158,61 @@ const Login = () => {
                             {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> : <span>Sign In</span>}
                         </button>
                     </form>
-
+                    {/* Demo Credentials Section */}
+                    <div className="mt-8 pt-6 border-t border-gray-100">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 text-center">Demo Credentials</p>
+                        <div className="grid grid-cols-2 gap-3">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsStudentLogin(true);
+                                    setIdentifier('220170107037');
+                                    setPassword('Password@123');
+                                }}
+                                className="flex flex-col items-center p-2.5 rounded-xl bg-gray-50 hover:bg-blue-50 hover:text-primary transition-all border border-gray-100 hover:border-blue-200 group"
+                            >
+                                <span className="text-xs font-bold">Students Enroll</span>
+                                <span className="text-[10px] text-gray-500 group-hover:text-primary/70">220170107037</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsStudentLogin(false);
+                                    setIdentifier('rkshah@vgecg.ac.in');
+                                    setPassword('Vgec@2026');
+                                }}
+                                className="flex flex-col items-center p-2.5 rounded-xl bg-gray-50 hover:bg-blue-50 hover:text-primary transition-all border border-gray-100 hover:border-blue-200 group"
+                            >
+                                <span className="text-xs font-bold">Faculty College Email</span>
+                                <span className="text-[10px] text-gray-500 group-hover:text-primary/70">rkshah@vgecg.ac.in</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsStudentLogin(false);
+                                    setIdentifier('kajalpatel@vgecg.ac.in');
+                                    setPassword('Vgec@2026');
+                                }}
+                                className="flex flex-col items-center p-2.5 rounded-xl bg-gray-50 hover:bg-blue-50 hover:text-primary transition-all border border-gray-100 hover:border-blue-200 group"
+                            >
+                                <span className="text-xs font-bold">HOD</span>
+                                <span className="text-[10px] text-gray-500 group-hover:text-primary/70">kajalpatel@vgecg.ac.in</span>
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setIsStudentLogin(false);
+                                    setIdentifier('admin@vgecg.ac.in');
+                                    setPassword('AdminPassword123!');
+                                }}
+                                className="flex flex-col items-center p-2.5 rounded-xl bg-gray-50 hover:bg-blue-50 hover:text-primary transition-all border border-gray-100 hover:border-blue-200 group"
+                            >
+                                <span className="text-xs font-bold">Admin</span>
+                                <span className="text-[10px] text-gray-500 group-hover:text-primary/70">admin@vgecg.ac.in</span>
+                            </button>
+                        </div>
+                        <p className="text-[10px] text-gray-400 mt-3 text-center italic">Please check the each profile</p>
+                    </div>
                 </div>
 
                 <p className="text-center text-blue-200 text-sm mt-6">
