@@ -117,48 +117,82 @@ const DepartmentDetail = () => {
             <AnnouncementTicker department={dept.name} />
 
             {/* ═════════════ HERO ═════════════ */}
-            <div className={`bg-gradient-to-r ${accentGrad} relative overflow-hidden py-24`}>
-                {/* decorative hatching */}
-                <div className="absolute inset-0 opacity-10"
-                    style={{ backgroundImage: 'repeating-linear-gradient(45deg, white 0, white 1px, transparent 0, transparent 50%)', backgroundSize: '20px 20px' }} />
+            <div className="relative overflow-hidden py-28 pb-32"
+                style={{
+                    background: `linear-gradient(135deg, #0f172a 0%, #1e293b 40%, #334155 100%)`,
+                }}>
+
+                {/* soft accent glow – top-right */}
+                <div className={`absolute -top-24 -right-24 w-[420px] h-[420px] rounded-full bg-gradient-to-br ${accentGrad} opacity-20 blur-[100px]`} />
+                {/* soft accent glow – bottom-left */}
+                <div className={`absolute -bottom-32 -left-20 w-[340px] h-[340px] rounded-full bg-gradient-to-tr ${accentGrad} opacity-15 blur-[90px]`} />
+
+                {/* subtle dot grid pattern */}
+                <div className="absolute inset-0 opacity-[0.04]"
+                    style={{
+                        backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px)',
+                        backgroundSize: '28px 28px',
+                    }} />
+
+                {/* fine grain / noise texture */}
+                <div className="absolute inset-0 opacity-[0.03]"
+                    style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`,
+                    }} />
+
+                {/* decorative floating ring – right side */}
+                <div className="absolute top-16 right-[12%] w-32 h-32 rounded-full border border-white/[0.06] hidden lg:block" />
+                <div className="absolute top-20 right-[13%] w-24 h-24 rounded-full border border-white/[0.04] hidden lg:block" />
+
+                {/* thin accent line across top */}
+                <div className={`absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-white/10 to-transparent`} />
 
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-                    <div className="flex items-center space-x-3 text-white/70 text-xs font-bold uppercase tracking-widest mb-4">
+                    <div className="flex items-center space-x-3 text-slate-400 text-xs font-bold uppercase tracking-widest mb-5">
                         <Link to="/" className="hover:text-white transition">VGEC</Link>
-                        <span>/</span>
-                        <span className="text-white">Departments</span>
+                        <span className="text-slate-600">/</span>
+                        <span className="text-slate-300">Departments</span>
                     </div>
 
-                    <div className="flex items-start gap-4 mb-4">
-                        <span className="bg-white/20 text-white text-xs font-black px-3 py-1 rounded-full uppercase tracking-widest backdrop-blur-sm">
+                    <div className="flex items-start gap-3 mb-5">
+                        <span className={`bg-gradient-to-r ${accentGrad} text-white text-xs font-black px-3.5 py-1.5 rounded-full uppercase tracking-widest shadow-lg`}>
                             {dept.code}
                         </span>
                         {dept.established && (
-                            <span className="bg-white/10 text-white/70 text-xs font-bold px-3 py-1 rounded-full">
+                            <span className="bg-white/[0.06] text-slate-400 text-xs font-bold px-3 py-1.5 rounded-full border border-white/[0.06]">
                                 Est. {dept.established}
                             </span>
                         )}
                     </div>
 
-                    <h1 className="text-4xl md:text-6xl font-black text-white leading-tight mb-4">
+                    <h1 className="text-4xl md:text-6xl font-black text-white leading-tight mb-4 tracking-tight">
                         Department of <br />
-                        <span className="text-white/90">{dept.name}</span>
+                        <span className="text-slate-300">{dept.name}</span>
                     </h1>
-                    <p className="text-white/75 text-lg max-w-2xl font-medium leading-relaxed">{dept.description}</p>
+                    <p className="text-slate-400 text-lg max-w-2xl font-medium leading-relaxed">{dept.description}</p>
 
-                    <div className="mt-8 flex flex-wrap gap-3">
+                    <div className="mt-9 flex flex-wrap gap-3">
                         <Link to={`/notices?dept=${encodeURIComponent(dept.name)}`}
-                            className="bg-white text-slate-800 px-6 py-2.5 rounded-xl font-bold hover:bg-slate-100 transition shadow-xl text-sm flex items-center gap-2">
+                            className="bg-white text-slate-900 px-6 py-2.5 rounded-xl font-bold hover:bg-slate-100 transition shadow-lg shadow-black/20 text-sm flex items-center gap-2">
                             Notice Board
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M14 5l7 7m0 0l-7 7m7-7H3" />
                             </svg>
                         </Link>
                         <Link to={`/faculty?dept=${encodeURIComponent(dept.name)}`}
-                            className="bg-white/20 backdrop-blur-md text-white border border-white/30 px-6 py-2.5 rounded-xl font-bold hover:bg-white/30 transition text-sm">
+                            className="bg-white/[0.06] backdrop-blur-md text-slate-200 border border-white/[0.1] px-6 py-2.5 rounded-xl font-bold hover:bg-white/[0.12] hover:border-white/[0.18] transition text-sm">
                             Meet Faculty
                         </Link>
                     </div>
+                </div>
+
+                {/* smooth wave divider at bottom */}
+                <div className="absolute bottom-0 left-0 right-0">
+                    <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto block"
+                        preserveAspectRatio="none">
+                        <path d="M0 60V30C240 0 480 0 720 30C960 60 1200 60 1440 30V60H0Z"
+                            className="fill-slate-50/50" />
+                    </svg>
                 </div>
             </div>
 
@@ -177,7 +211,7 @@ const DepartmentDetail = () => {
             )}
 
             {/* ═════════════ TABS ═════════════ */}
-            <div className="sticky top-[152px] z-30 bg-white border-b border-slate-200 shadow-sm mt-8">
+            {/* <div className="sticky top-[0px] z-10 bg-white border-b border-slate-200 shadow-sm mt-8">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex space-x-0 overflow-x-auto">
                         {TABS.map(tab => (
@@ -194,8 +228,8 @@ const DepartmentDetail = () => {
                             </button>
                         ))}
                     </div>
-                </div>
-            </div>
+                </div>+
+            </div> */}
 
             {/* ═════════════ TAB CONTENT ═════════════ */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -233,7 +267,7 @@ const DepartmentDetail = () => {
                                         <div className="relative w-full h-full bg-slate-100 rounded-2xl overflow-hidden shadow-lg border-4 border-white">
                                             {hodProfile?.profilePhoto ? (
                                                 <img
-                                                    src={api.defaults.baseURL + hodProfile.profilePhoto}
+                                                    src={hodProfile.profilePhoto.startsWith('http') ? hodProfile.profilePhoto : api.defaults.baseURL + hodProfile.profilePhoto}
                                                     alt={hodProfile.name}
                                                     className="w-full h-full object-cover"
                                                     onError={e => { e.target.onerror = null; e.target.src = '/assets/placeholder-avatar.png'; }}
@@ -399,7 +433,7 @@ const DepartmentDetail = () => {
                                         <Link key={f._id} to={`/faculty/${f._id}`} className="flex items-center space-x-3 p-2 rounded-xl hover:bg-slate-50 transition group">
                                             <div className={`w-11 h-11 bg-gradient-to-br ${accentGrad} rounded-full flex items-center justify-center shrink-0`}>
                                                 {f.profilePhoto ? (
-                                                    <img src={api.defaults.baseURL + f.profilePhoto} alt={f.name}
+                                                    <img src={f.profilePhoto.startsWith('http') ? f.profilePhoto : api.defaults.baseURL + f.profilePhoto} alt={f.name}
                                                         className="w-full h-full object-cover rounded-full"
                                                         onError={e => { e.target.onerror = null; e.target.style.display = 'none'; }} />
                                                 ) : (

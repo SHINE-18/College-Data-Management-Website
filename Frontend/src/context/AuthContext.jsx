@@ -135,7 +135,10 @@ export const AuthProvider = ({ children }) => {
             await api.delete('/notifications/clear');
             setNotifications([]);
             setUnreadCount(0);
-        } catch { /* silent */ }
+        } catch {
+            // Re-sync from server so badge count doesn't drift on network failure
+            await fetchNotifications();
+        }
     };
 
     const value = {
