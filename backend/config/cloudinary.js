@@ -1,6 +1,4 @@
-// ============================================
-// config/cloudinary.js — Cloudinary configuration
-// ============================================
+// config/cloudinary.js
 
 const cloudinary = require('cloudinary').v2;
 

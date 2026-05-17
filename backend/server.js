@@ -13,7 +13,14 @@ const { startGtuSyncScheduler } = require('./services/gtuSyncService');
 
 // Import error handling and rate limiting middleware
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
-const { apiLimiter, authLimiter } = require('./middleware/rateLimiter');
+const {
+    publicLimiter,
+    loginLimiter,
+    passwordResetLimiter,
+    fileUploadLimiter,
+    adminApiLimiter,
+    validateSyncToken
+} = require('./middleware/rateLimiter');
 
 // Load environment variables FIRST
 dotenv.config();
@@ -105,9 +112,37 @@ app.get('/', (req, res) => {
 });
 
 // Rate limiting
-app.use('/api', apiLimiter);
-app.use('/api/auth', authLimiter);
-app.use('/api/student-auth', authLimiter);
+// Scraper/API sync routes — protected with secret token BEFORE rate limits or routers
+app.post('/api/admin/sync/gtu', validateSyncToken);
+
+// Login routes rate limiters (5 attempts per 15 minutes)
+app.post('/api/auth/login', loginLimiter);
+app.post('/api/student-auth/login', loginLimiter);
+
+// Password reset & changing limiters (3 attempts per hour)
+app.post('/api/auth/forgot-password', passwordResetLimiter);
+app.post('/api/auth/reset-password/:token', passwordResetLimiter);
+app.put('/api/auth/password', passwordResetLimiter);
+app.put('/api/student-auth/password', passwordResetLimiter);
+
+// File Upload rate limiters (20 uploads per hour)
+app.post('/api/faculty/result-pdfs', fileUploadLimiter);
+app.post('/api/student/submissions', fileUploadLimiter);
+app.post('/api/notices', fileUploadLimiter);
+app.post('/api/circulars', fileUploadLimiter);
+app.post('/api/timetables', fileUploadLimiter);
+app.post('/api/academics/syllabi', fileUploadLimiter);
+app.post('/api/academics/resources', fileUploadLimiter);
+app.post('/api/settings/calendar', fileUploadLimiter);
+
+// Admin & HOD APIs — strict limiter (50 requests per 15 minutes)
+app.use('/api/admin', adminApiLimiter);
+app.use('/api/hod', adminApiLimiter);
+
+// General/Public APIs — 500 requests per 15 minutes
+app.use('/api', publicLimiter);
+
+
 
 // ── Existing routes ──
 

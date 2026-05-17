@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../utils/axios';
 import {
     FiFileText, FiDownload, FiEye, FiFilter,
-    FiBookOpen, FiCalendar, FiUser, FiChevronDown, FiInbox
+    FiBookOpen, FiCalendar, FiUser, FiInbox, FiRefreshCw
 } from 'react-icons/fi';
 import { usePdfPreview } from '../../utils/pdfViewer';
 
@@ -10,12 +10,12 @@ const EXAM_TYPES = ['All', 'Mid-Sem', 'Final', 'Practical', 'Internal', 'Viva', 
 const SEMESTERS = ['All', 1, 2, 3, 4, 5, 6, 7, 8];
 
 const examTypeColors = {
-    'Mid-Sem':   'bg-yellow-50 text-yellow-700 border border-yellow-200',
-    'Final':     'bg-red-50 text-red-700 border border-red-200',
-    'Practical': 'bg-purple-50 text-purple-700 border border-purple-200',
-    'Internal':  'bg-blue-50 text-blue-700 border border-blue-200',
-    'Viva':      'bg-green-50 text-green-700 border border-green-200',
-    'University':'bg-gray-50 text-gray-700 border border-gray-200',
+    'Mid-Sem':   'bg-amber-50 text-amber-700 border border-amber-100',
+    'Final':     'bg-rose-50 text-rose-700 border border-rose-100',
+    'Practical': 'bg-purple-50 text-purple-700 border border-purple-100',
+    'Internal':  'bg-sky-50 text-sky-700 border border-sky-100',
+    'Viva':      'bg-emerald-50 text-emerald-700 border border-emerald-100',
+    'University':'bg-slate-50 text-slate-700 border border-slate-200',
 };
 
 const GradesViewer = () => {
@@ -25,17 +25,19 @@ const GradesViewer = () => {
     const [filterExam, setFilterExam] = useState('All');
     const { openPreview, PdfModal } = usePdfPreview();
 
+    const fetchResultPdfs = async () => {
+        try {
+            setLoading(true);
+            const { data } = await api.get('/student/result-pdfs');
+            setPdfs(data);
+        } catch (err) {
+            console.error('Failed to load result PDFs', err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchResultPdfs = async () => {
-            try {
-                const { data } = await api.get('/student/result-pdfs');
-                setPdfs(data);
-            } catch (err) {
-                console.error('Failed to load result PDFs', err);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchResultPdfs();
     }, []);
 
@@ -56,134 +58,181 @@ const GradesViewer = () => {
 
     if (loading) {
         return (
-            <div className="space-y-4 animate-pulse">
-                {[1, 2, 3].map(i => (
-                    <div key={i} className="h-24 bg-gray-100 rounded-2xl" />
+            <div className="space-y-6 animate-pulse">
+                <div className="h-28 bg-white border border-gray-100 rounded-3xl"></div>
+                {[1, 2].map(i => (
+                    <div key={i} className="h-44 bg-white border border-gray-100 rounded-3xl" />
                 ))}
             </div>
         );
     }
 
     return (
-        <div className="space-y-6 animate-fade-in">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="space-y-8 animate-fade-in">
+            {/* Minimal Modern Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Academic Results</h1>
-                    <p className="text-sm text-gray-500 mt-1">
-                        View and download official result PDFs published by your faculty.
+                    <h1 className="text-3xl font-black text-gray-900 tracking-tight font-heading">Academic Results</h1>
+                    <p className="text-sm text-gray-400 font-medium mt-1">
+                        Access and view your official term-end, midterm, and practical score sheets.
                     </p>
                 </div>
-                <span className="inline-flex items-center gap-1.5 text-xs bg-blue-50 text-blue-700 border border-blue-100 px-3 py-1.5 rounded-full font-medium">
-                    <FiFileText /> {pdfs.length} Result{pdfs.length !== 1 ? 's' : ''} Available
-                </span>
+                <div className="flex items-center gap-3 shrink-0">
+                    <button 
+                        onClick={fetchResultPdfs}
+                        className="p-2.5 bg-white border border-gray-200/60 rounded-xl hover:border-gray-300 text-gray-500 hover:text-gray-900 transition shadow-sm"
+                        title="Reload"
+                    >
+                        <FiRefreshCw className="w-4 h-4" />
+                    </button>
+                    <span className="inline-flex items-center gap-2 text-xs bg-primary/5 text-primary border border-primary-100 px-4 py-2 rounded-full font-bold uppercase tracking-wider shadow-sm">
+                        <FiFileText /> {pdfs.length} Record{pdfs.length !== 1 ? 's' : ''} Published
+                    </span>
+                </div>
             </div>
 
-            {/* Filters */}
-            <div className="flex flex-wrap gap-3 bg-white border border-gray-100 rounded-xl px-4 py-3 shadow-sm">
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <FiFilter className="text-gray-400" /> Filters:
-                </div>
-                <div className="relative">
-                    <select
-                        value={filterSem}
-                        onChange={e => setFilterSem(e.target.value)}
-                        className="appearance-none text-sm border border-gray-200 rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
-                    >
-                        {SEMESTERS.map(s => (
-                            <option key={s} value={s}>{s === 'All' ? 'All Semesters' : `Semester ${s}`}</option>
+            {/* Premium Filter Controls */}
+            <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-3xl p-6 shadow-sm flex flex-wrap items-center justify-between gap-4">
+                <div className="flex flex-wrap items-center gap-4">
+                    <div className="flex items-center gap-2 text-xs font-black text-gray-400 uppercase tracking-widest">
+                        <FiFilter /> Filter Records
+                    </div>
+                    
+                    {/* Sem Filter */}
+                    <div className="flex flex-wrap gap-1.5 bg-gray-50 p-1 rounded-xl border border-gray-100">
+                        {['All', 1, 2, 3, 4, 5, 6, 7, 8].slice(0, 5).map(s => (
+                            <button
+                                key={s}
+                                onClick={() => setFilterSem(s)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                                    filterSem === s
+                                        ? 'bg-white text-primary shadow-sm border border-gray-200/40'
+                                        : 'text-gray-500 hover:text-gray-900'
+                                }`}
+                            >
+                                {s === 'All' ? 'All Sems' : `Sem ${s}`}
+                            </button>
                         ))}
-                    </select>
-                    <FiChevronDown className="absolute right-2.5 top-2.5 text-gray-400 pointer-events-none text-xs" />
+                        {pdfs.some(pdf => pdf.semester > 4) && (
+                            <select
+                                value={typeof filterSem === 'number' && filterSem > 4 ? filterSem : 'More'}
+                                onChange={e => {
+                                    if (e.target.value !== 'More') setFilterSem(Number(e.target.value));
+                                }}
+                                className={`px-2 py-1 bg-transparent text-xs font-bold border-none focus:outline-none focus:ring-0 ${
+                                    typeof filterSem === 'number' && filterSem > 4 ? 'text-primary' : 'text-gray-500'
+                                }`}
+                            >
+                                <option value="More" disabled>More</option>
+                                {[5, 6, 7, 8].map(s => <option key={s} value={s}>Sem {s}</option>)}
+                            </select>
+                        )}
+                    </div>
+
+                    {/* Exam Type Filter */}
+                    <div className="relative">
+                        <select
+                            value={filterExam}
+                            onChange={e => setFilterExam(e.target.value)}
+                            className="appearance-none text-xs font-bold text-gray-700 bg-gray-50 border border-gray-100 hover:border-gray-200 px-4 py-2.5 rounded-xl pr-8 focus:outline-none focus:ring-4 focus:ring-primary/5 cursor-pointer transition-all"
+                        >
+                            {EXAM_TYPES.map(t => (
+                                <option key={t} value={t}>{t === 'All' ? 'All Exams' : t}</option>
+                            ))}
+                        </select>
+                        <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none text-gray-400">
+                            ▼
+                        </div>
+                    </div>
                 </div>
-                <div className="relative">
-                    <select
-                        value={filterExam}
-                        onChange={e => setFilterExam(e.target.value)}
-                        className="appearance-none text-sm border border-gray-200 rounded-lg pl-3 pr-8 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
-                    >
-                        {EXAM_TYPES.map(t => <option key={t} value={t}>{t === 'All' ? 'All Exam Types' : t}</option>)}
-                    </select>
-                    <FiChevronDown className="absolute right-2.5 top-2.5 text-gray-400 pointer-events-none text-xs" />
-                </div>
+
                 {(filterSem !== 'All' || filterExam !== 'All') && (
                     <button
                         onClick={() => { setFilterSem('All'); setFilterExam('All'); }}
-                        className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2.5 py-1.5 rounded-lg transition"
+                        className="text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 px-3.5 py-2 border border-rose-100 rounded-xl transition"
                     >
-                        Clear filters
+                        Reset Filter
                     </button>
                 )}
             </div>
 
-            {/* Results */}
+            {/* Results Grid / List */}
             {sortedSems.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-16 text-center">
-                    <FiInbox className="text-5xl text-gray-200 mx-auto mb-4" />
-                    <p className="text-gray-500 font-medium">No results found.</p>
-                    <p className="text-sm text-gray-400 mt-1">
+                <div className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-3xl p-16 text-center shadow-sm">
+                    <FiInbox className="text-6xl text-gray-200 mx-auto mb-4" />
+                    <h3 className="font-bold text-gray-700 text-lg">No scorecards found</h3>
+                    <p className="text-sm text-gray-400 mt-1 max-w-sm mx-auto leading-relaxed">
                         {pdfs.length === 0
-                            ? 'Your faculty has not published any results yet.'
-                            : 'Try adjusting the filters above.'}
+                            ? 'Your academic grade sheets will appear here as soon as they are uploaded by your department HOD or faculty.'
+                            : 'Try adjusting the Semester or Exam Type filters above.'}
                     </p>
                 </div>
             ) : (
                 <div className="space-y-8">
                     {sortedSems.map(sem => (
-                        <div key={sem} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                            {/* Semester header */}
-                            <div className="px-6 py-3.5 bg-gradient-to-r from-blue-600 to-blue-500 text-white flex items-center gap-2">
-                                <FiBookOpen />
-                                <h2 className="text-sm font-semibold tracking-wide">Semester {sem}</h2>
-                                <span className="ml-auto text-xs bg-white/20 px-2 py-0.5 rounded-full">
-                                    {grouped[sem].length} file{grouped[sem].length !== 1 ? 's' : ''}
+                        <div key={sem} className="bg-white/80 backdrop-blur-sm border border-gray-200/60 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-300">
+                            {/* Modern Sem Banner */}
+                            <div className="px-6 py-4 bg-gradient-to-r from-primary-900 to-primary-700 text-white flex items-center justify-between border-b border-primary-800">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center">
+                                        <FiBookOpen className="text-accent" />
+                                    </div>
+                                    <div>
+                                        <h2 className="font-heading font-black text-sm uppercase tracking-wider">Semester {sem}</h2>
+                                        <p className="text-[10px] text-primary-200 font-semibold uppercase tracking-wider">Term Records</p>
+                                    </div>
+                                </div>
+                                <span className="text-xs font-bold bg-white/10 border border-white/10 px-3 py-1 rounded-full">
+                                    {grouped[sem].length} File{grouped[sem].length !== 1 ? 's' : ''} Published
                                 </span>
                             </div>
 
-                            {/* PDF cards */}
-                            <ul className="divide-y divide-gray-50">
+                            {/* Clean List Items */}
+                            <ul className="divide-y divide-gray-100/80 stagger-fade-in">
                                 {grouped[sem].map(pdf => (
-                                    <li key={pdf._id} className="flex items-center gap-4 px-6 py-4 hover:bg-gray-50/60 transition">
-                                        {/* Icon */}
-                                        <div className="shrink-0 w-11 h-11 rounded-xl bg-red-50 flex items-center justify-center">
-                                            <FiFileText className="text-red-500 text-lg" />
-                                        </div>
+                                    <li key={pdf._id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-5 hover:bg-gray-50/50 transition-all duration-300 group">
+                                        <div className="flex items-start gap-4 min-w-0">
+                                            {/* Beautiful File Red Badge */}
+                                            <div className="shrink-0 w-12 h-12 rounded-2xl bg-rose-50 border border-rose-100 flex items-center justify-center group-hover:scale-105 transition-transform">
+                                                <FiFileText className="text-rose-500 text-xl" />
+                                            </div>
 
-                                        {/* Info */}
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-semibold text-gray-800 truncate">{pdf.title}</p>
-                                            {pdf.description && (
-                                                <p className="text-xs text-gray-400 truncate mt-0.5">{pdf.description}</p>
-                                            )}
-                                            <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                                                <span className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${examTypeColors[pdf.examType] || 'bg-gray-100 text-gray-600'}`}>
-                                                    {pdf.examType}
-                                                </span>
-                                                <span className="flex items-center gap-1 text-xs text-gray-400">
-                                                    <FiCalendar className="text-gray-300" /> {pdf.academicYear}
-                                                </span>
-                                                <span className="flex items-center gap-1 text-xs text-gray-400">
-                                                    <FiUser className="text-gray-300" /> {pdf.uploadedBy?.name || 'Faculty'}
-                                                </span>
+                                            {/* Details Block */}
+                                            <div className="min-w-0">
+                                                <h4 className="text-sm font-bold text-gray-800 group-hover:text-primary transition truncate">{pdf.title}</h4>
+                                                {pdf.description && (
+                                                    <p className="text-xs text-gray-400 mt-0.5 line-clamp-1">{pdf.description}</p>
+                                                )}
+                                                <div className="flex flex-wrap items-center gap-3.5 mt-2">
+                                                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-md border ${examTypeColors[pdf.examType] || 'bg-gray-100 text-gray-600'}`}>
+                                                        {pdf.examType}
+                                                    </span>
+                                                    <span className="flex items-center gap-1.5 text-[11px] text-gray-400 font-medium">
+                                                        <FiCalendar className="text-gray-300" /> {pdf.academicYear}
+                                                    </span>
+                                                    <span className="flex items-center gap-1.5 text-[11px] text-gray-400 font-medium">
+                                                        <FiUser className="text-gray-300" /> {pdf.uploadedBy?.name || 'Faculty'}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        {/* Actions */}
-                                        <div className="flex items-center gap-2 shrink-0">
+                                        {/* Action buttons with fine hover micro-animations */}
+                                        <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
                                             <button
                                                 onClick={() => openPreview(pdf.pdfUrl, pdf.title)}
-                                                className="flex items-center gap-1.5 text-xs text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg transition font-medium"
+                                                className="inline-flex items-center justify-center gap-1.5 text-xs text-primary font-bold bg-gray-50 hover:bg-primary hover:text-white border border-gray-200/60 hover:border-primary px-4 py-2 rounded-xl transition-all duration-300 shadow-sm"
                                             >
-                                                <FiEye /> View
+                                                <FiEye className="w-3.5 h-3.5" /> View
                                             </button>
                                             <a
                                                 href={pdf.pdfUrl}
                                                 download
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                className="flex items-center gap-1.5 text-xs text-green-700 hover:text-green-800 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg transition font-medium"
+                                                className="inline-flex items-center justify-center gap-1.5 text-xs text-emerald-600 font-bold bg-emerald-50/50 hover:bg-emerald-600 hover:text-white border border-emerald-100 hover:border-emerald-600 px-4 py-2 rounded-xl transition-all duration-300 shadow-sm"
                                             >
-                                                <FiDownload /> Download
+                                                <FiDownload className="w-3.5 h-3.5" /> Download
                                             </a>
                                         </div>
                                     </li>
