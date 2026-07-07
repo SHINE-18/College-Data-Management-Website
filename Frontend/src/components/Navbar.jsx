@@ -79,6 +79,17 @@ const Navbar = () => {
 
     const isActive = (path) => location.pathname === path;
 
+    const mobileNavLinks = [
+        { path: '/', label: 'Home', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' },
+        { path: '/faculty', label: 'Faculty', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z', useDept: true },
+        { path: '/notices', label: 'Notices', icon: 'M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9', useDept: true },
+        { path: '/gtu-circulars', label: 'GTU Circulars', icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', useDept: true },
+        { path: '/timetable', label: 'Timetable', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', useDept: true },
+        { path: '/events', label: 'Events', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', useDept: true },
+        { path: '/syllabi', label: 'Syllabus Archive', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253', useDept: true },
+        { path: '/calendar', label: 'Calendar', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', useDept: true }
+    ];
+
     return (
         <header
             className={`sticky top-0 z-50 shadow-lg transition-transform duration-300 ease-in-out ${
@@ -230,29 +241,71 @@ const Navbar = () => {
 
             {/* Mobile Menu */}
             {open && (
-                <div className="lg:hidden bg-white border-t border-gray-200 animate-slide-down shadow-xl">
-                    <div className="px-4 py-3 space-y-1">
-                        <Link to="/" onClick={() => setOpen(false)} className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive('/') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}> Home</Link>
-                        <Link to={getDeptLink("/faculty")} onClick={() => setOpen(false)} className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive('/faculty') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}> Faculty</Link>
-                        <Link to={getDeptLink("/notices")} onClick={() => setOpen(false)} className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive('/notices') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}> Notices</Link>
-                        <Link to={getDeptLink("/gtu-circulars")} onClick={() => setOpen(false)} className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive('/gtu-circulars') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}> GTU Circulars</Link>
-                        <Link to={getDeptLink("/timetable")} onClick={() => setOpen(false)} className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive('/timetable') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}> Timetable</Link>
-                        <Link to={getDeptLink("/events")} onClick={() => setOpen(false)} className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive('/events') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}> Events</Link>
-                        <Link to={getDeptLink("/syllabi")} onClick={() => setOpen(false)} className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive('/syllabi') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}> Syllabus Archive</Link>
-                        <Link to={getDeptLink("/calendar")} onClick={() => setOpen(false)} className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive('/calendar') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}>Calendar</Link>
+                <div className="lg:hidden bg-white border-t border-gray-200 animate-slide-down shadow-2xl max-h-[85vh] overflow-y-auto">
+                    <div className="px-4 py-5 space-y-1">
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                            {mobileNavLinks.map((link, idx) => {
+                                const active = isActive(link.path);
+                                const toPath = link.useDept ? getDeptLink(link.path) : link.path;
+                                return (
+                                    <Link 
+                                        key={idx}
+                                        to={toPath} 
+                                        onClick={() => setOpen(false)} 
+                                        className={`flex flex-col items-center justify-center p-3.5 rounded-2xl border transition-all duration-200 ${
+                                            active 
+                                                ? 'bg-primary/5 border-primary/20 text-primary shadow-sm' 
+                                                : 'bg-white border-gray-100 text-gray-600 hover:bg-gray-50 hover:text-gray-900 hover:border-gray-200 hover:shadow-sm'
+                                        }`}
+                                    >
+                                        <svg className={`w-6 h-6 mb-2 transition-transform duration-200 ${active ? 'text-primary scale-110' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={link.icon} />
+                                        </svg>
+                                        <span className="text-[11px] font-bold text-center leading-tight tracking-wide">{link.label}</span>
+                                    </Link>
+                                );
+                            })}
+                        </div>
 
-                        <div className="pt-3 border-t border-gray-200 space-y-2">
+                        <div className="pt-5 border-t border-gray-100 space-y-3">
                             {isAuthenticated ? (
                                 <>
-                                    <div className="flex items-center px-3 py-2">
+                                    <div className="flex items-center px-2 py-1 mb-3">
                                         <NotificationBell />
-                                        <span className="ml-2 text-sm text-gray-600 font-medium">Notifications</span>
+                                        <div className="ml-3 flex-1">
+                                            <p className="text-sm font-bold text-gray-900">Notifications</p>
+                                            <p className="text-[11px] font-medium text-gray-500 uppercase tracking-wide">Manage your alerts</p>
+                                        </div>
                                     </div>
-                                    <Link to={portalLink} onClick={() => setOpen(false)} className="block px-3 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold text-center">Dashboard</Link>
-                                    <button onClick={() => { logout(); setOpen(false); }} className="block w-full px-3 py-2.5 text-red-500 border border-red-200 rounded-lg text-sm font-medium hover:bg-red-50 transition text-center">Logout</button>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <Link 
+                                            to={portalLink} 
+                                            onClick={() => setOpen(false)} 
+                                            className="flex flex-col items-center justify-center p-3 bg-primary text-white rounded-2xl shadow-md shadow-primary/20 hover:bg-primary-600 hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200"
+                                        >
+                                            <svg className="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                                            <span className="text-[11px] font-bold tracking-wide">Dashboard</span>
+                                        </Link>
+                                        <button 
+                                            onClick={() => { logout(); setOpen(false); }} 
+                                            className="flex flex-col items-center justify-center p-3 text-red-600 bg-red-50 border border-red-100 rounded-2xl hover:bg-red-100 hover:border-red-200 hover:shadow-sm transition-all duration-200"
+                                        >
+                                            <svg className="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
+                                            <span className="text-[11px] font-bold tracking-wide">Logout</span>
+                                        </button>
+                                    </div>
                                 </>
                             ) : (
-                                <Link to="/login" onClick={() => setOpen(false)} className="block px-3 py-2.5 bg-primary text-white rounded-lg text-sm font-semibold text-center">Faculty Login</Link>
+                                <Link 
+                                    to="/login" 
+                                    onClick={() => setOpen(false)} 
+                                    className="flex items-center justify-center space-x-3 w-full p-4 bg-primary text-white rounded-2xl font-bold tracking-wide hover:bg-primary-600 transition-all duration-200 shadow-lg shadow-primary/20 hover:shadow-xl hover:-translate-y-0.5"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                                    </svg>
+                                    <span>Faculty Login</span>
+                                </Link>
                             )}
                         </div>
                     </div>
