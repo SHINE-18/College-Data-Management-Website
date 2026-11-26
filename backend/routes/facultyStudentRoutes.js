@@ -10,7 +10,7 @@ const { uploadAssignment } = require('../middleware/upload');
 const { buildDepartmentMatch, normalizeDepartment } = require('../utils/departmentUtils');
 
 // GET /api/faculty/students?semester=X - Fetch students for marking
-router.get('/students', protect, authorize('faculty', 'hod'), async (req, res) => {
+router.get('/students', protect, authorize('faculty', 'hod'), async (req, res, next) => {
     try {
         const { semester } = req.query;
         if (!semester) return res.status(400).json({ message: 'Semester is required' });
@@ -28,12 +28,25 @@ router.get('/students', protect, authorize('faculty', 'hod'), async (req, res) =
 
         res.json(students);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
+async function validateRoster(req, res, next) {
+    const records = req.body.records;
+    if (!Array.isArray(records) || !records.length ||
+        records.some(row => !mongoose.isObjectIdOrHexString(row?.student))) {
+        return res.status(400).json({ message: 'A student ID is required for every record' });
+    }
+    const ids = [...new Set(records.map(row => row.student))];
+    const count = await Student.countDocuments({ _id: { $in: ids }, isActive: true,
+        department: buildDepartmentMatch(req.user.department) });
+    if (count !== ids.length) return res.status(403).json({ message: 'Students must belong to your department' });
+    next();
+}
+
 // POST /api/faculty/attendance - Batch attendance
-router.post('/attendance', protect, authorize('faculty', 'hod'), async (req, res) => {
+router.post('/attendance', protect, authorize('faculty', 'hod'), validateRoster, async (req, res, next) => {
     try {
         const { records } = req.body;
         if (!Array.isArray(records)) return res.status(400).json({ message: 'Invalid records' });
@@ -49,7 +62,7 @@ router.post('/attendance', protect, authorize('faculty', 'hod'), async (req, res
 });
 
 // POST /api/faculty/results - Batch results
-router.post('/results', protect, authorize('faculty', 'hod'), async (req, res) => {
+router.post('/results', protect, authorize('faculty', 'hod'), validateRoster, async (req, res, next) => {
     try {
         const { records } = req.body;
         
@@ -156,7 +169,7 @@ router.post('/results', protect, authorize('faculty', 'hod'), async (req, res) =
 });
 
 // POST /api/faculty/assignments - Create assignment
-router.post('/assignments', protect, authorize('faculty', 'hod'), uploadAssignment.single('assignmentFile'), async (req, res) => {
+router.post('/assignments', protect, authorize('faculty', 'hod'), uploadAssignment.single('assignmentFile'), async (req, res, next) => {
     try {
         const assignmentData = {
             ...req.body,
@@ -177,7 +190,7 @@ router.post('/assignments', protect, authorize('faculty', 'hod'), uploadAssignme
 });
 
 // GET /api/faculty/attendance/stats - Aggregate attendance statistics for a semester/range
-router.get('/attendance/stats', protect, authorize('faculty', 'hod'), async (req, res) => {
+router.get('/attendance/stats', protect, authorize('faculty', 'hod'), async (req, res, next) => {
     try {
         const { semester, range } = req.query;
         const now = new Date();
@@ -186,13 +199,9 @@ router.get('/attendance/stats', protect, authorize('faculty', 'hod'), async (req
         else if (range === 'semester') startDate = new Date(now.getFullYear(), now.getMonth() >= 6 ? 6 : 0, 1);
         else startDate = new Date(now - 30 * 24 * 60 * 60 * 1000); // default month
 
-        const query = { date: { $gte: startDate } };
+        const students = await Student.distinct('_id', { department: buildDepartmentMatch(req.user.department) });
+        const query = { date: { $gte: startDate }, student: { $in: students } };
         if (semester) query.semester = Number(semester);
-        if (req.user.department) {
-            const { buildDepartmentMatch } = require('../utils/departmentUtils');
-            // filter via student department
-        }
-
         const records = await Attendance.find(query);
         const bySubject = {};
         let totalPresent = 0, totalAbsent = 0, totalLate = 0, totalExcused = 0;
@@ -216,12 +225,12 @@ router.get('/attendance/stats', protect, authorize('faculty', 'hod'), async (req
             bySubject
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // GET /api/faculty/attendance/absent-students - Students with high absence for a semester/range
-router.get('/attendance/absent-students', protect, authorize('faculty', 'hod'), async (req, res) => {
+router.get('/attendance/absent-students', protect, authorize('faculty', 'hod'), async (req, res, next) => {
     try {
         const { semester, range } = req.query;
         const now = new Date();
@@ -230,7 +239,8 @@ router.get('/attendance/absent-students', protect, authorize('faculty', 'hod'), 
         else if (range === 'semester') startDate = new Date(now.getFullYear(), now.getMonth() >= 6 ? 6 : 0, 1);
         else startDate = new Date(now - 30 * 24 * 60 * 60 * 1000);
 
-        const query = { date: { $gte: startDate } };
+        const students = await Student.distinct('_id', { department: buildDepartmentMatch(req.user.department) });
+        const query = { date: { $gte: startDate }, student: { $in: students } };
         if (semester) query.semester = Number(semester);
 
         const records = await Attendance.find(query).populate('student', 'name enrollmentNumber');
@@ -257,7 +267,7 @@ router.get('/attendance/absent-students', protect, authorize('faculty', 'hod'), 
 
         res.json(result);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 

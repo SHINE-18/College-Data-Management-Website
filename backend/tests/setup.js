@@ -6,16 +6,16 @@ let mongoServer;
 const connect = async () => {
     mongoServer = await MongoMemoryServer.create();
     const uri = mongoServer.getUri();
-    await mongoose.connect(uri);
+    await mongoose.connect(uri, { serverSelectionTimeoutMS: 5000 });
 };
 
 const close = async () => {
-    await mongoose.connection.dropDatabase();
-    await mongoose.connection.close();
-    await mongoServer.stop();
+    await mongoose.disconnect();
+    if (mongoServer) await mongoServer.stop();
 };
 
 const clear = async () => {
+    if (mongoose.connection.readyState !== 1) return;
     const collections = mongoose.connection.collections;
     for (const key in collections) {
         const collection = collections[key];

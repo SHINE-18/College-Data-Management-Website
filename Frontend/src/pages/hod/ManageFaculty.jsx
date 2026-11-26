@@ -259,7 +259,7 @@ const ManageFaculty = () => {
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Designation</label>
                                 <select value={form.designation} onChange={(e) => setForm({ ...form, designation: e.target.value })} className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm bg-white">
-                                    {designationOptions.map((designation) => <option key={designation} value={designation}>{designation}</option>)}
+                                    {designationOptions.filter(d => isSuperAdmin || d !== 'HOD' || form.designation === 'HOD').map((designation) => <option key={designation} value={designation}>{designation}</option>)}
                                 </select>
                                 <p className="mt-1 text-xs text-gray-500">Choosing `HOD` gives this faculty HOD portal access. Any other teaching designation keeps faculty portal access.</p>
                             </div>
@@ -278,7 +278,7 @@ const ManageFaculty = () => {
                             {!editId && (
                                 <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
                                     <p className="text-xs text-blue-700 leading-relaxed">
-                                        <strong>Note:</strong> Creating a faculty profile will automatically generate a login account with the default password: <code className="bg-blue-100 px-1 rounded">Faculty@VGEC123</code>
+                                        New faculty can use Forgot Password on the sign-in page to set their password by email.
                                     </p>
                                 </div>
                             )}

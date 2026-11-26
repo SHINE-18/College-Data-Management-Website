@@ -1,3 +1,4 @@
+import { lazy } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import ProtectedRoute from '../components/ProtectedRoute';
 
@@ -23,46 +24,46 @@ import ResetPassword from '../pages/auth/ResetPassword';
 import NotFound from '../pages/common/NotFound';
 
 // Student
-import StudentDashboard from '../pages/student/StudentDashboard';
-import AttendanceViewer from '../pages/student/AttendanceViewer';
-import GradesViewer from '../pages/student/GradesViewer';
-import AssignmentUploader from '../pages/student/AssignmentUploader';
-import ResourceLibrary from '../pages/common/ResourceLibrary';
+const StudentDashboard = lazy(() => import('../pages/student/StudentDashboard'));
+const AttendanceViewer = lazy(() => import('../pages/student/AttendanceViewer'));
+const GradesViewer = lazy(() => import('../pages/student/GradesViewer'));
+const AssignmentUploader = lazy(() => import('../pages/student/AssignmentUploader'));
+const ResourceLibrary = lazy(() => import('../pages/common/ResourceLibrary'));
 
 // Faculty
-import FacultyDashboard from '../pages/faculty/FacultyDashboard';
-import MyProfile from '../pages/faculty/MyProfile';
-import Qualifications from '../pages/faculty/Qualifications';
-import Publications from '../pages/faculty/Publications';
-import Achievements from '../pages/faculty/Achievements';
-import LeaveApplication from '../pages/faculty/LeaveApplication';
-import WorkloadSheet from '../pages/faculty/WorkloadSheet';
-import AttendanceManager from '../pages/faculty/AttendanceManager';
-import ResultUploader from '../pages/faculty/ResultUploader';
-import AssignmentPoster from '../pages/faculty/AssignmentPoster';
-import AcademicsManager from '../pages/faculty/AcademicsManager';
-import EventManager from '../pages/faculty/EventManager';
+const FacultyDashboard = lazy(() => import('../pages/faculty/FacultyDashboard'));
+const MyProfile = lazy(() => import('../pages/faculty/MyProfile'));
+const Qualifications = lazy(() => import('../pages/faculty/Qualifications'));
+const Publications = lazy(() => import('../pages/faculty/Publications'));
+const Achievements = lazy(() => import('../pages/faculty/Achievements'));
+const LeaveApplication = lazy(() => import('../pages/faculty/LeaveApplication'));
+const WorkloadSheet = lazy(() => import('../pages/faculty/WorkloadSheet'));
+const AttendanceManager = lazy(() => import('../pages/faculty/AttendanceManager'));
+const ResultUploader = lazy(() => import('../pages/faculty/ResultUploader'));
+const AssignmentPoster = lazy(() => import('../pages/faculty/AssignmentPoster'));
+const AcademicsManager = lazy(() => import('../pages/faculty/AcademicsManager'));
+const EventManager = lazy(() => import('../pages/faculty/EventManager'));
 
 // HOD
-import HODDashboard from '../pages/hod/HODDashboard';
-import ManageFaculty from '../pages/hod/ManageFaculty';
-import TimetableBuilder from '../pages/hod/TimetableBuilder';
-import TimetableUpload from '../pages/hod/TimetableUpload';
-import LeaveApprovals from '../pages/hod/LeaveApprovals';
-import PostCircular from '../pages/hod/PostCircular';
-import HODDepartmentEditor from '../pages/hod/HODDepartmentEditor';
+const HODDashboard = lazy(() => import('../pages/hod/HODDashboard'));
+const ManageFaculty = lazy(() => import('../pages/hod/ManageFaculty'));
+const TimetableBuilder = lazy(() => import('../pages/hod/TimetableBuilder'));
+const TimetableUpload = lazy(() => import('../pages/hod/TimetableUpload'));
+const LeaveApprovals = lazy(() => import('../pages/hod/LeaveApprovals'));
+const PostCircular = lazy(() => import('../pages/hod/PostCircular'));
+const HODDepartmentEditor = lazy(() => import('../pages/hod/HODDepartmentEditor'));
 // import Reports from '../pages/hod/Reports';
 
 // Admin
-import SuperAdminDashboard from '../pages/admin/SuperAdminDashboard';
-import UserManagement from '../pages/admin/UserManagement';
-import ManageDepartments from '../pages/admin/ManageDepartments';
-import SiteSettings from '../pages/admin/SiteSettings';
-import AdminImportStudents from '../pages/admin/AdminImportStudents';
+const SuperAdminDashboard = lazy(() => import('../pages/admin/SuperAdminDashboard'));
+const UserManagement = lazy(() => import('../pages/admin/UserManagement'));
+const ManageDepartments = lazy(() => import('../pages/admin/ManageDepartments'));
+const SiteSettings = lazy(() => import('../pages/admin/SiteSettings'));
+const AdminImportStudents = lazy(() => import('../pages/admin/AdminImportStudents'));
 
 // New Feature Pages
 
-import StudentProfile from '../pages/student/StudentProfile';
+const StudentProfile = lazy(() => import('../pages/student/StudentProfile'));
 
 // Layouts
 import PublicLayout from '../components/PublicLayout';

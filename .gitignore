@@ -7,10 +7,9 @@ build/
 
 # Environment variables
 .env
-.env.local
-.env.*.local
-**/.env.production
-Backend/.env
+.env.*
+!.env.example
+.vercel/
 
 # IDE
 .vscode/
@@ -40,3 +39,8 @@ Backend/admin_seed.js
 
 Backend/output.json
 Backend/output.txt
+# Local imports, exports and credentials
+backend/private/
+backend/students_import.csv
+backend/output.json
+backend/error.json

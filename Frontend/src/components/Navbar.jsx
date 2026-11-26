@@ -64,8 +64,9 @@ const Navbar = () => {
 
             if (currentY > 80 && delta > 0) {
                 // Scrolling DOWN past 80px — hide
-                setVisible(false);
-                setOpen(false); // also close mobile menu
+                if (!open) {
+                    setVisible(false);
+                }
             } else {
                 // Scrolling UP or near top — show
                 setVisible(true);
@@ -75,7 +76,7 @@ const Navbar = () => {
 
         window.addEventListener('scroll', handleScroll, { passive: true });
         return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+    }, [open]);
 
     const isActive = (path) => location.pathname === path;
 
@@ -230,7 +231,7 @@ const Navbar = () => {
 
             {/* Mobile Menu */}
             {open && (
-                <div className="lg:hidden bg-white border-t border-gray-200 animate-slide-down shadow-xl">
+                <div className="lg:hidden absolute top-full left-0 w-full max-h-[calc(100vh-70px)] overflow-y-auto bg-white border-t border-gray-200 animate-slide-down shadow-xl">
                     <div className="px-4 py-3 space-y-1">
                         <Link to="/" onClick={() => setOpen(false)} className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive('/') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}> Home</Link>
                         <Link to={getDeptLink("/faculty")} onClick={() => setOpen(false)} className={`block px-3 py-2.5 rounded-lg text-sm font-medium transition ${isActive('/faculty') ? 'bg-primary text-white' : 'text-gray-700 hover:bg-gray-100'}`}> Faculty</Link>

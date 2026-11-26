@@ -11,6 +11,7 @@ const submissionSchema = new mongoose.Schema({
         ref: 'Student',
         required: true
     },
+    cloudinaryPublicId: String,
     fileUrl: {
         type: String, // Path to the uploaded PDF, Zip, or Doc
         required: true

@@ -6,7 +6,7 @@ const express = require('express');
 const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
-const { protect, authorize, generateToken, generateRefreshToken } = require('../middleware/authMiddleware');
+const { protect, authorize, generateToken, generateRefreshToken, sessionIsCurrent } = require('../middleware/authMiddleware');
 const { normalizeDepartment, isKnownDepartment } = require('../utils/departmentUtils');
 
 const getRefreshCookieOptions = () => {
@@ -25,7 +25,7 @@ const getRefreshCookieOptions = () => {
 const validate = (req, res, next) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+        return res.status(400).json({ errors: errors.array().map(({ path, msg }) => ({ path, msg })) });
     }
     next();
 };
@@ -45,7 +45,7 @@ router.post('/register', [
         return true;
     }),
     validate
-], async (req, res) => {
+], async (req, res, next) => {
     try {
         const { name, email, password, role, department, designation } = req.body;
         const normalizedDepartment = department ? normalizeDepartment(department) : undefined;
@@ -103,11 +103,10 @@ router.post('/register', [
             email: user.email,
             role: user.role,
             department: user.department,
-            designation: user.designation,
-            token: generateToken(user._id)
+            designation: user.designation
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
@@ -116,7 +115,7 @@ router.post('/login', [
     body('email').isEmail().withMessage('Please enter a valid email'),
     body('password').notEmpty().withMessage('Password is required'),
     validate
-], async (req, res) => {
+], async (req, res, next) => {
     try {
         const { email, password } = req.body;
 
@@ -142,7 +141,7 @@ router.post('/login', [
         await user.save({ validateBeforeSave: false });
 
         // Issue refresh token as httpOnly cookie
-        const refreshToken = generateRefreshToken(user._id);
+        const refreshToken = generateRefreshToken(user);
         res.cookie('refreshToken', refreshToken, getRefreshCookieOptions());
 
         res.json({
@@ -152,15 +151,15 @@ router.post('/login', [
             role: user.role,
             department: user.department,
             designation: user.designation,
-            token: generateToken(user._id)
+            token: generateToken(user)
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // GET /api/auth/me - Get current user
-router.get('/me', protect, async (req, res) => {
+router.get('/me', protect, async (req, res, next) => {
     try {
         const user = await User.findById(req.user._id);
         res.json({
@@ -175,7 +174,7 @@ router.get('/me', protect, async (req, res) => {
             createdAt: user.createdAt
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
@@ -190,14 +189,16 @@ router.put('/profile', [
         return true;
     }),
     validate
-], async (req, res) => {
+], async (req, res, next) => {
     try {
         const { name, department, designation } = req.body;
 
         const user = await User.findById(req.user._id);
 
         if (name) user.name = name;
-        if (department) user.department = normalizeDepartment(department);
+        if (department && normalizeDepartment(department) !== normalizeDepartment(user.department)) {
+            return res.status(403).json({ message: 'Department changes require an administrator' });
+        }
         if (designation) user.designation = designation;
 
         const updatedUser = await user.save();
@@ -211,7 +212,7 @@ router.put('/profile', [
             designation: updatedUser.designation
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
@@ -221,7 +222,7 @@ router.put('/password', [
     body('currentPassword').notEmpty().withMessage('Current password is required'),
     body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters'),
     validate
-], async (req, res) => {
+], async (req, res, next) => {
     try {
         const { currentPassword, newPassword } = req.body;
 
@@ -233,27 +234,30 @@ router.put('/password', [
             return res.status(400).json({ message: 'Current password is incorrect' });
         }
 
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpire = undefined;
         user.password = newPassword;
         await user.save();
 
-        res.json({ message: 'Password updated successfully' });
+        res.cookie('refreshToken', generateRefreshToken(user), getRefreshCookieOptions());
+        res.json({ message: 'Password updated successfully', token: generateToken(user) });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // GET /api/auth/users - Get all users (admin only)
-router.get('/users', protect, authorize('super_admin'), async (req, res) => {
+router.get('/users', protect, authorize('super_admin'), async (req, res, next) => {
     try {
         const users = await User.find().select('-password').sort({ createdAt: -1 });
         res.json(users);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // DELETE /api/auth/users/:id - Delete user (admin only)
-router.delete('/users/:id', protect, authorize('super_admin'), async (req, res) => {
+router.delete('/users/:id', protect, authorize('super_admin'), async (req, res, next) => {
     try {
         const user = await User.findById(req.params.id);
 
@@ -269,12 +273,12 @@ router.delete('/users/:id', protect, authorize('super_admin'), async (req, res) 
         await user.deleteOne();
         res.json({ message: 'User deleted successfully' });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // PUT /api/auth/users/:id/toggle - Toggle user active status (admin only)
-router.put('/users/:id/toggle', protect, authorize('super_admin'), async (req, res) => {
+router.put('/users/:id/toggle', protect, authorize('super_admin'), async (req, res, next) => {
     try {
         const user = await User.findById(req.params.id);
 
@@ -290,12 +294,12 @@ router.put('/users/:id/toggle', protect, authorize('super_admin'), async (req, r
             isActive: user.isActive
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // PUT /api/auth/users/:id - Edit User (Super Admin only)
-router.put('/users/:id', protect, authorize('super_admin'), async (req, res) => {
+router.put('/users/:id', protect, authorize('super_admin'), async (req, res, next) => {
     try {
         const user = await User.findById(req.params.id);
         if (!user) return res.status(404).json({ message: 'User not found' });
@@ -339,7 +343,7 @@ router.put('/users/:id', protect, authorize('super_admin'), async (req, res) => 
 
         res.json(user);
     } catch(err) {
-        res.status(500).json({ message: 'Server error', error: err.message });
+        next(err);
     }
 });
 
@@ -347,7 +351,7 @@ router.put('/users/:id', protect, authorize('super_admin'), async (req, res) => 
 router.post('/forgot-password', [
     body('email').isEmail().withMessage('Please enter a valid email'),
     validate
-], async (req, res) => {
+], async (req, res, next) => {
     try {
         const { email } = req.body;
         const user = await User.findOne({ email }).select('+resetPasswordToken +resetPasswordExpire');
@@ -390,13 +394,12 @@ router.post('/forgot-password', [
             res.json({ message: 'If that email is registered, a reset link has been sent.' });
         } catch (emailError) {
             // If email fails, clean up the token so user can retry
-            user.resetPasswordToken = undefined;
-            user.resetPasswordExpire = undefined;
-            await user.save({ validateBeforeSave: false });
+            await User.updateOne({ _id: user._id, resetPasswordToken: user.resetPasswordToken },
+                { $unset: { resetPasswordToken: 1, resetPasswordExpire: 1 } });
             return res.status(500).json({ message: 'Email could not be sent. Please try again later.' });
         }
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
@@ -404,7 +407,7 @@ router.post('/forgot-password', [
 router.post('/reset-password/:token', [
     body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
     validate
-], async (req, res) => {
+], async (req, res, next) => {
     try {
         const crypto = require('crypto');
         const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
@@ -418,30 +421,40 @@ router.post('/reset-password/:token', [
             return res.status(400).json({ message: 'Invalid or expired reset token. Please request a new one.' });
         }
 
-        // Set new password and clear reset fields
+        // Match the token again at write time so two parallel requests cannot consume it twice.
+        user.$where = { resetPasswordToken: hashedToken, resetPasswordExpire: { $gt: new Date() } };
         user.password = req.body.password;
         user.resetPasswordToken = undefined;
         user.resetPasswordExpire = undefined;
-        await user.save();
+        try {
+            await user.save();
+        } catch (error) {
+            if (error.name === 'DocumentNotFoundError') {
+                return res.status(400).json({ message: 'Invalid or expired reset token. Please request a new one.' });
+            }
+            throw error;
+        }
 
         res.json({ message: 'Password reset successfully. You can now log in.' });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // POST /api/auth/refresh — Issue new access token using refresh token cookie
-router.post('/refresh', async (req, res) => {
+router.post('/refresh', async (req, res, next) => {
     const token = req.cookies?.refreshToken;
     if (!token) return res.status(401).json({ message: 'No refresh token' });
 
     try {
         const jwt = require('jsonwebtoken');
         const decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
+        if (decoded.purpose && decoded.purpose !== 'refresh') return res.status(401).json({ message: 'Invalid refresh token' });
+        if (req.body?.userId && req.body.userId !== decoded.id) return res.status(401).json({ message: 'Session changed' });
         const user = await User.findById(decoded.id).select('-password');
-        if (!user || !user.isActive) return res.status(401).json({ message: 'User not found or inactive' });
+        if (!sessionIsCurrent(user, decoded)) return res.status(401).json({ message: 'Session expired or account inactive' });
 
-        res.json({ token: generateToken(user._id) });
+        res.json({ token: generateToken(user), userId: user._id });
     } catch {
         res.status(401).json({ message: 'Refresh token invalid or expired. Please log in again.' });
     }

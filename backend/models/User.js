@@ -70,6 +70,7 @@ const userSchema = new mongoose.Schema({
         type: Date,
         select: false
     },
+    sessionVersion: String,
     isActive: {
         type: Boolean,
         default: true
@@ -86,6 +87,7 @@ userSchema.pre('save', async function () {
     if (!this.isModified('password')) {
         return;
     }
+    if (!this.isNew) this.sessionVersion = require('node:crypto').randomUUID();
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
 });

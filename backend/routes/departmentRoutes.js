@@ -1,3 +1,4 @@
+const literalSearch = require('../utils/search');
 const express = require('express');
 const router = express.Router();
 const Department = require('../models/Department');
@@ -6,27 +7,27 @@ const { protect, authorize } = require('../middleware/authMiddleware');
 // @desc    Get all departments
 // @route   GET /api/departments
 // @access  Public
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
     try {
         const departments = await Department.find({ isActive: true });
         res.json({ success: true, count: departments.length, data: departments });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // @desc    Get a single department by code or name
 // @route   GET /api/departments/search
 // @access  Public
-router.get('/search', async (req, res) => {
+router.get('/search', async (req, res, next) => {
     try {
         const { code, name } = req.query;
         let query = { isActive: true };
 
         if (code) {
-            query.code = new RegExp(`^${code}$`, 'i');
+            query.code = literalSearch(code, true);
         } else if (name) {
-            query.name = new RegExp(`^${name}$`, 'i');
+            query.name = literalSearch(name, true);
         } else {
             return res.status(400).json({ success: false, message: 'Please provide a code or name parameter' });
         }
@@ -39,7 +40,7 @@ router.get('/search', async (req, res) => {
 
         res.json({ success: true, data: department });
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Server error', error: error.message });
+        next(error);
     }
 });
 

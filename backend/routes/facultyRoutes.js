@@ -1,3 +1,4 @@
+const literalSearch = require('../utils/search');
 // ============================================
 // routes/facultyRoutes.js — Faculty API Endpoints
 // ============================================
@@ -40,7 +41,7 @@ router.get('/', [
     query('search').optional().trim(),
     query('designation').optional().trim(),
     query('department').optional().trim(),
-], validate, async (req, res) => {
+], validate, async (req, res, next) => {
     try {
         // Parse pagination params
         const page = parseInt(req.query.page) || 1;
@@ -50,7 +51,7 @@ router.get('/', [
         // Build search query
         const searchQuery = { isActive: true };
         if (req.query.search) {
-            const searchRegex = new RegExp(req.query.search, 'i');
+            const searchRegex = literalSearch(req.query.search);
             searchQuery.$or = [
                 { name: searchRegex },
                 { email: searchRegex },
@@ -90,11 +91,11 @@ router.get('/', [
             }
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
-router.get('/admin/all', protect, authorize('hod', 'super_admin'), async (req, res) => {
+router.get('/admin/all', protect, authorize('hod', 'super_admin'), async (req, res, next) => {
     try {
         const query = {};
 
@@ -119,12 +120,12 @@ router.get('/admin/all', protect, authorize('hod', 'super_admin'), async (req, r
             };
         }));
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // GET /api/faculty/me — Get the current logged-in user's faculty profile
-router.get('/me', protect, async (req, res) => {
+router.get('/me', protect, async (req, res, next) => {
     try {
         // Try finding by facultyId first, then by email
         let faculty = null;
@@ -141,22 +142,25 @@ router.get('/me', protect, async (req, res) => {
         }
         res.json(faculty);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // POST /api/faculty/initialize — Faculty creates their own profile if missing (self-service)
-router.post('/initialize', protect, uploadFaculty.single('profilePhoto'), async (req, res) => {
+router.post('/initialize', protect, uploadFaculty.single('profilePhoto'), async (req, res, next) => {
     try {
         const existing = await Faculty.findOne({ email: req.user.email.toLowerCase() });
         if (existing) return res.status(400).json({ message: 'Profile already exists' });
         const facultyData = { ...req.body, email: req.user.email.toLowerCase(), department: req.user.department, isActive: true };
+        if (req.user.role === 'faculty' && facultyData.designation === 'HOD') {
+            return res.status(403).json({ message: 'Only administrators can appoint a HOD' });
+        }
         if (req.file) facultyData.profilePhoto = req.file.path || req.file.secure_url || req.file.location;
         const saved = await new Faculty(facultyData).save();
         await User.findByIdAndUpdate(req.user._id, { facultyId: saved._id });
         res.status(201).json(saved);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
@@ -168,7 +172,7 @@ router.post('/initialize', protect, uploadFaculty.single('profilePhoto'), async 
 // Example: /api/faculty/abc123 → req.params.id = "abc123"
 router.get('/:id', [
     param('id').isMongoId().withMessage('Invalid faculty ID')
-], validate, async (req, res) => {
+], validate, async (req, res, next) => {
     try {
         const faculty = await Faculty.findById(req.params.id);
         // findById looks for a document with that specific MongoDB _id
@@ -179,7 +183,7 @@ router.get('/:id', [
         }
         res.json(faculty);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
@@ -197,7 +201,7 @@ router.post('/', protect, authorize('hod', 'super_admin'), uploadFaculty.single(
     body('qualification').optional().trim(),
     body('specialization').optional().trim(),
     body('experience').optional().trim(),
-], validate, async (req, res) => {
+], validate, async (req, res, next) => {
     try {
         const facultyData = { ...req.body };
 
@@ -223,17 +227,26 @@ router.post('/', protect, authorize('hod', 'super_admin'), uploadFaculty.single(
             }
         }
 
+        const userExists = await User.findOne({ email: facultyData.email.toLowerCase() });
+        if (userExists && (userExists.facultyId || userExists.role === 'super_admin' ||
+            (req.user.role === 'hod' && (userExists.role !== 'faculty' ||
+                !departmentsMatch(userExists.department, req.user.department))))) {
+            return res.status(409).json({ message: 'Email is already assigned to another account' });
+        }
+        if (req.user.role !== 'super_admin' && facultyData.designation === 'HOD') {
+            return res.status(403).json({ message: 'Only administrators can appoint a HOD' });
+        }
+
         // 1. Create Faculty Profile
         const newFaculty = new Faculty(facultyData);
         const savedFaculty = await newFaculty.save();
 
-        // 2. Automatically create User Account (if not exists)
-        const userExists = await User.findOne({ email: facultyData.email.toLowerCase() });
+        // Link the profile to its portal account.
         if (!userExists) {
             await User.create({
                 name: facultyData.name,
                 email: facultyData.email,
-                password: 'Faculty@VGEC123', // Default password
+                password: require('node:crypto').randomBytes(32).toString('hex'),
                 role: mapDesignationToUserRole(facultyData.designation),
                 department: facultyData.department,
                 designation: facultyData.designation,
@@ -269,7 +282,7 @@ router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), uploadFa
     body('name').optional().trim().notEmpty().withMessage('Name cannot be empty'),
     body('designation').optional().isIn(['Professor', 'Associate Professor', 'Assistant Professor', 'HOD', 'Lecturer']).withMessage('Invalid designation'),
     body('email').optional().isEmail().withMessage('Valid email is required'),
-], validate, async (req, res) => {
+], validate, async (req, res, next) => {
     try {
         const existingFaculty = await Faculty.findById(req.params.id);
 
@@ -291,8 +304,21 @@ router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), uploadFa
             return res.status(403).json({ message: 'Not authorized to update faculty outside your department' });
         }
 
-        const updateData = { ...req.body };
+        const fields = ['name', 'email', 'designation', 'department', 'isActive', 'phone', 'qualification',
+            'specialization', 'experience', 'joiningDate', 'researchInterests', 'bio'];
+        const updateData = Object.fromEntries(fields.filter(key => req.body[key] !== undefined)
+            .map(key => [key, req.body[key]]));
+        if (req.user.role !== 'super_admin' && updateData.designation &&
+            (updateData.designation === 'HOD') !== (existingFaculty.designation === 'HOD')) {
+            return res.status(403).json({ message: 'Only administrators can change HOD access' });
+        }
 
+        // Changing a login email redirects password resets. Staff account
+        // email changes go through the administrator.
+        if (req.user.role !== 'super_admin' && updateData.email &&
+            updateData.email.toLowerCase() !== existingFaculty.email.toLowerCase()) {
+            return res.status(403).json({ message: 'Account email changes require an administrator' });
+        }
         if (req.user.role === 'faculty') {
             delete updateData.isActive;
             delete updateData.department;
@@ -347,7 +373,9 @@ router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), uploadFa
             linkedUser.email = updated.email.toLowerCase();
             linkedUser.designation = updated.designation;
             linkedUser.department = updated.department;
-            linkedUser.role = mapDesignationToUserRole(updated.designation);
+            if (req.user.role === 'super_admin' && linkedUser.role !== 'super_admin') {
+                linkedUser.role = mapDesignationToUserRole(updated.designation);
+            }
             if (typeof updateData.isActive === 'boolean') {
                 linkedUser.isActive = updateData.isActive;
             }
@@ -370,7 +398,7 @@ router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), uploadFa
 // ────────────────────────────────────────────
 router.delete('/:id', protect, authorize('hod', 'super_admin'), [
     param('id').isMongoId().withMessage('Invalid faculty ID')
-], validate, async (req, res) => {
+], validate, async (req, res, next) => {
     try {
         const faculty = await Faculty.findById(req.params.id);
 
@@ -389,7 +417,7 @@ router.delete('/:id', protect, authorize('hod', 'super_admin'), [
         // Return success message with the deleted faculty's name
         res.json({ message: `${faculty.name} has been removed` });
     } catch (error) {
-        res.status(500).json({ message: 'Delete failed', error: error.message });
+        next(error);
     }
 });
 

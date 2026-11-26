@@ -1,10 +1,10 @@
 const mongoose = require('mongoose');
-const Faculty = require('./backend/models/Faculty');
-const User = require('./backend/models/User');
+const Faculty = require('../models/Faculty');
+const User = require('../models/User');
 const dotenv = require('dotenv');
 const path = require('path');
 
-dotenv.config({ path: path.join(__dirname, 'backend', '.env') });
+dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 const HOD_DATA = [
     { name: "Prof. Chhaya Zala", designation: "HOD", department: "Information Technology", email: "chhayazala@vgecg.ac.in" },
@@ -31,15 +31,14 @@ async function seedHODs() {
 
             // Check if user already exists
             let user = await User.findOne({ email: data.email });
-            const password = 'HOD@VGEC123';
             if (!user) {
                 user = await User.create({
                     ...data,
-                    password,
+                    password: require('node:crypto').randomBytes(32).toString('hex'),
                     role: 'hod',
                     facultyId: faculty._id
                 });
-                console.log(`Created user: ${data.email} with password: ${password}`);
+                console.log(`Created user: ${data.email} (use password reset to sign in)`);
             } else {
                 user.facultyId = faculty._id;
                 user.role = 'hod';

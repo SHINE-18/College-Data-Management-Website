@@ -5,6 +5,7 @@ const normalizedApiUrl = rawApiUrl ? rawApiUrl.replace(/\/$/, '') : '/api';
 
 const api = axios.create({
     baseURL: normalizedApiUrl,
+    timeout: 30000,
     headers: { 'Content-Type': 'application/json' },
     withCredentials: true, // Required to send/receive httpOnly cookies (refresh token)
 });
@@ -15,6 +16,14 @@ export const getAssetUrl = (assetPath) => {
     if (!rawApiUrl || rawApiUrl.startsWith('/')) return assetPath;
     return `${normalizedApiUrl.replace(/\/api$/, '')}${assetPath}`;
 };
+
+export function getSessionUser() {
+    try {
+        return JSON.parse(sessionStorage.getItem('user'));
+    } catch {
+        return null;
+    }
+}
 
 // Add access token from sessionStorage to every request
 // sessionStorage is tab-isolated so each browser tab maintains its own independent session
@@ -44,11 +53,14 @@ api.interceptors.response.use(
         // Only attempt refresh for 401s that aren't the auth endpoints themselves
         if (
             error.response?.status === 401 &&
-            !originalRequest._retry &&
+            originalRequest && !originalRequest._retry &&
+            sessionStorage.getItem('token') &&
+            getSessionUser()?.role !== 'student' &&
             !originalRequest.url?.includes('/auth/refresh') &&
             !originalRequest.url?.includes('/auth/login') &&
             !originalRequest.url?.includes('/student-auth')
         ) {
+            originalRequest._retry = true;
             if (isRefreshing) {
                 // Queue requests while refresh is in progress
                 return new Promise((resolve, reject) => {
@@ -59,14 +71,13 @@ api.interceptors.response.use(
                 }).catch(err => Promise.reject(err));
             }
 
-            originalRequest._retry = true;
             isRefreshing = true;
 
             try {
-                const { data } = await api.post('/auth/refresh');
+                const { data } = await api.post('/auth/refresh', { userId: getSessionUser()?._id });
+                if (data.userId !== getSessionUser()?._id) throw new Error('Session changed');
                 const newToken = data.token;
                 sessionStorage.setItem('token', newToken);
-                api.defaults.headers.common.Authorization = `Bearer ${newToken}`;
                 processQueue(null, newToken);
                 originalRequest.headers.Authorization = `Bearer ${newToken}`;
                 return api(originalRequest);

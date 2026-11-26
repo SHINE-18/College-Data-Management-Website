@@ -1,8 +1,14 @@
 const nodemailer = require('nodemailer');
 
-// Configure the transporter
+const smtpPort = Number(process.env.SMTP_PORT || 587);
+if (process.env.SMTP_HOST && (!Number.isInteger(smtpPort) || smtpPort < 1 || smtpPort > 65535)) {
+    throw new Error('SMTP_PORT must be a valid TCP port');
+}
+const transportOptions = process.env.SMTP_HOST
+    ? { host: process.env.SMTP_HOST, port: smtpPort, secure: smtpPort === 465, requireTLS: smtpPort !== 465 }
+    : { service: process.env.EMAIL_SERVICE || 'gmail' };
 const transporter = nodemailer.createTransport({
-    service: process.env.EMAIL_SERVICE || 'gmail',
+    ...transportOptions,
     auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
@@ -20,7 +26,7 @@ const sendBroadcastEmail = async (subject, text, html, recipients) => {
     if (!recipients || recipients.length === 0) return;
 
     const mailOptions = {
-        from: `"VGEC CE Department" <${process.env.EMAIL_USER}>`,
+        from: { name: 'VGEC CE Department', address: process.env.EMAIL_FROM || process.env.EMAIL_USER },
         bcc: recipients, // Use BCC for mass emails to protect privacy
         subject,
         text,
@@ -74,7 +80,7 @@ const notifyNewPost = async (item, type, emails) => {
  */
 const sendEmail = async ({ to, subject, html }) => {
     const mailOptions = {
-        from: `"VGEC CE Department" <${process.env.EMAIL_USER}>`,
+        from: { name: 'VGEC CE Department', address: process.env.EMAIL_FROM || process.env.EMAIL_USER },
         to,
         subject,
         html,

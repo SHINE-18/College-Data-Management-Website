@@ -18,7 +18,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                             duration: 3000,
                             style: { background: '#1a3c5e', color: '#fff', borderRadius: '8px' }
                         }} />
-                        <AppRoutes />
+                        <React.Suspense fallback={<div role="status" className="p-6 text-center">Loading page...</div>}>
+                            <AppRoutes />
+                        </React.Suspense>
                     </ThemeProvider>
                 </AuthProvider>
             </BrowserRouter>

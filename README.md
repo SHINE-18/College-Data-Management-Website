@@ -65,8 +65,8 @@ A full-stack web application for the **Computer Engineering Department** of Vish
 ## 📁 Project Structure
 
 ```
-CE_WEBSITE/
-├── src/                        # React frontend
+College-Data-Management-Website/
+├── Frontend/src/               # React frontend
 │   ├── pages/
 │   │   ├── public/             # Public-facing pages
 │   │   ├── faculty/            # Faculty portal pages
@@ -93,70 +93,26 @@ CE_WEBSITE/
 
 ## 🚀 Getting Started
 
-### Prerequisites
+Use Node.js 24 or newer and npm. From the repository root install both packages.
 
-- Node.js v18+
-- MongoDB Atlas account (or local MongoDB)
-- npm
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/SHINE-18/College-Data-Management-Website.git
-cd College-Data-Management-Website
+```sh
+npm ci --prefix Frontend
+npm ci --prefix backend
 ```
 
-### 2. Install frontend dependencies
+Create `backend/.env` with local development values.
 
-```bash
-npm install
-```
-
-### 3. Install backend dependencies
-
-```bash
-cd backend
-npm install
-```
-
-### 4. Configure environment variables
-
-Create a `.env` file inside the `backend/` directory:
-
-```env
-PORT=5000
-MONGO_URI=your_mongodb_connection_string
-JWT_SECRET=your_jwt_secret_key
-FRONTEND_URL=http://localhost:5173
+```dotenv
 NODE_ENV=development
-
-# Optional: Nodemailer config for email features
-EMAIL_USER=your_email@gmail.com
-EMAIL_PASS=your_app_password
+MONGODB_URI=mongodb://127.0.0.1:27017/vgec_development
+JWT_SECRET=development-only-replace-before-deploying
+FRONTEND_URL=http://localhost:5173
+PORT=5000
 ```
 
-### 5. Seed the database (optional)
+Run `npm run dev --prefix backend` and `npm run dev --prefix Frontend` in separate terminals. Open `http://localhost:5173`. Vite forwards API requests and legacy uploads to port 5000. File uploads and password-reset emails require the service settings in the release plan.
 
-```bash
-# Seed department data
-node backend/seedDepartments.js
-
-# Seed a default admin user
-node backend/seedAdmin.js
-```
-
-### 6. Run the development servers
-
-**Backend** (runs on `http://localhost:5000`):
-```bash
-cd backend
-npm run dev
-```
-
-**Frontend** (runs on `http://localhost:5173`):
-```bash
-npm run dev
-```
+To bootstrap a new database, run `node seedDepartments.js` and `node seedAdmin.js` from `backend/`. The admin script reads `ADMIN_EMAIL` and `ADMIN_PASSWORD`. Confirm the target database before running either script.
 
 ---
 
@@ -189,18 +145,11 @@ npm run dev
 
 ---
 
-## 📦 Build for Production
+## Production deployment
 
-```bash
-# Build the React frontend
-npm run build
+The Netlify frontend and Express API have separate deployments. The release plan covers host settings, verification, credential rotation and rollback. [Production readiness plan](PRODUCTION.md)
 
-# Start backend in production mode
-cd backend
-NODE_ENV=production npm start
-```
-
-In production mode, Express serves the React build (`dist/`) alongside the API.
+For a single-host deployment, set the production environment on the API host, run `npm run build --prefix Frontend` and start Express with `npm start --prefix backend`. Express serves `Frontend/dist` when it exists.
 
 ---
 

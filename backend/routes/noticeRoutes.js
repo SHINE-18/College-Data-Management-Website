@@ -36,7 +36,7 @@ router.get('/', [
     query('department').optional().trim(),
     query('source').optional().trim(),
     query('excludeSource').optional().trim(),
-], validate, async (req, res) => {
+], validate, async (req, res, next) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 10;
@@ -108,20 +108,20 @@ router.get('/', [
             }
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // GET /api/notices/:id — Get one notice
 router.get('/:id', [
     param('id').isMongoId().withMessage('Invalid notice ID')
-], validate, async (req, res) => {
+], validate, async (req, res, next) => {
     try {
-        const notice = await Notice.findById(req.params.id);
+        const notice = await Notice.findOne({ _id: req.params.id, isActive: true });
         if (!notice) return res.status(404).json({ message: 'Notice not found' });
         res.json(notice);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
@@ -134,7 +134,7 @@ router.post('/', [
     body('content').trim().notEmpty().withMessage('Content is required'),
     body('category').optional().isIn(['General', 'Exam', 'Admission', 'Events', 'Placement', 'Other']).withMessage('Invalid category'),
     body('department').optional().trim(),
-], validate, async (req, res) => {
+], validate, async (req, res, next) => {
     try {
         const notice = new Notice({
             ...req.body,
@@ -202,7 +202,7 @@ router.put('/:id', [
     body('title').optional().trim().notEmpty().withMessage('Title cannot be empty'),
     body('content').optional().trim().notEmpty().withMessage('Content cannot be empty'),
     body('category').optional().isIn(['General', 'Exam', 'Admission', 'Events', 'Placement', 'Other']).withMessage('Invalid category'),
-], validate, async (req, res) => {
+], validate, async (req, res, next) => {
     try {
         const existingNotice = await Notice.findById(req.params.id);
         if (!existingNotice) return res.status(404).json({ message: 'Notice not found' });
@@ -230,7 +230,7 @@ router.delete('/:id', [
     protect,
     authorize('hod', 'super_admin'),
     param('id').isMongoId().withMessage('Invalid notice ID')
-], validate, async (req, res) => {
+], validate, async (req, res, next) => {
     try {
         const deleted = await Notice.findById(req.params.id);
         if (!deleted) return res.status(404).json({ message: 'Notice not found' });
@@ -240,7 +240,7 @@ router.delete('/:id', [
         await deleted.deleteOne();
         res.json({ message: `Notice "${deleted.title}" has been removed` });
     } catch (error) {
-        res.status(500).json({ message: 'Delete failed', error: error.message });
+        next(error);
     }
 });
 

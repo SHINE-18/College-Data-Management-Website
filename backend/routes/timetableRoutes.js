@@ -14,7 +14,7 @@ const {
 } = require('../utils/departmentUtils');
 
 // GET /api/timetables — Get all active timetables (with optional filters)
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
     try {
         const { department, semester, division } = req.query;
         let query = { isActive: true };
@@ -28,12 +28,12 @@ router.get('/', async (req, res) => {
         const timetables = await Timetable.find(query).sort({ createdAt: -1 });
         res.json(timetables);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // GET /api/timetables/departments/:dept — Get timetables by department
-router.get('/departments/:dept', async (req, res) => {
+router.get('/departments/:dept', async (req, res, next) => {
     try {
         const timetables = await Timetable.find({
             department: buildDepartmentMatch(req.params.dept),
@@ -41,23 +41,23 @@ router.get('/departments/:dept', async (req, res) => {
         }).sort({ semester: 1, division: 1 });
         res.json(timetables);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // GET /api/timetables/:id — Get one timetable
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req, res, next) => {
     try {
         const timetable = await Timetable.findById(req.params.id);
         if (!timetable) return res.status(404).json({ message: 'Timetable not found' });
         res.json(timetable);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // POST /api/timetables — Upload a new timetable (with PDF file)
-router.post('/', protect, authorize('hod', 'super_admin'), uploadTimetable.single('pdf'), async (req, res) => {
+router.post('/', protect, authorize('hod', 'super_admin'), uploadTimetable.single('pdf'), async (req, res, next) => {
     try {
         const { title, department, semester, division, uploadedBy } = req.body;
 
@@ -82,7 +82,7 @@ router.post('/', protect, authorize('hod', 'super_admin'), uploadTimetable.singl
 });
 
 // PUT /api/timetables/:id — Update timetable details (not the file)
-router.put('/:id', protect, authorize('hod', 'super_admin'), async (req, res) => {
+router.put('/:id', protect, authorize('hod', 'super_admin'), async (req, res, next) => {
     try {
         const { title, department, semester, division, isActive } = req.body;
 
@@ -116,7 +116,7 @@ router.put('/:id', protect, authorize('hod', 'super_admin'), async (req, res) =>
 });
 
 // DELETE /api/timetables/:id — Delete (hide) a timetable
-router.delete('/:id', protect, authorize('hod', 'super_admin'), async (req, res) => {
+router.delete('/:id', protect, authorize('hod', 'super_admin'), async (req, res, next) => {
     try {
         const existingTimetable = await Timetable.findById(req.params.id);
 
@@ -138,7 +138,7 @@ router.delete('/:id', protect, authorize('hod', 'super_admin'), async (req, res)
         if (!deleted) return res.status(404).json({ message: 'Timetable not found' });
         res.json({ message: `Timetable "${deleted.title}" has been removed` });
     } catch (error) {
-        res.status(500).json({ message: 'Delete failed', error: error.message });
+        next(error);
     }
 });
 

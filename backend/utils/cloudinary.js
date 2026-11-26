@@ -65,7 +65,24 @@ const getPublicIdFromUrl = (url) => {
     }
 };
 
+async function discardRejectedUpload(file) {
+    if (!file?.filename) return;
+    try {
+        await cloudinary.uploader.destroy(file.filename, { resource_type: file.resourceType, type: file.deliveryType });
+    } catch {
+        console.error('Failed to clean up rejected upload', file.filename);
+    }
+}
+
+function privateDocumentUrl(publicId) {
+    return cloudinary.utils.private_download_url(publicId, '', {
+        resource_type: 'raw', type: 'authenticated', expires_at: Math.floor(Date.now() / 1000) + 900,
+    });
+}
+
 module.exports = {
+    privateDocumentUrl,
+    discardRejectedUpload,
     uploadToCloudinary,
     deleteFromCloudinary,
     getPublicIdFromUrl

@@ -16,7 +16,7 @@ const { syncGtuCirculars } = require('../services/gtuSyncService');
 const { normalizeDepartment } = require('../utils/departmentUtils');
 
 // GET /api/admin/stats — Aggregate dashboard statistics
-router.get('/stats', protect, authorize('super_admin'), async (req, res) => {
+router.get('/stats', protect, authorize('super_admin'), async (req, res, next) => {
     try {
         // Count all entities in parallel for performance
         const [
@@ -59,22 +59,22 @@ router.get('/stats', protect, authorize('super_admin'), async (req, res) => {
             departmentStats: deptChartData
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // POST /api/admin/import-students — Bulk import students from CSV
-router.post('/import-students', protect, authorize('super_admin'), async (req, res) => {
+router.post('/import-students', protect, authorize('super_admin'), async (req, res, next) => {
     const multer = require('multer');
     const csvParser = require('csv-parser');
     const stream = require('stream');
-    const bcrypt = require('bcryptjs');
+
 
     // Use memory storage for CSV (no disk needed)
-    const upload = multer({ storage: multer.memoryStorage() });
+    const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 1024 * 1024, files: 1, fields: 0 } });
 
     upload.single('csv')(req, res, async (err) => {
-        if (err) return res.status(400).json({ message: 'File upload error', error: err.message });
+        if (err) return res.status(err.code === 'LIMIT_FILE_SIZE' ? 413 : 400).json({ message: err.message });
         if (!req.file) return res.status(400).json({ message: 'CSV file is required' });
 
         const rows = [];
@@ -92,13 +92,14 @@ router.post('/import-students', protect, authorize('super_admin'), async (req, r
             });
 
             const Student = require('../models/Student');
-            const User = require('../models/User');
+            if (rows.length > 1000) return res.status(400).json({ message: 'Limit each import to 1,000 students' });
 
             for (const row of rows) {
                 const enrollmentNumber = row.enrollmentNumber || row.enrollmentNo;
                 const { name, email, semester, department, batch } = row;
-                if (!name || !email || !enrollmentNumber) {
-                    errors.push({ row, reason: 'Missing required fields (name, email, enrollmentNumber)' });
+                const identifier = { email, enrollmentNumber };
+                if (!name || !email || !enrollmentNumber || !row.password || row.password.length < 6) {
+                    errors.push({ row: identifier, reason: 'Name, email, enrollment number and a password of at least 6 characters are required' });
                     continue;
                 }
 
@@ -107,7 +108,7 @@ router.post('/import-students', protect, authorize('super_admin'), async (req, r
                         $or: [{ email }, { enrollmentNumber }]
                     });
                     if (existing) {
-                        errors.push({ row, reason: 'Email or enrollmentNumber already exists' });
+                        errors.push({ row: identifier, reason: 'Email or enrollmentNumber already exists' });
                         continue;
                     }
 
@@ -128,7 +129,7 @@ router.post('/import-students', protect, authorize('super_admin'), async (req, r
                         enrollmentNumber: student.enrollmentNumber
                     });
                 } catch (rowErr) {
-                    errors.push({ row, reason: rowErr.message });
+                    errors.push({ row: identifier, reason: rowErr.code === 11000 ? 'Duplicate student' : 'Invalid student data' });
                 }
             }
 
@@ -144,7 +145,7 @@ router.post('/import-students', protect, authorize('super_admin'), async (req, r
 });
 
 // POST /api/admin/sync/gtu — Manually pull GTU engineering circulars into notices
-router.post('/sync/gtu', protect, authorize('super_admin'), async (req, res) => {
+router.post('/sync/gtu', protect, authorize('super_admin'), async (req, res, next) => {
     try {
         const summary = await syncGtuCirculars();
         res.json({
@@ -152,7 +153,7 @@ router.post('/sync/gtu', protect, authorize('super_admin'), async (req, res) => 
             ...summary,
         });
     } catch (error) {
-        res.status(500).json({ message: 'GTU sync failed', error: error.message });
+        next(error);
     }
 });
 

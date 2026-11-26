@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import campusMap from '../assets/campusmap.png';
+import campusMap from '../assets/campusmap.webp';
 import vgecLogo from '../assets/vgec_hd.png';
 import api from '../utils/axios';
 
@@ -117,7 +117,7 @@ const InteractiveMap = () => {
             >
                 {/* 1. Base satellite image */}
                 <img
-                    src={campusMap}
+                    loading="lazy" decoding="async" src={campusMap}
                     alt="VGEC Campus Satellite View"
                     className="w-full h-auto block pointer-events-none"
                 />

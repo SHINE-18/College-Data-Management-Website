@@ -23,7 +23,7 @@ const validate = (req, res, next) => {
 };
 
 // GET /api/leaves - Get all leaves (with filters)
-router.get('/', protect, async (req, res) => {
+router.get('/', protect, async (req, res, next) => {
     try {
         const { status, department, startDate, endDate } = req.query;
         let query = {};
@@ -49,12 +49,12 @@ router.get('/', protect, async (req, res) => {
         const leaves = await Leave.find(query).sort({ createdAt: -1 });
         res.json(leaves);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // GET /api/leaves/pending - Get pending leaves for HOD approval
-router.get('/pending', protect, authorize('hod', 'super_admin'), async (req, res) => {
+router.get('/pending', protect, authorize('hod', 'super_admin'), async (req, res, next) => {
     try {
         const query = { status: 'Pending' };
         
@@ -65,7 +65,7 @@ router.get('/pending', protect, authorize('hod', 'super_admin'), async (req, res
         const leaves = await Leave.find(query).sort({ createdAt: -1 });
         res.json(leaves);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
@@ -78,7 +78,7 @@ router.post('/', [
     body('endDate').isISO8601().withMessage('End date is required'),
     body('reason').trim().notEmpty().withMessage('Reason is required'),
     validate
-], async (req, res) => {
+], async (req, res, next) => {
     try {
         const { leaveType, startDate, endDate, reason } = req.body;
 
@@ -101,12 +101,12 @@ router.post('/', [
         await leave.save();
         res.status(201).json(leave);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // PUT /api/leaves/:id/approve - Approve leave (HOD only)
-router.put('/:id/approve', protect, authorize('hod', 'super_admin'), async (req, res) => {
+router.put('/:id/approve', protect, authorize('hod', 'super_admin'), async (req, res, next) => {
     try {
         const { remarks } = req.body;
         
@@ -132,12 +132,12 @@ router.put('/:id/approve', protect, authorize('hod', 'super_admin'), async (req,
         await leave.save();
         res.json(leave);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // PUT /api/leaves/:id/reject - Reject leave (HOD only)
-router.put('/:id/reject', protect, authorize('hod', 'super_admin'), async (req, res) => {
+router.put('/:id/reject', protect, authorize('hod', 'super_admin'), async (req, res, next) => {
     try {
         const { remarks } = req.body;
         
@@ -167,12 +167,12 @@ router.put('/:id/reject', protect, authorize('hod', 'super_admin'), async (req, 
         await leave.save();
         res.json(leave);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // DELETE /api/leaves/:id - Delete/cancel leave
-router.delete('/:id', protect, async (req, res) => {
+router.delete('/:id', protect, async (req, res, next) => {
     try {
         const leave = await Leave.findById(req.params.id);
         
@@ -195,7 +195,7 @@ router.delete('/:id', protect, async (req, res) => {
         await leave.deleteOne();
         res.json({ message: 'Leave deleted successfully' });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 

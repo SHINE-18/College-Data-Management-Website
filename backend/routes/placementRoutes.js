@@ -10,7 +10,7 @@ const { body } = require('express-validator');
 const validate = require('../middleware/validate');
 
 // GET /api/placements — Public, filterable by year and department
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
     try {
         const filter = {};
         if (req.query.year) filter.year = Number(req.query.year);
@@ -20,12 +20,12 @@ router.get('/', async (req, res) => {
         const placements = await Placement.find(filter).sort({ year: -1, studentsPlaced: -1 });
         res.json(placements);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // GET /api/placements/summary — Aggregated stats
-router.get('/summary', async (req, res) => {
+router.get('/summary', async (req, res, next) => {
     try {
         const year = req.query.year ? Number(req.query.year) : null;
         const matchStage = year ? { $match: { year } } : { $match: {} };
@@ -53,7 +53,7 @@ router.get('/summary', async (req, res) => {
             perYear
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
@@ -67,17 +67,17 @@ router.post('/', [
     body('studentsPlaced').isInt({ min: 1 }).withMessage('Students placed must be at least 1'),
     body('department').notEmpty().withMessage('Department required'),
     validate
-], async (req, res) => {
+], async (req, res, next) => {
     try {
         const placement = await Placement.create(req.body);
         res.status(201).json(placement);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // DELETE /api/placements/:id — Admin or HOD (for own dept)
-router.delete('/:id', protect, authorize('super_admin', 'hod'), async (req, res) => {
+router.delete('/:id', protect, authorize('super_admin', 'hod'), async (req, res, next) => {
     try {
         const placement = await Placement.findById(req.params.id);
         if (!placement) return res.status(404).json({ message: 'Placement not found' });
@@ -90,7 +90,7 @@ router.delete('/:id', protect, authorize('super_admin', 'hod'), async (req, res)
         await placement.deleteOne();
         res.json({ message: 'Placement deleted successfully' });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 

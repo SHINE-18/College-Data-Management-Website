@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { privateDocumentUrl } = require('../utils/cloudinary');
 
 const resultPDFSchema = new mongoose.Schema({
     title: {
@@ -36,6 +37,7 @@ const resultPDFSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    deliveryType: { type: String, enum: ['upload', 'authenticated'], default: 'upload' },
     cloudinaryPublicId: {
         type: String,
         default: ''
@@ -48,5 +50,13 @@ const resultPDFSchema = new mongoose.Schema({
 }, {
     timestamps: true
 });
+
+resultPDFSchema.methods.forDownload = function () {
+    const pdf = this.toObject();
+    if (pdf.deliveryType === 'authenticated') {
+        pdf.pdfUrl = privateDocumentUrl(pdf.cloudinaryPublicId);
+    }
+    return pdf;
+};
 
 module.exports = mongoose.model('ResultPDF', resultPDFSchema);

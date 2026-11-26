@@ -2,24 +2,21 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js",
-    "test": "jest --runInBand --forceExit",
-    "sync:gtu": "node scripts/syncGtuCirculars.js"
-  },
-  "jest": {
-    "testEnvironment": "node",
-    "verbose": true,
-    "testTimeout": 30000
+    "dev": "node --watch server.js",
+    "test": "node --test --test-concurrency=1 tests/*.test.js",
+    "sync:gtu": "node scripts/syncGtuCirculars.js",
+    "release:inventory": "node scripts/releaseInventory.js",
+    "release:verify": "node scripts/verifyDeployment.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^3.0.3",
-    "cloudinary": "^1.41.3",
+    "cloudinary": "^2.11.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "csv-parser": "^3.2.0",
@@ -31,13 +28,13 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.4.1",
     "multer": "^2.1.1",
-    "multer-storage-cloudinary": "^4.0.0",
-    "nodemailer": "^8.0.2"
+    "nodemailer": "^10.6.1"
   },
   "devDependencies": {
-    "jest": "^30.3.0",
     "mongodb-memory-server": "^11.0.1",
-    "nodemon": "^3.1.0",
     "supertest": "^7.2.2"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }

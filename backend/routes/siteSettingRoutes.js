@@ -7,31 +7,35 @@ const router = express.Router();
 const { protect, authorize } = require('../middleware/authMiddleware');
 const SiteSetting = require('../models/SiteSetting');
 const multer = require('multer');
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 1 },
+    fileFilter(req, file, cb) {
+        cb(file.mimetype === 'application/pdf' ? null : Object.assign(new Error('PDF required'), { statusCode: 400 }), file.mimetype === 'application/pdf');
+    },
+});
 const { uploadToCloudinary, deleteFromCloudinary, getPublicIdFromUrl } = require('../utils/cloudinary');
 
 // GET /api/settings — Get current site settings (public)
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
     try {
         const settings = await SiteSetting.getSettings();
         res.json(settings);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // GET /api/settings/visitor-count — Get public visitor count
-router.get('/visitor-count', async (req, res) => {
+router.get('/visitor-count', async (req, res, next) => {
     try {
         const settings = await SiteSetting.getSettings();
         res.json({ visitorCount: settings.visitorCount || 0 });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // POST /api/settings/visitor-count — Increment visitor count
-router.post('/visitor-count', async (req, res) => {
+router.post('/visitor-count', async (req, res, next) => {
     try {
         const settings = await SiteSetting.getSettings();
         settings.visitorCount = (settings.visitorCount || 0) + 1;
@@ -39,12 +43,12 @@ router.post('/visitor-count', async (req, res) => {
 
         res.json({ visitorCount: settings.visitorCount });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // PUT /api/settings — Update site settings (super_admin only)
-router.put('/', protect, authorize('super_admin'), async (req, res) => {
+router.put('/', protect, authorize('super_admin'), async (req, res, next) => {
     try {
         const { collegeName, email, phone, address, website, established, ugBranches, totalStudents, naacGrade } = req.body;
 
@@ -63,12 +67,12 @@ router.put('/', protect, authorize('super_admin'), async (req, res) => {
         await settings.save();
         res.json(settings);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // POST /api/settings/calendar — Upload academic calendar PDF (HOD, Super Admin)
-router.post('/calendar', protect, authorize('hod', 'super_admin'), upload.single('calendarPdf'), async (req, res) => {
+router.post('/calendar', protect, authorize('hod', 'super_admin'), upload.single('calendarPdf'), async (req, res, next) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: 'No PDF file provided.' });
@@ -76,24 +80,26 @@ router.post('/calendar', protect, authorize('hod', 'super_admin'), upload.single
 
         let settings = await SiteSetting.getSettings();
 
-        // If there's an existing calendar, try to delete it from Cloudinary
-        if (settings.academicCalendarPdf) {
-            const oldPublicId = getPublicIdFromUrl(settings.academicCalendarPdf);
-            if (oldPublicId) {
-                await deleteFromCloudinary(oldPublicId, 'raw').catch(console.error);
-            }
-        }
+        const previousPdf = settings.academicCalendarPdf;
 
-        // Upload new file to Cloudinary as 'raw' with 'inline' flag (browser-viewable)
-        const uploadResult = await uploadToCloudinary(req.file.buffer, 'academic_calendar', 'raw', 'inline');
+        // Retain the previous document until its replacement has been saved.
+        const uploadResult = await uploadToCloudinary(req.file.buffer, 'academic_calendar', 'raw');
 
         // Save URL
         settings.academicCalendarPdf = uploadResult.secure_url;
         await settings.save();
 
+        // If there's an existing calendar, try to delete it from Cloudinary
+        if (previousPdf) {
+            const oldPublicId = getPublicIdFromUrl(previousPdf);
+            if (oldPublicId) {
+                await deleteFromCloudinary(oldPublicId, 'raw').catch(console.error);
+            }
+        }
+
         res.json({ message: 'Academic calendar updated', url: uploadResult.secure_url });
     } catch (error) {
-        res.status(500).json({ message: 'Upload failed', error: error.message });
+        next(error);
     }
 });
 

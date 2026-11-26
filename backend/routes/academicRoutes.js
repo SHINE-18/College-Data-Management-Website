@@ -1,3 +1,5 @@
+const literalSearch = require('../utils/search');
+const { departmentsMatch } = require('../utils/departmentUtils');
 const express = require('express');
 const router = express.Router();
 const { protect, authorize, protectBoth } = require('../middleware/authMiddleware');
@@ -8,27 +10,28 @@ const { uploadSyllabus, uploadResource } = require('../middleware/upload');
 // ── SYLLABUS ROUTES ──
 
 // GET /api/academics/syllabi - Accessible to both users and students
-router.get('/syllabi', async (req, res) => {
+router.get('/syllabi', async (req, res, next) => {
     try {
         const { semester, search, department } = req.query;
         let query = { isActive: true };
         if (semester) query.semester = Number(semester);
-        if (search) query.courseTitle = new RegExp(search, 'i');
+        if (search) query.courseTitle = literalSearch(search);
         if (department) query.department = department;
 
         const syllabi = await Syllabus.find(query).sort('semester courseTitle');
         res.json(syllabi);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // POST /api/academics/syllabi - Admin/Faculty upload
-router.post('/syllabi', protect, authorize('faculty', 'hod', 'super_admin'), uploadSyllabus.single('syllabusFile'), async (req, res) => {
+router.post('/syllabi', protect, authorize('faculty', 'hod', 'super_admin'), uploadSyllabus.single('syllabusFile'), async (req, res, next) => {
     try {
         const syllabusData = {
             ...req.body,
             syllabusUrl: req.file ? (req.file.path || req.file.secure_url || req.file.location) : null,
+            ...(req.user.role !== 'super_admin' && { department: req.user.department }),
             uploadedBy: req.user._id
         };
         const syllabus = new Syllabus(syllabusData);
@@ -40,11 +43,14 @@ router.post('/syllabi', protect, authorize('faculty', 'hod', 'super_admin'), upl
 });
 
 // DELETE /api/academics/syllabi/:id - Delete syllabus
-router.delete('/syllabi/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res) => {
+router.delete('/syllabi/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res, next) => {
     try {
         const syllabus = await Syllabus.findById(req.params.id);
         if (!syllabus) return res.status(404).json({ message: 'Syllabus not found' });
 
+        if (req.user.role === 'hod' && !departmentsMatch(syllabus.department, req.user.department)) {
+            return res.status(403).json({ message: 'Document belongs to another department' });
+        }
         // Only HOD, Super Admin, or the uploader can delete
         if (req.user.role !== 'hod' && req.user.role !== 'super_admin' && syllabus.uploadedBy.toString() !== req.user._id.toString()) {
             return res.status(403).json({ message: 'Not authorized to delete this syllabus' });
@@ -53,33 +59,34 @@ router.delete('/syllabi/:id', protect, authorize('faculty', 'hod', 'super_admin'
         await syllabus.deleteOne();
         res.json({ message: 'Syllabus deleted successfully' });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // ── RESOURCE ROUTES ──
 
 // GET /api/academics/resources - Filtered resources (accessible to both users and students)
-router.get('/resources', protectBoth, async (req, res) => {
+router.get('/resources', protectBoth, async (req, res, next) => {
     try {
         const { semester, type, subject } = req.query;
         let query = { isActive: true };
         if (semester) query.semester = Number(semester);
         if (type) query.resourceType = type;
-        if (subject) query.subject = new RegExp(subject, 'i');
+        if (subject) query.subject = literalSearch(subject);
 
         const resources = await Resource.find(query).sort('-createdAt');
         res.json(resources);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // POST /api/academics/resources - Faculty upload
-router.post('/resources', protect, authorize('faculty', 'hod', 'super_admin'), uploadResource.array('resourceFiles', 10), async (req, res) => {
+router.post('/resources', protect, authorize('faculty', 'hod', 'super_admin'), uploadResource.array('resourceFiles', 10), async (req, res, next) => {
     try {
         const resourceBaseData = {
             ...req.body,
+            ...(req.user.role !== 'super_admin' && { department: req.user.department }),
             uploadedBy: req.user._id
         };
 
@@ -108,11 +115,14 @@ router.post('/resources', protect, authorize('faculty', 'hod', 'super_admin'), u
 });
 
 // DELETE /api/academics/resources/:id - Delete resource
-router.delete('/resources/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res) => {
+router.delete('/resources/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res, next) => {
     try {
         const resource = await Resource.findById(req.params.id);
         if (!resource) return res.status(404).json({ message: 'Resource not found' });
 
+        if (req.user.role === 'hod' && !departmentsMatch(resource.department, req.user.department)) {
+            return res.status(403).json({ message: 'Document belongs to another department' });
+        }
         // Only HOD, Super Admin, or the uploader can delete
         if (req.user.role !== 'hod' && req.user.role !== 'super_admin' && resource.uploadedBy.toString() !== req.user._id.toString()) {
             return res.status(403).json({ message: 'Not authorized to delete this resource' });
@@ -121,7 +131,7 @@ router.delete('/resources/:id', protect, authorize('faculty', 'hod', 'super_admi
         await resource.deleteOne();
         res.json({ message: 'Resource deleted successfully' });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 

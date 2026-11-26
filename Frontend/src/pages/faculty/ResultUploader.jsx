@@ -32,7 +32,7 @@ const ResultUploader = () => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [dragOver, setDragOver] = useState(false);
     const [filterSem, setFilterSem] = useState('all');
-    const { openPreview, PdfModal } = usePdfPreview();
+    const { openPreview, PdfModal } = usePdfPreview({ direct: true });
 
     const fetchPdfs = async () => {
         try {

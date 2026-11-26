@@ -1,3 +1,5 @@
+const assert = require('node:assert/strict');
+const { describe, test } = require('node:test');
 const {
     extractAnchorCandidates,
     extractDatedTextCandidates,
@@ -15,8 +17,8 @@ describe('gtuSyncService helpers', () => {
 
     test('parseIndianDate parses day-first dates', () => {
         const parsed = parseIndianDate('15-04-2026');
-        expect(parsed).toBeInstanceOf(Date);
-        expect(parsed.toISOString().slice(0, 10)).toBe('2026-04-15');
+        assert.ok(parsed instanceof Date);
+        assert.equal(parsed.toISOString().slice(0, 10), '2026-04-15');
     });
 
     test('extractAnchorCandidates captures dated engineering notices', () => {
@@ -30,10 +32,10 @@ describe('gtuSyncService helpers', () => {
         `;
 
         const candidates = extractAnchorCandidates(html, source);
-        expect(candidates).toHaveLength(1);
-        expect(candidates[0].title).toContain('Civil Engineering');
-        expect(candidates[0].sourceUrl).toBe('https://set.gtu.ac.in/files/circular-1.pdf');
-        expect(candidates[0].publishedAt.toISOString().slice(0, 10)).toBe('2026-04-15');
+        assert.equal(candidates.length, 1);
+        assert.ok(candidates[0].title.includes('Civil Engineering'));
+        assert.equal(candidates[0].sourceUrl, 'https://set.gtu.ac.in/files/circular-1.pdf');
+        assert.equal(candidates[0].publishedAt.toISOString().slice(0, 10), '2026-04-15');
     });
 
     test('extractDatedTextCandidates captures text-only date rows', () => {
@@ -44,22 +46,22 @@ describe('gtuSyncService helpers', () => {
         `;
 
         const candidates = extractDatedTextCandidates(html, source);
-        expect(candidates).toHaveLength(1);
-        expect(candidates[0].title).toContain('Artificial Intelligence');
+        assert.equal(candidates.length, 1);
+        assert.ok(candidates[0].title.includes('Artificial Intelligence'));
     });
 
     test('engineering relevance filters out obvious non-engineering items', () => {
-        expect(isEngineeringRelevant({
+        assert.equal(isEngineeringRelevant({
             title: 'MBA Admission Schedule 2026',
             summary: 'MBA admission round details',
             sourceName: 'GTU IEP Updates',
-        })).toBe(false);
+        }), false);
 
-        expect(isEngineeringRelevant({
+        assert.equal(isEngineeringRelevant({
             title: 'International conference on Frontiers of Engineering in Healthcare Applications',
             summary: 'Conference notice for engineering students',
             sourceName: 'GTU IEP Updates',
-        })).toBe(true);
+        }), true);
     });
 
     test('mapCandidateToNotice creates GTU notices with category and source data', () => {
@@ -74,15 +76,15 @@ describe('gtuSyncService helpers', () => {
         };
 
         const notice = mapCandidateToNotice(candidate);
-        expect(notice.source).toBe('GTU');
-        expect(notice.category).toBe('Exam');
-        expect(notice.attachment).toBe(candidate.sourceUrl);
-        expect(notice.externalId).toBe('abc123');
+        assert.equal(notice.source, 'GTU');
+        assert.equal(notice.category, 'Exam');
+        assert.equal(notice.attachment, candidate.sourceUrl);
+        assert.equal(notice.externalId, 'abc123');
     });
 
     test('inferCategory classifies imported notices', () => {
-        expect(inferCategory('Admission Merit List for BE Program')).toBe('Admission');
-        expect(inferCategory('Workshop on AI and ML')).toBe('Events');
-        expect(inferCategory('Exam schedule for BE Semester')).toBe('Exam');
+        assert.equal(inferCategory('Admission Merit List for BE Program'), 'Admission');
+        assert.equal(inferCategory('Workshop on AI and ML'), 'Events');
+        assert.equal(inferCategory('Exam schedule for BE Semester'), 'Exam');
     });
 });

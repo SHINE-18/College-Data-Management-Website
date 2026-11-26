@@ -22,7 +22,7 @@ const validate = (req, res, next) => {
 };
 
 // GET /api/qualifications - Get all qualifications (with filters)
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
     try {
         const { facultyId, degreeType } = req.query;
         let query = {};
@@ -33,17 +33,17 @@ router.get('/', async (req, res) => {
         const qualifications = await Qualification.find(query).sort({ endYear: -1 });
         res.json(qualifications);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // GET /api/qualifications/faculty/:id - Get qualifications by faculty
-router.get('/faculty/:id', async (req, res) => {
+router.get('/faculty/:id', async (req, res, next) => {
     try {
         const qualifications = await Qualification.find({ facultyId: req.params.id }).sort({ endYear: -1 });
         res.json(qualifications);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
@@ -56,7 +56,7 @@ router.post('/', [
     body('institution').trim().notEmpty().withMessage('Institution is required'),
     body('degreeType').isIn(['Bachelor', 'Master', 'Doctorate', 'Diploma', 'Certificate', 'Other']).withMessage('Invalid degree type'),
     validate
-], async (req, res) => {
+], async (req, res, next) => {
     try {
         const facultyId = await resolveFacultyProfileId(req.user);
         if (!facultyId) {
@@ -72,12 +72,12 @@ router.post('/', [
         await syncQualificationSummary(facultyId);
         res.status(201).json(qualification);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // PUT /api/qualifications/:id - Update qualification
-router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res) => {
+router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res, next) => {
     try {
         const qualification = await Qualification.findById(req.params.id);
         
@@ -96,12 +96,12 @@ router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (r
         await syncQualificationSummary(qualification.facultyId);
         res.json(qualification);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // PUT /api/qualifications/:id/verify - Verify qualification (admin only)
-router.put('/:id/verify', protect, authorize('super_admin'), async (req, res) => {
+router.put('/:id/verify', protect, authorize('super_admin'), async (req, res, next) => {
     try {
         const qualification = await Qualification.findById(req.params.id);
         
@@ -113,12 +113,12 @@ router.put('/:id/verify', protect, authorize('super_admin'), async (req, res) =>
         await qualification.save();
         res.json(qualification);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // DELETE /api/qualifications/:id - Delete qualification
-router.delete('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res) => {
+router.delete('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res, next) => {
     try {
         const qualification = await Qualification.findById(req.params.id);
         
@@ -137,7 +137,7 @@ router.delete('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async
         await syncQualificationSummary(facultyId);
         res.json({ message: 'Qualification deleted successfully' });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
