@@ -25,6 +25,7 @@ const {
 } = require('./middleware/rateLimiter');
 
 const production = process.env.NODE_ENV === 'production';
+const onVercel = process.env.VERCEL === '1';
 if (process.env.NODE_ENV !== 'test') {
     const required = ['MONGODB_URI', 'JWT_SECRET'];
     if (production) required.push('FRONTEND_URL', 'JWT_REFRESH_SECRET', 'CLOUDINARY_CLOUD_NAME',
@@ -59,7 +60,10 @@ app.use(helmet({
 
 // FRONTEND_URL is also the canonical base for password reset emails.
 const allowedOrigins = new Set();
-for (const value of [process.env.FRONTEND_URL, ...(process.env.PRODUCTION_URL || '').split(',')]) {
+const vercelOrigins = onVercel
+    ? [process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL].filter(Boolean).map(host => 'https://' + host)
+    : [];
+for (const value of [process.env.FRONTEND_URL, ...vercelOrigins, ...(process.env.PRODUCTION_URL || '').split(',')]) {
     if (!value?.trim()) continue;
     const url = new URL(value.trim());
     if ((production && url.protocol !== 'https:') || url.origin !== value.trim().replace(/\/$/, '')) {
@@ -86,7 +90,7 @@ app.use(cookieParser());
 app.use(express.json());
 
 // Serve legacy local uploads when present
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(__dirname, 'public', 'uploads')));
 
 // ============================================
 // ROUTES
@@ -96,13 +100,24 @@ app.use('/api', (req, res, next) => {
     res.set('Cache-Control', 'private, no-store');
     next();
 });
+if (onVercel) {
+    app.use('/api', async (req, res, next) => {
+        try {
+            await connectDB();
+        } catch (error) {
+            console.error('MongoDB connection unavailable:', error.name);
+            return res.status(503).json({ status: 'unavailable' });
+        }
+        next();
+    });
+}
 app.get('/api/health', (req, res) => {
     const ready = mongoose.connection.readyState === 1;
     res.status(ready ? 200 : 503).json({ status: ready ? 'ready' : 'unavailable' });
 });
 
 const distPath = path.join(__dirname, '..', 'Frontend', 'dist');
-const serveFrontend = production && fs.existsSync(path.join(distPath, 'index.html'));
+const serveFrontend = production && !onVercel && fs.existsSync(path.join(distPath, 'index.html'));
 app.get('/', (req, res, next) => {
     if (serveFrontend) return next();
     res.json({
@@ -193,7 +208,7 @@ app.use(errorHandler);
 // ============================================
 // START THE SERVER
 // ============================================
-if (require.main === module && process.env.NODE_ENV !== 'test') {
+if (require.main === module && !onVercel && process.env.NODE_ENV !== 'test') {
     connectDB().then(() => {
         const server = app.listen(PORT, () => {
             console.log(`\n🚀 Backend server is running!`);
@@ -214,6 +229,9 @@ if (require.main === module && process.env.NODE_ENV !== 'test') {
         };
         process.once('SIGTERM', shutdown);
         process.once('SIGINT', shutdown);
+    }).catch(error => {
+        console.error('MongoDB startup failed:', error.name);
+        process.exitCode = 1;
     });
 }
 

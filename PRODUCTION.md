@@ -33,6 +33,12 @@ npm run release:inventory -- --database private/students_import.csv private/stud
 
 The default report contains counts. Add `--ids` to the database command when an authorized operator needs individual MongoDB record IDs for remediation. Use `--database` alone for a file-only inventory. A matched student identifies a candidate for credential rotation. Review staff provisioning records separately. An authenticated file reference still needs a provider access check. Resolve every public, local or unclassified file before signing off on migration.
 
+## Vercel staging deployment
+
+Import the `production-staging` branch as a **Services** project with the repository root `./`. The root `vercel.json` routes `/api/*` and legacy `/uploads/*` to Express and serves React at the same origin. Set `FRONTEND_URL` to the stable staging HTTPS origin so password-reset links point to staging. Leave `VITE_API_URL` unset. Use the server-side environment settings for MongoDB, Cloudinary, email, and two distinct JWT secrets listed below. Use separate staging services and data.
+
+Verify `/api/health`, `/notices`, a legacy PDF, and login on the Vercel deployment. The first API request establishes the MongoDB connection. Automatic GTU sync is disabled on Vercel until it has a scheduled job. Keep uploads below the Vercel request limit for staging. Large uploads will need direct-to-Cloudinary delivery before production. [Vercel Services](https://vercel.com/kb/guide/vercel-services) · [Upload limits](https://vercel.com/docs/errors/function_payload_too_large)
+
 ## Improvement priorities
 
 | When | Work | Acceptance |

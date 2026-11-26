@@ -14,16 +14,18 @@ function httpsOrigin(value, setting, apiPath = false) {
 
 export default defineConfig(({ mode }) => {
   const env = { ...loadEnv(mode, process.cwd(), ''), ...process.env }
+  const onVercel = env.VERCEL === '1'
   let apiOrigin
   if (env.NETLIFY === 'true') {
     apiOrigin = env.API_ORIGIN
       ? httpsOrigin(env.API_ORIGIN, 'API_ORIGIN')
       : httpsOrigin(env.VITE_API_URL, 'API_ORIGIN or VITE_API_URL', true)
   }
-  const siteUrl = env.SITE_URL || (env.NETLIFY === 'true' && env.URL)
+  const siteUrl = env.SITE_URL || (env.NETLIFY === 'true' && env.URL) ||
+    (onVercel && env.VERCEL_PROJECT_PRODUCTION_URL && 'https://' + env.VERCEL_PROJECT_PRODUCTION_URL)
   const siteOrigin = siteUrl && httpsOrigin(siteUrl, 'SITE_URL')
   return {
-    define: apiOrigin && env.API_ORIGIN ? { 'import.meta.env.VITE_API_URL': JSON.stringify('/api') } : {},
+    define: onVercel || (apiOrigin && env.API_ORIGIN) ? { 'import.meta.env.VITE_API_URL': JSON.stringify('/api') } : {},
     plugins: [react(), {
       name: 'deployment-files',
       generateBundle() {
@@ -34,7 +36,8 @@ export default defineConfig(({ mode }) => {
         }
         rules.push('/* /index.html 200')
         this.emitFile({ type: 'asset', fileName: '_redirects', source: rules.join('\n') + '\n' })
-        const preview = env.NETLIFY === 'true' && env.CONTEXT && env.CONTEXT !== 'production'
+        const preview = (env.NETLIFY === 'true' && env.CONTEXT && env.CONTEXT !== 'production') ||
+          (onVercel && env.VERCEL_ENV !== 'production')
         const robots = preview ? 'User-agent: *\nDisallow: /\n' :
           'User-agent: *\nAllow: /\n' + ['/api/', '/admin/', '/hod/', '/faculty-portal/', '/student-portal/', '/reset-password/']
             .map(path => 'Disallow: ' + path + '\n').join('')
