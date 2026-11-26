@@ -15,9 +15,10 @@ const { buildDepartmentMatch, departmentsMatch } = require('../utils/departmentU
 const hodOnly = [protect, authorize('hod', 'super_admin')];
 
 // GET /api/reports/attendance?department=&semester=
-router.get('/attendance', hodOnly, async (req, res) => {
+router.get('/attendance', hodOnly, async (req, res, next) => {
     try {
-        const { department, semester } = req.query;
+        const { semester } = req.query;
+        const department = req.user.role === 'hod' ? req.user.department : req.query.department;
         const filter = {};
         if (semester) filter.semester = Number(semester);
 
@@ -55,14 +56,15 @@ router.get('/attendance', hodOnly, async (req, res) => {
 
         res.json({ department, semester, summary });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // GET /api/reports/results?department=&semester=
-router.get('/results', hodOnly, async (req, res) => {
+router.get('/results', hodOnly, async (req, res, next) => {
     try {
-        const { department, semester } = req.query;
+        const { semester } = req.query;
+        const department = req.user.role === 'hod' ? req.user.department : req.query.department;
         const filter = {};
         if (semester) filter.semester = Number(semester);
 
@@ -96,14 +98,14 @@ router.get('/results', hodOnly, async (req, res) => {
 
         res.json({ department, semester, summary });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // GET /api/reports/faculty-workload?department=
-router.get('/faculty-workload', hodOnly, async (req, res) => {
+router.get('/faculty-workload', hodOnly, async (req, res, next) => {
     try {
-        const { department } = req.query;
+        const department = req.user.role === 'hod' ? req.user.department : req.query.department;
         const filter = department ? { department: buildDepartmentMatch(department) } : {};
 
         const faculties = await Faculty.find(filter)
@@ -166,7 +168,7 @@ router.get('/faculty-workload', hodOnly, async (req, res) => {
 
         res.json({ department, summary });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 

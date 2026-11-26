@@ -22,7 +22,7 @@ export const googleDocsViewerUrl = (url) =>
  *   <PdfModal />
  *   <button onClick={() => openPreview(url, 'My PDF Title')}>View</button>
  */
-export const usePdfPreview = () => {
+export const usePdfPreview = ({ direct = false } = {}) => {
     const [state, setState] = useState({ url: null, title: '' });
     const [iframeKey, setIframeKey] = useState(0);
     const [loaded, setLoaded] = useState(false);
@@ -107,7 +107,7 @@ export const usePdfPreview = () => {
                         )}
                         <iframe
                             key={iframeKey}
-                            src={googleDocsViewerUrl(state.url)}
+                            src={direct ? state.url : googleDocsViewerUrl(state.url)}
                             title={state.title}
                             className="w-full h-full border-0"
                             style={{ minHeight: '70vh' }}

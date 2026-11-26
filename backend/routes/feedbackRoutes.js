@@ -5,7 +5,7 @@
 const express = require('express');
 const router = express.Router();
 const Feedback = require('../models/Feedback');
-const { protect, authorize } = require('../middleware/authMiddleware');
+const { protect, authorize, findSessionAccount } = require('../middleware/authMiddleware');
 const { body } = require('express-validator');
 const validate = require('../middleware/validate');
 
@@ -17,29 +17,18 @@ router.post('/', [
     body('message').trim().isLength({ min: 10, max: 2000 })
         .withMessage('Message must be between 10 and 2000 characters'),
     validate
-], async (req, res) => {
+], async (req, res, next) => {
     try {
         const { type, category, message, isAnonymous, department } = req.body;
 
-        // If not anonymous, try to get userId from token (optional)
-        let userId = null;
-        const authHeader = req.headers.authorization;
-        if (!isAnonymous && authHeader && authHeader.startsWith('Bearer ')) {
-            try {
-                const jwt = require('jsonwebtoken');
-                const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
-                userId = decoded.id;
-            } catch {
-                // Ignore auth errors for public route
-            }
-        }
+        const actor = isAnonymous ? null : await findSessionAccount(req);
 
         const feedback = await Feedback.create({
             type,
             category,
             message,
             isAnonymous: isAnonymous || false,
-            userId: isAnonymous ? null : userId,
+            userId: actor?._id || null,
             department: department || 'General'
         });
 
@@ -48,12 +37,12 @@ router.post('/', [
             id: feedback._id
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // GET /api/feedback — Admin only: view all feedback
-router.get('/', protect, authorize('super_admin'), async (req, res) => {
+router.get('/', protect, authorize('super_admin'), async (req, res, next) => {
     try {
         const filter = {};
         if (req.query.type) filter.type = req.query.type;
@@ -66,7 +55,7 @@ router.get('/', protect, authorize('super_admin'), async (req, res) => {
 
         res.json(feedbacks);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
@@ -77,7 +66,7 @@ router.patch('/:id/respond', [
     body('adminResponse').trim().notEmpty().withMessage('Response is required'),
     body('status').isIn(['reviewed', 'resolved', 'dismissed']).withMessage('Invalid status'),
     validate
-], async (req, res) => {
+], async (req, res, next) => {
     try {
         const feedback = await Feedback.findByIdAndUpdate(
             req.params.id,
@@ -91,7 +80,7 @@ router.patch('/:id/respond', [
         if (!feedback) return res.status(404).json({ message: 'Feedback not found' });
         res.json(feedback);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 

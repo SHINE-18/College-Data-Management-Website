@@ -4,7 +4,9 @@
 
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
+require('dotenv').config({ quiet: true });
+const mongoose = require('mongoose');
+const fs = require('node:fs');
 const connectDB = require('./config/database');
 const path = require('path');
 const helmet = require('helmet');
@@ -22,15 +24,17 @@ const {
     validateSyncToken
 } = require('./middleware/rateLimiter');
 
-// Load environment variables FIRST
-dotenv.config();
-
-// ── Startup env variable validation ──
-const REQUIRED_ENV = ['MONGODB_URI', 'JWT_SECRET', 'PORT'];
-const missing = REQUIRED_ENV.filter(k => !process.env[k]);
-if (missing.length) {
-    console.error(`❌ Missing required environment variables: ${missing.join(', ')}`);
-    process.exit(1);
+const production = process.env.NODE_ENV === 'production';
+if (process.env.NODE_ENV !== 'test') {
+    const required = ['MONGODB_URI', 'JWT_SECRET'];
+    if (production) required.push('FRONTEND_URL', 'JWT_REFRESH_SECRET', 'CLOUDINARY_CLOUD_NAME',
+        'CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET', 'EMAIL_USER', 'EMAIL_PASS');
+    const missing = required.filter(key => !process.env[key]?.trim());
+    if (missing.length) throw new Error('Missing settings: ' + missing.join(', '));
+    if (production && (process.env.JWT_SECRET.length < 32 || process.env.JWT_REFRESH_SECRET.length < 32 ||
+        process.env.JWT_SECRET === process.env.JWT_REFRESH_SECRET)) {
+        throw new Error('Set distinct JWT signing secrets of at least 32 characters');
+    }
 }
 
 // Create Express application
@@ -53,43 +57,27 @@ app.use(helmet({
     contentSecurityPolicy: false // Disable CSP to avoid breaking React app served in production
 }));
 
-// CORS — supports localhost dev, all Vercel preview/production deployments,
-// Netlify preview/production deployments, and any extra origins set via
-// FRONTEND_URL / PRODUCTION_URL env vars on Render.
-const allowedOriginPatterns = [
-    /^http:\/\/localhost:\d+$/,            // any localhost port (local dev)
-    /^https:\/\/.*\.vercel\.app$/,        // all Vercel domains (preview + production)
-    /^https:\/\/.*\.netlify\.app$/,       // all Netlify domains (preview + production)
-    /^https:\/\/.*\.onrender\.com$/,      // Render itself if needed
-];
-
-// Exact origins from env (comma-separated) + hardcoded production domain
-const exactAllowedOrigins = [
-    process.env.FRONTEND_URL,
-    process.env.PRODUCTION_URL,
-    'https://college-data-management-website.vercel.app',
-]
-    .filter(Boolean)
-    .flatMap(u => u.split(',').map(s => s.trim()));
+// FRONTEND_URL is also the canonical base for password reset emails.
+const allowedOrigins = new Set();
+for (const value of [process.env.FRONTEND_URL, ...(process.env.PRODUCTION_URL || '').split(',')]) {
+    if (!value?.trim()) continue;
+    const url = new URL(value.trim());
+    if ((production && url.protocol !== 'https:') || url.origin !== value.trim().replace(/\/$/, '')) {
+        throw new Error('Configure frontend origins as scheme and hostname only');
+    }
+    allowedOrigins.add(url.origin);
+}
 
 app.use(cors({
-    origin: function (origin, callback) {
-        // Allow server-to-server / same-origin requests (no Origin header)
-        if (!origin) return callback(null, true);
-        // Exact match
-        if (exactAllowedOrigins.includes(origin)) return callback(null, true);
-        // Pattern match (handles Vercel preview URLs like project-xyz-abc.vercel.app)
-        if (allowedOriginPatterns.some(p => p.test(origin))) return callback(null, true);
-        console.warn(`CORS blocked origin: ${origin}`);
-        return callback(new Error(`CORS: origin '${origin}' not allowed`));
+    origin(origin, callback) {
+        const localDev = !production && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+        if (!origin || localDev || allowedOrigins.has(origin)) return callback(null, true);
+        return callback(Object.assign(new Error('Origin is not allowed'), { statusCode: 403 }));
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Sync-Token'],
 }));
-
-// Handle preflight OPTIONS requests explicitly
-app.options('/{*path}', cors());
 
 // Cookie parser (needed for JWT refresh tokens)
 app.use(cookieParser());
@@ -104,7 +92,19 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // ROUTES
 // ============================================
 
-app.get('/', (req, res) => {
+app.use('/api', (req, res, next) => {
+    res.set('Cache-Control', 'private, no-store');
+    next();
+});
+app.get('/api/health', (req, res) => {
+    const ready = mongoose.connection.readyState === 1;
+    res.status(ready ? 200 : 503).json({ status: ready ? 'ready' : 'unavailable' });
+});
+
+const distPath = path.join(__dirname, '..', 'Frontend', 'dist');
+const serveFrontend = production && fs.existsSync(path.join(distPath, 'index.html'));
+app.get('/', (req, res, next) => {
+    if (serveFrontend) return next();
     res.json({
         message: 'Welcome to VGEC CE Department API! 🚀',
         status: 'Server is running',
@@ -128,6 +128,8 @@ app.put('/api/student-auth/password', passwordResetLimiter);
 // File Upload rate limiters (20 uploads per hour)
 app.post('/api/faculty/result-pdfs', fileUploadLimiter);
 app.post('/api/student/submissions', fileUploadLimiter);
+app.post('/api/events', fileUploadLimiter);
+app.post('/api/admin/import-students', fileUploadLimiter);
 app.post('/api/notices', fileUploadLimiter);
 app.post('/api/circulars', fileUploadLimiter);
 app.post('/api/timetables', fileUploadLimiter);
@@ -174,9 +176,11 @@ app.use('/api/reports', require('./routes/reportRoutes'));
 app.use('/api/feedback', require('./routes/feedbackRoutes'));
 
 // ── Production: Serve React Frontend ──
-if (process.env.NODE_ENV === 'production') {
-    const distPath = path.join(__dirname, '..', 'Frontend', 'dist');
+app.use('/api', notFound);
+app.use('/uploads', notFound);
+if (serveFrontend) {
     app.use(express.static(distPath));
+    app.use('/assets', notFound);
     app.get(/(.*)/, (req, res) => {
         res.sendFile(path.resolve(distPath, 'index.html'));
     });
@@ -189,24 +193,27 @@ app.use(errorHandler);
 // ============================================
 // START THE SERVER
 // ============================================
-if (process.env.NODE_ENV !== 'test') {
+if (require.main === module && process.env.NODE_ENV !== 'test') {
     connectDB().then(() => {
-        app.listen(PORT, () => {
+        const server = app.listen(PORT, () => {
             console.log(`\n🚀 Backend server is running!`);
             console.log(`📍 Local: http://localhost:${PORT}`);
             console.log(`\nPress Ctrl+C to stop the server\n`);
         });
-        startGtuSyncScheduler(console);
-
-        // Keep-alive ping for Render free tier (spins down after 15 min of inactivity)
-        if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {
-            const https = require('https');
-            setInterval(() => {
-                https.get(process.env.RENDER_EXTERNAL_URL, () => {
-                    console.log('🏓 Keep-alive ping sent');
-                }).on('error', () => {});
-            }, 14 * 60 * 1000); // every 14 minutes
-        }
+        const scheduler = startGtuSyncScheduler(console);
+        const shutdown = () => {
+            clearInterval(scheduler);
+            const deadline = setTimeout(() => process.exit(1), 10000).unref();
+            server.close(async () => {
+                try {
+                    await mongoose.disconnect();
+                } finally {
+                    clearTimeout(deadline);
+                }
+            });
+        };
+        process.once('SIGTERM', shutdown);
+        process.once('SIGINT', shutdown);
     });
 }
 

@@ -5,9 +5,7 @@
 import { useState, useRef } from 'react';
 import api from '../../utils/axios';
 
-const SAMPLE_CSV = `name,email,enrollmentNo,semester,department
-Aryan Shah,aryan.shah@vgec.ac.in,220010107001,3,Computer Engineering
-Priya Patel,priya.patel@vgec.ac.in,220010107002,3,Computer Engineering`;
+const SAMPLE_CSV = `name,email,enrollmentNumber,password,semester,department,batch\n`;
 
 const downloadSample = () => {
     const blob = new Blob([SAMPLE_CSV], { type: 'text/csv' });
@@ -63,9 +61,9 @@ const AdminImportStudents = () => {
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 mb-6 text-sm text-blue-800 dark:text-blue-300">
                 <p className="font-semibold mb-1">📋 Required CSV columns:</p>
                 <code className="block bg-white/60 dark:bg-black/20 px-2 py-1 rounded text-xs font-mono">
-                    name, email, enrollmentNo, semester, department, [password (optional)]
+                    name, email, enrollmentNumber, password, semester, department, batch
                 </code>
-                <p className="mt-2 text-xs">If no password column is present, default will be: <code>Vgec@{'{enrollmentNo}'}</code></p>
+                <p className="mt-2 text-xs">Use a unique initial password for each student. Upload up to 1,000 rows per CSV (1 MB).</p>
                 <button onClick={downloadSample} className="mt-2 text-blue-600 dark:text-blue-400 font-medium hover:underline text-xs">
                     ⬇ Download Sample Template
                 </button>
@@ -84,7 +82,7 @@ const AdminImportStudents = () => {
                 ) : (
                     <>
                         <p className="font-semibold text-gray-700 dark:text-gray-300">Click to choose CSV file</p>
-                        <p className="text-sm text-gray-400 mt-1">or drag and drop here</p>
+                        <p className="text-sm text-gray-400 mt-1">CSV files up to 1 MB</p>
                     </>
                 )}
             </div>
@@ -124,7 +122,7 @@ const AdminImportStudents = () => {
                                             <tr key={i}>
                                                 <td className="px-3 py-2 text-gray-900 dark:text-white">{s.name}</td>
                                                 <td className="px-3 py-2 text-gray-500">{s.email}</td>
-                                                <td className="px-3 py-2 text-gray-500">{s.enrollmentNo}</td>
+                                                <td className="px-3 py-2 text-gray-500">{s.enrollmentNumber}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -139,7 +137,7 @@ const AdminImportStudents = () => {
                             <div className="bg-white dark:bg-gray-800 rounded-xl border overflow-hidden max-h-48 overflow-y-auto">
                                 {result.errors.map((e, i) => (
                                     <div key={i} className="px-3 py-2 border-b border-gray-100 dark:border-gray-700 text-xs">
-                                        <span className="text-gray-900 dark:text-white font-medium">{e.row?.email || e.row?.enrollmentNo || `Row ${i + 1}`}</span>
+                                        <span className="text-gray-900 dark:text-white font-medium">{e.row?.email || e.row?.enrollmentNumber || `Row ${i + 1}`}</span>
                                         <span className="text-red-500 ml-2">{e.reason}</span>
                                     </div>
                                 ))}

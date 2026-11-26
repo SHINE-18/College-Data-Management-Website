@@ -3,7 +3,8 @@
 // ============================================
 
 const multer = require('multer');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { randomUUID } = require('node:crypto');
+const path = require('node:path');
 const cloudinary = require('../config/cloudinary');
 
 const IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -24,34 +25,38 @@ const makeFileFilter = (allowedTypes, errorMessage) => (req, file, cb) => {
     if (allowedTypes.includes(file.mimetype)) {
         cb(null, true);
     } else {
-        cb(new Error(errorMessage), false);
+        cb(Object.assign(new Error(errorMessage), { statusCode: 400 }), false);
     }
 };
 
 // Helper to create a Cloudinary storage instance for a given folder
-const createStorage = (folder, allowedFormats) =>
-    new CloudinaryStorage({
-        cloudinary,
-        params: async (req, file) => {
-            const isImage = IMAGE_MIME_TYPES.includes(file.mimetype);
-            const isPdf = file.mimetype === 'application/pdf';
-            const extension = file.originalname.includes('.')
-                ? file.originalname.split('.').pop().toLowerCase()
-                : undefined;
-            return {
-                folder: `vgec/${folder}`,
-                allowed_formats: allowedFormats,
-                resource_type: isImage ? 'image' : 'raw',
-                // 'inline' flag makes Cloudinary send Content-Disposition: inline
-                // so PDFs open in the browser instead of being force-downloaded.
-                flags: isPdf ? 'inline' : undefined,
-                // Preserve file extension for raw uploads so downloads keep the correct type.
-                public_id: !isImage && extension
-                    ? `${file.originalname.replace(/\.[^/.]+$/, "")}_${Date.now()}.${extension}`
-                    : undefined
-            };
-        },
-    });
+const createStorage = (folder, allowedFormats) => ({
+    _handleFile(req, file, callback) {
+        const image = IMAGE_MIME_TYPES.includes(file.mimetype);
+        const extension = path.extname(file.originalname).slice(1).toLowerCase();
+        if (!allowedFormats.includes(extension)) {
+            return callback(Object.assign(new Error('Unsupported file extension'), { statusCode: 400 }));
+        }
+        const options = {
+            folder: 'vgec/' + folder,
+            resource_type: image ? 'image' : 'raw',
+            type: ['results', 'submissions'].includes(folder) ? 'authenticated' : 'upload',
+            allowed_formats: allowedFormats,
+            public_id: image ? randomUUID() : randomUUID() + '.' + extension,
+        };
+        const stream = cloudinary.uploader.upload_stream(options, (err, result) => {
+            if (err) return callback(err);
+            callback(null, { path: result.secure_url, filename: result.public_id, size: result.bytes,
+                resourceType: options.resource_type, deliveryType: options.type });
+        });
+        file.stream.pipe(stream);
+    },
+    _removeFile(req, file, callback) {
+        cloudinary.uploader.destroy(file.filename, {
+            resource_type: file.resourceType, type: file.deliveryType, invalidate: true,
+        }, callback);
+    },
+});
 
 // Per-resource upload instances
 const uploadFaculty = multer({
@@ -75,7 +80,7 @@ const uploadSyllabus = multer({
     limits: { fileSize: 20 * 1024 * 1024 }
 });
 const uploadAssignment = multer({
-    storage: createStorage('assignments', ['pdf', 'doc', 'docx', 'zip', 'rar']),
+    storage: createStorage('assignments', ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'zip', 'rar']),
     fileFilter: makeFileFilter(DOCUMENT_MIME_TYPES, 'Only PDF, DOC, DOCX, PPT, PPTX, ZIP, and RAR files are allowed'),
     limits: { fileSize: 20 * 1024 * 1024 }
 });
@@ -95,7 +100,7 @@ const uploadEvent = multer({
     limits: { fileSize: 5 * 1024 * 1024 }
 });
 const uploadSubmission = multer({
-    storage: createStorage('submissions', ['pdf', 'doc', 'docx', 'zip', 'rar']),
+    storage: createStorage('submissions', ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'zip', 'rar']),
     fileFilter: makeFileFilter(DOCUMENT_MIME_TYPES, 'Only PDF, DOC, DOCX, PPT, PPTX, ZIP, and RAR files are allowed'),
     limits: { fileSize: 20 * 1024 * 1024 }
 });

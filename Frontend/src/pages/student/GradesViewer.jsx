@@ -23,7 +23,7 @@ const GradesViewer = () => {
     const [loading, setLoading] = useState(true);
     const [filterSem, setFilterSem] = useState('All');
     const [filterExam, setFilterExam] = useState('All');
-    const { openPreview, PdfModal } = usePdfPreview();
+    const { openPreview, PdfModal } = usePdfPreview({ direct: true });
 
     const fetchResultPdfs = async () => {
         try {

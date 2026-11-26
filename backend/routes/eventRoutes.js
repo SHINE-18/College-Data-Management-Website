@@ -4,37 +4,10 @@
 
 const express = require('express');
 const { body, param, query, validationResult } = require('express-validator');
-const multer = require('multer');
-const path = require('path');
+const { uploadEvent } = require('../middleware/upload');
 const router = express.Router();
 const Event = require('../models/Event');
 const { protect, authorize } = require('../middleware/authMiddleware');
-
-// Configure Multer for image upload
-const imageStorage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, 'uploads/events/');
-    },
-    filename: function (req, file, cb) {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'event-' + uniqueSuffix + path.extname(file.originalname));
-    }
-});
-
-// Filter to only accept image files
-const imageFilter = (req, file, cb) => {
-    if (file.mimetype.startsWith('image/')) {
-        cb(null, true);
-    } else {
-        cb(new Error('Only image files are allowed!'), false);
-    }
-};
-
-const uploadImage = multer({
-    storage: imageStorage,
-    fileFilter: imageFilter,
-    limits: { fileSize: 5 * 1024 * 1024 }
-});
 
 // Validation middleware
 const validate = (req, res, next) => {
@@ -52,7 +25,7 @@ router.get('/', [
     query('search').optional().trim(),
     query('type').optional().trim(),
     query('department').optional().trim(),
-], validate, async (req, res) => {
+], validate, async (req, res, next) => {
     try {
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 10;
@@ -90,32 +63,32 @@ router.get('/', [
             }
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // GET /api/events/:id â€” Get one event
 router.get('/:id', [
     param('id').isMongoId().withMessage('Invalid event ID')
-], validate, async (req, res) => {
+], validate, async (req, res, next) => {
     try {
-        const event = await Event.findById(req.params.id);
+        const event = await Event.findOne({ _id: req.params.id, isActive: true });
         if (!event) return res.status(404).json({ message: 'Event not found' });
         res.json(event);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // POST /api/events â€” Create a new event (with optional image)
-router.post('/', protect, authorize('faculty', 'hod', 'super_admin'), uploadImage.single('image'), [
+router.post('/', protect, authorize('faculty', 'hod', 'super_admin'), uploadEvent.single('image'), [
     body('title').trim().notEmpty().withMessage('Title is required'),
     body('description').trim().notEmpty().withMessage('Description is required'),
     body('date').isISO8601().withMessage('Valid date is required'),
     body('type').optional().isIn(['Conference', 'Workshop', 'Cultural', 'Sports', 'Placement', 'Lecture', 'Competition', 'Other']).withMessage('Invalid event type'),
     body('department').optional().trim(),
     body('venue').optional().trim(),
-], validate, async (req, res) => {
+], validate, async (req, res, next) => {
     try {
         const { title, description, date, type, department, venue } = req.body;
 
@@ -129,7 +102,7 @@ router.post('/', protect, authorize('faculty', 'hod', 'super_admin'), uploadImag
         };
 
         if (req.file) {
-            eventData.image = `/uploads/events/${req.file.filename}`;
+            eventData.image = req.file.path;
         }
 
         const event = new Event(eventData);
@@ -141,13 +114,13 @@ router.post('/', protect, authorize('faculty', 'hod', 'super_admin'), uploadImag
 });
 
 // PUT /api/events/:id â€” Update an event (with optional image update)
-router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), uploadImage.single('image'), [
+router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), uploadEvent.single('image'), [
     param('id').isMongoId().withMessage('Invalid event ID'),
     body('title').optional().trim().notEmpty().withMessage('Title cannot be empty'),
     body('description').optional().trim().notEmpty().withMessage('Description cannot be empty'),
     body('date').optional().isISO8601().withMessage('Valid date is required'),
     body('type').optional().isIn(['Conference', 'Workshop', 'Cultural', 'Sports', 'Placement', 'Lecture', 'Competition', 'Other']).withMessage('Invalid event type'),
-], validate, async (req, res) => {
+], validate, async (req, res, next) => {
     try {
         const existingEvent = await Event.findById(req.params.id);
 
@@ -166,7 +139,7 @@ router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), uploadIm
         }
 
         if (req.file) {
-            updateData.image = `/uploads/events/${req.file.filename}`;
+            updateData.image = req.file.path;
         }
 
         const updated = await Event.findByIdAndUpdate(req.params.id, updateData, { new: true, runValidators: true });
@@ -179,19 +152,19 @@ router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), uploadIm
 // DELETE /api/events/:id â€” Delete an event
 router.delete('/:id', protect, authorize('faculty', 'hod', 'super_admin'), [
     param('id').isMongoId().withMessage('Invalid event ID')
-], validate, async (req, res) => {
+], validate, async (req, res, next) => {
     try {
         const deleted = await Event.findById(req.params.id);
         if (!deleted) return res.status(404).json({ message: 'Event not found' });
 
-        if (req.user.role === 'hod' && deleted.department !== req.user.department) {
+        if (req.user.role !== 'super_admin' && deleted.department !== req.user.department) {
             return res.status(403).json({ message: 'Not authorized to delete events outside your department' });
         }
 
         await deleted.deleteOne();
         res.json({ message: `Event "${deleted.title}" has been removed` });
     } catch (error) {
-        res.status(500).json({ message: 'Delete failed', error: error.message });
+        next(error);
     }
 });
 

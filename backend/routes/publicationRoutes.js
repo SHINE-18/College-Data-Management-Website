@@ -22,7 +22,7 @@ const validate = (req, res, next) => {
 };
 
 // GET /api/publications - Get all publications (with filters)
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
     try {
         const { facultyId, publicationType, isIndexed } = req.query;
         let query = {};
@@ -34,17 +34,17 @@ router.get('/', async (req, res) => {
         const publications = await Publication.find(query).sort({ publicationDate: -1 });
         res.json(publications);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // GET /api/publications/faculty/:id - Get publications by faculty
-router.get('/faculty/:id', async (req, res) => {
+router.get('/faculty/:id', async (req, res, next) => {
     try {
         const publications = await Publication.find({ facultyId: req.params.id }).sort({ publicationDate: -1 });
         res.json(publications);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
@@ -55,7 +55,7 @@ router.post('/', [
     body('title').trim().notEmpty().withMessage('Title is required'),
     body('publicationType').isIn(['Journal', 'Conference', 'Book Chapter', 'Book', 'Patent']).withMessage('Invalid publication type'),
     validate
-], async (req, res) => {
+], async (req, res, next) => {
     try {
         const facultyId = await resolveFacultyProfileId(req.user);
         if (!facultyId) {
@@ -72,12 +72,12 @@ router.post('/', [
         await syncPublicationSummary(facultyId);
         res.status(201).json(publication);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // PUT /api/publications/:id - Update publication
-router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res) => {
+router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res, next) => {
     try {
         const publication = await Publication.findById(req.params.id);
         
@@ -96,12 +96,12 @@ router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (r
         await syncPublicationSummary(publication.facultyId);
         res.json(publication);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // DELETE /api/publications/:id - Delete publication
-router.delete('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res) => {
+router.delete('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res, next) => {
     try {
         const publication = await Publication.findById(req.params.id);
         
@@ -120,7 +120,7 @@ router.delete('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async
         await syncPublicationSummary(facultyId);
         res.json({ message: 'Publication deleted successfully' });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 

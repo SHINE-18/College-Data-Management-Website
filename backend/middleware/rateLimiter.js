@@ -77,11 +77,12 @@ const adminApiLimiter = rateLimit({
 // 6. Scraper/API Sync Routes — Secret Token Protection Middleware
 // ════════════════════════════════════════════════════════════════════════
 const validateSyncToken = (req, res, next) => {
-    // Read secret token from process env, fallback to secure placeholder in dev
-    const secretToken = process.env.SYNC_SECRET_TOKEN || 'vgec_secret_sync_token_2026';
-    const clientToken = req.headers['x-sync-token'] || req.query.token;
-
-    if (!clientToken || clientToken !== secretToken) {
+    // The admin router always requires a super-admin session. Operators may
+    // additionally require a token for automated sync clients.
+    const secretToken = process.env.SYNC_SECRET_TOKEN;
+    if (!secretToken) return next();
+    const clientToken = req.get('x-sync-token');
+    if (clientToken !== secretToken) {
         return res.status(403).json({
             success: false,
             message: 'Access denied: Scraper and sync operations are restricted to authorized clients with a valid sync token.'

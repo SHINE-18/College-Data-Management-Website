@@ -6,37 +6,37 @@ const { generateToken, protectStudent } = require('../middleware/authMiddleware'
 
 const validate = (req, res, next) => {
     const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array().map(({ path, msg }) => ({ path, msg })) });
     next();
 };
 
 // POST /api/student-auth/login - Student Login
 router.post('/login', [
-    body('enrollmentNumber').notEmpty().withMessage('Enrollment number is required'),
-    body('password').notEmpty().withMessage('Password is required'),
+    body('enrollmentNumber').isString().bail().trim().notEmpty().withMessage('Enrollment number is required'),
+    body('password').isString().bail().notEmpty().withMessage('Password is required'),
     validate
-], async (req, res) => {
+], async (req, res, next) => {
     try {
         const { enrollmentNumber, password } = req.body;
-        console.log('Login attempt for:', enrollmentNumber);
+
 
         const student = await Student.findOne({ enrollmentNumber }).select('+password');
 
         if (!student || !student.isActive) {
-            console.log('Student not found or inactive');
+
             return res.status(401).json({ message: 'Invalid credentials or inactive account' });
         }
 
         const isMatch = await student.comparePassword(password);
         if (!isMatch) {
-            console.log('Password mismatch');
+
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
         student.lastLogin = new Date();
         await student.save({ validateBeforeSave: false });
 
-        const token = generateToken(student._id);
+        const token = generateToken(student, '7d');
 
         res.json({
             _id: student._id,
@@ -50,16 +50,12 @@ router.post('/login', [
         });
     } catch (error) {
         console.error('CRITICAL LOGIN ERROR:', error);
-        res.status(500).json({
-            message: 'Server error',
-            error: error.message,
-            stack: error.stack
-        });
+        res.status(500).json({ message: 'Server error' });
     }
 });
 
 // GET /api/student-auth/me - Get current student
-router.get('/me', protectStudent, async (req, res) => {
+router.get('/me', protectStudent, async (req, res, next) => {
     try {
         const student = await Student.findById(req.student._id);
         res.json({
@@ -73,7 +69,7 @@ router.get('/me', protectStudent, async (req, res) => {
         });
     } catch (error) {
         console.error('Get Me Error:', error);
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
@@ -83,7 +79,7 @@ router.put('/password', [
     body('currentPassword').notEmpty().withMessage('Current password is required'),
     body('newPassword').isLength({ min: 6 }).withMessage('New password must be at least 6 characters'),
     validate
-], async (req, res) => {
+], async (req, res, next) => {
     try {
         const { currentPassword, newPassword } = req.body;
 
@@ -99,10 +95,10 @@ router.put('/password', [
         student.password = newPassword;
         await student.save();
 
-        res.json({ message: 'Password updated successfully' });
+        res.json({ message: 'Password updated successfully', token: generateToken(student, '7d') });
     } catch (error) {
         console.error('Password change error:', error);
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 

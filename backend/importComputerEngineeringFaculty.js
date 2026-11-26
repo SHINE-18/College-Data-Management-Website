@@ -13,7 +13,6 @@ const Faculty = require('./models/Faculty');
 
 dotenv.config();
 
-const DEFAULT_PASSWORD = process.env.FACULTY_PASS; // Default password - faculty should change this on first login
 
 const importFaculty = async () => {
     try {
@@ -59,7 +58,7 @@ const importFaculty = async () => {
                 const user = await User.create({
                     name: name,
                     email: email.toLowerCase(),
-                    password: DEFAULT_PASSWORD,
+                    password: require('node:crypto').randomBytes(32).toString('hex'),
                     role: 'faculty',
                     department: 'Computer Engineering',
                     designation: designation
@@ -91,8 +90,6 @@ const importFaculty = async () => {
         console.log(`❌ Errors: ${errorCount}`);
         console.log(`${'='.repeat(60)}\n`);
 
-        console.log(`🔐 Default Password: ${DEFAULT_PASSWORD}`);
-        console.log(`⚠️  Faculty members should change password on first login!\n`);
 
         process.exit(0);
 

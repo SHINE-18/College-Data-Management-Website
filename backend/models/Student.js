@@ -57,6 +57,7 @@ const studentSchema = new mongoose.Schema({
         type: String, // e.g. "2023-2027"
         required: true
     },
+    sessionVersion: String,
     isActive: {
         type: Boolean,
         default: true
@@ -90,6 +91,7 @@ studentSchema.pre('save', async function () {
         return;
     }
 
+    if (!this.isNew) this.sessionVersion = require('node:crypto').randomUUID();
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
 });

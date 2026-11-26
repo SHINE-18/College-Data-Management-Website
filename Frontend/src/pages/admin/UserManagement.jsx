@@ -41,7 +41,7 @@ const UserManagement = () => {
             await api.post('/auth/register', formData);
             toast.success('User registered successfully');
             setIsModalOpen(false);
-            setFormData({ name: '', email: '', password: '', role: 'faculty', department: 'Computer Engineering', designation: '' });
+            setFormData({ name: '', email: '', password: '', role: 'hod', department: 'Computer Engineering', designation: '' });
             fetchUsers();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to register user');
@@ -60,7 +60,7 @@ const UserManagement = () => {
             toast.success('User updated successfully');
             setIsEditModalOpen(false);
             setEditingUserId(null);
-            setFormData({ name: '', email: '', password: '', role: 'faculty', department: 'Computer Engineering', designation: '' });
+            setFormData({ name: '', email: '', password: '', role: 'hod', department: 'Computer Engineering', designation: '' });
             fetchUsers();
         } catch (error) {
             toast.error(error.response?.data?.message || 'Failed to update user');

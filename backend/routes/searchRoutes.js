@@ -1,3 +1,4 @@
+const literalSearch = require('../utils/search');
 // ============================================
 // routes/searchRoutes.js — Global Search API
 // ============================================
@@ -10,33 +11,37 @@ const Event = require('../models/Event');
 const Syllabus = require('../models/Syllabus');
 
 // GET /api/search?q=keyword — Search across multiple collections
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
     try {
         const { q, dept } = req.query;
-        if (!q || q.trim().length < 2) {
+        if (typeof q !== 'string' || q.trim().length < 2) {
             return res.status(400).json({ message: 'Search query must be at least 2 characters' });
         }
 
-        const regex = new RegExp(q.trim(), 'i');
+        const regex = literalSearch(q.trim());
         const deptFilter = dept ? { department: dept } : {};
 
         const [faculty, notices, events, syllabi] = await Promise.all([
             Faculty.find({
+                isActive: true,
                 ...deptFilter,
                 $or: [{ name: regex }, { designation: regex }, { specialization: regex }]
             }).select('name designation profilePhoto department').limit(5),
 
             Notice.find({
+                isActive: true,
                 ...deptFilter,
                 $or: [{ title: regex }, { content: regex }]
             }).select('title category department createdAt').limit(5),
 
             Event.find({
+                isActive: true,
                 ...deptFilter,
                 $or: [{ title: regex }, { description: regex }]
             }).select('title date venue department').limit(5),
 
             Syllabus.find({
+                isActive: true,
                 ...deptFilter,
                 $or: [{ courseTitle: regex }, { subjectCode: regex }]
             }).select('courseTitle subjectCode semester department').limit(5),
@@ -84,7 +89,7 @@ router.get('/', async (req, res) => {
             total: faculty.length + notices.length + events.length + syllabi.length
         });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 

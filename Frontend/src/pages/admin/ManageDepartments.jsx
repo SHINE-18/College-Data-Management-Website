@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import api from '../../utils/axios';
-import campusMap from '../../assets/campusmap.png';
+import campusMap from '../../assets/campusmap.webp';
 
 /* ─────────────────────────────── helpers ─────────────────────────────── */
 

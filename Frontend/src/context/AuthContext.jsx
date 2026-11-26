@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import api from '../utils/axios';
+import api, { getSessionUser } from '../utils/axios';
 
 const AuthContext = createContext(null);
 
@@ -23,38 +23,14 @@ export const AuthProvider = ({ children }) => {
         // This ensures a logged-in session in one tab is never visible in a new tab/window.
         const savedToken = sessionStorage.getItem('token');
         if (!savedToken) {
-            // No token in this tab — but we may still have a valid httpOnly refresh cookie.
-            // Attempt a silent token refresh so the user doesn't have to log in again after
-            // a page reload within the same tab.
-            api.post('/auth/refresh')
-                .then(({ data }) => {
-                    const refreshedToken = data.token;
-                    sessionStorage.setItem('token', refreshedToken);
-                    return api.get('/auth/me');
-                })
-                .then(({ data }) => {
-                    const token = sessionStorage.getItem('token');
-                    setToken(token);
-                    setUser(data);
-                    sessionStorage.setItem('user', JSON.stringify(data));
-                })
-                .catch(() => {
-                    // No valid refresh cookie — user is truly logged out in this tab
-                    sessionStorage.removeItem('token');
-                    sessionStorage.removeItem('user');
-                    setToken(null);
-                    setUser(null);
-                })
-                .finally(() => {
-                    setLoading(false);
-                });
+            setLoading(false);
             return;
         }
 
-        // Validate the existing session token against the backend before trusting it
-        api.get('/auth/me')
+        const endpoint = getSessionUser()?.role === 'student' ? '/student-auth/me' : '/auth/me';
+        api.get(endpoint)
             .then(({ data }) => {
-                setToken(savedToken);
+                setToken(sessionStorage.getItem('token'));
                 setUser(data);
                 // Sync sessionStorage with fresh user data from server
                 sessionStorage.setItem('user', JSON.stringify(data));

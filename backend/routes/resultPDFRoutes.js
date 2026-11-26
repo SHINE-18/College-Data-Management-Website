@@ -3,6 +3,7 @@ const router = express.Router();
 const { protect, authorize } = require('../middleware/authMiddleware');
 const { uploadResult } = require('../middleware/upload');
 const ResultPDF = require('../models/ResultPDF');
+const { discardRejectedUpload } = require('../utils/cloudinary');
 const cloudinary = require('../config/cloudinary');
 
 // ──────────────────────────────────────────────────────────
@@ -13,7 +14,7 @@ router.post(
     protect,
     authorize('faculty', 'hod', 'super_admin'),
     uploadResult.single('resultPdf'),
-    async (req, res) => {
+    async (req, res, next) => {
         try {
             if (!req.file) {
                 return res.status(400).json({ message: 'PDF file is required' });
@@ -21,6 +22,7 @@ router.post(
 
             const { title, description, semester, examType, academicYear } = req.body;
             if (!title || !semester || !examType || !academicYear) {
+                await discardRejectedUpload(req.file);
                 return res.status(400).json({ message: 'Title, semester, exam type, and academic year are required' });
             }
 
@@ -36,16 +38,17 @@ router.post(
                 department: req.user.department || 'CE',
                 pdfUrl,
                 cloudinaryPublicId,
+                deliveryType: req.file.deliveryType,
                 uploadedBy: req.user._id
             });
 
             await resultPDF.save();
             await resultPDF.populate('uploadedBy', 'name');
 
-            res.status(201).json({ message: 'Result PDF uploaded successfully', resultPDF });
+            res.status(201).json({ message: 'Result PDF uploaded successfully', resultPDF: resultPDF.forDownload() });
         } catch (error) {
-            console.error('Result PDF upload error:', error);
-            res.status(500).json({ message: 'Failed to upload result PDF', error: error.message });
+            if (error.name === 'ValidationError') await discardRejectedUpload(req.file);
+            next(error);
         }
     }
 );
@@ -53,7 +56,7 @@ router.post(
 // ──────────────────────────────────────────────────────────
 // GET /api/faculty/result-pdfs — List all result PDFs uploaded by this faculty
 // ──────────────────────────────────────────────────────────
-router.get('/result-pdfs', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res) => {
+router.get('/result-pdfs', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res, next) => {
     try {
         const filter = {};
 
@@ -66,16 +69,16 @@ router.get('/result-pdfs', protect, authorize('faculty', 'hod', 'super_admin'), 
             .populate('uploadedBy', 'name')
             .sort('-createdAt');
 
-        res.json(pdfs);
+        res.json(pdfs.map(pdf => pdf.forDownload()));
     } catch (error) {
-        res.status(500).json({ message: 'Failed to fetch result PDFs', error: error.message });
+        next(error);
     }
 });
 
 // ──────────────────────────────────────────────────────────
 // DELETE /api/faculty/result-pdfs/:id — Delete a result PDF
 // ──────────────────────────────────────────────────────────
-router.delete('/result-pdfs/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res) => {
+router.delete('/result-pdfs/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res, next) => {
     try {
         const pdf = await ResultPDF.findById(req.params.id);
         if (!pdf) return res.status(404).json({ message: 'Result PDF not found' });
@@ -91,7 +94,7 @@ router.delete('/result-pdfs/:id', protect, authorize('faculty', 'hod', 'super_ad
         // Remove from Cloudinary
         if (pdf.cloudinaryPublicId) {
             try {
-                await cloudinary.uploader.destroy(pdf.cloudinaryPublicId, { resource_type: 'raw' });
+                await cloudinary.uploader.destroy(pdf.cloudinaryPublicId, { resource_type: 'raw', type: pdf.deliveryType || 'upload' });
             } catch (e) {
                 console.warn('Cloudinary delete failed (continuing):', e.message);
             }
@@ -100,7 +103,7 @@ router.delete('/result-pdfs/:id', protect, authorize('faculty', 'hod', 'super_ad
         await pdf.deleteOne();
         res.json({ message: 'Result PDF deleted successfully' });
     } catch (error) {
-        res.status(500).json({ message: 'Failed to delete result PDF', error: error.message });
+        next(error);
     }
 });
 

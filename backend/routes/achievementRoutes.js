@@ -22,7 +22,7 @@ const validate = (req, res, next) => {
 };
 
 // GET /api/achievements - Get all achievements (with filters)
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
     try {
         const { facultyId, achievementType, isVerified } = req.query;
         let query = {};
@@ -34,17 +34,17 @@ router.get('/', async (req, res) => {
         const achievements = await Achievement.find(query).sort({ date: -1 });
         res.json(achievements);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // GET /api/achievements/faculty/:id - Get achievements by faculty
-router.get('/faculty/:id', async (req, res) => {
+router.get('/faculty/:id', async (req, res, next) => {
     try {
         const achievements = await Achievement.find({ facultyId: req.params.id }).sort({ date: -1 });
         res.json(achievements);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
@@ -56,7 +56,7 @@ router.post('/', [
     body('description').trim().notEmpty().withMessage('Description is required'),
     body('achievementType').isIn(['Award', 'Certification', 'Honor', 'Recognition', 'Prize', 'Other']).withMessage('Invalid achievement type'),
     validate
-], async (req, res) => {
+], async (req, res, next) => {
     try {
         const facultyId = await resolveFacultyProfileId(req.user);
         if (!facultyId) {
@@ -73,12 +73,12 @@ router.post('/', [
         await syncAchievementSummary(facultyId);
         res.status(201).json(achievement);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // PUT /api/achievements/:id - Update achievement
-router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res) => {
+router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res, next) => {
     try {
         const achievement = await Achievement.findById(req.params.id);
         
@@ -97,12 +97,12 @@ router.put('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (r
         await syncAchievementSummary(achievement.facultyId);
         res.json(achievement);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // PUT /api/achievements/:id/verify - Verify achievement (admin only)
-router.put('/:id/verify', protect, authorize('super_admin'), async (req, res) => {
+router.put('/:id/verify', protect, authorize('super_admin'), async (req, res, next) => {
     try {
         const achievement = await Achievement.findById(req.params.id);
         
@@ -114,12 +114,12 @@ router.put('/:id/verify', protect, authorize('super_admin'), async (req, res) =>
         await achievement.save();
         res.json(achievement);
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 
 // DELETE /api/achievements/:id - Delete achievement
-router.delete('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res) => {
+router.delete('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async (req, res, next) => {
     try {
         const achievement = await Achievement.findById(req.params.id);
         
@@ -138,7 +138,7 @@ router.delete('/:id', protect, authorize('faculty', 'hod', 'super_admin'), async
         await syncAchievementSummary(facultyId);
         res.json({ message: 'Achievement deleted successfully' });
     } catch (error) {
-        res.status(500).json({ message: 'Server error', error: error.message });
+        next(error);
     }
 });
 

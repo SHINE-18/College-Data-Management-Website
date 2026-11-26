@@ -22,6 +22,7 @@ const notFound = (req, res, next) => {
 
 // Global error handler - catches all errors
 const errorHandler = (err, req, res, next) => {
+    if (res.headersSent) return next(err);
     let error = { ...err };
     error.message = err.message;
     error.statusCode = err.statusCode || 500;
@@ -29,6 +30,10 @@ const errorHandler = (err, req, res, next) => {
     // Log error for debugging
     if (process.env.NODE_ENV === 'development') {
         console.error('Error:', err);
+    }
+
+    if (err.name === 'MulterError') {
+        error = new AppError(err.message, err.code === 'LIMIT_FILE_SIZE' ? 413 : 400);
     }
 
     // Mongoose bad ObjectId error
@@ -59,9 +64,13 @@ const errorHandler = (err, req, res, next) => {
         error = new AppError('Your token has expired. Please log in again.', 401);
     }
 
+    if (error.statusCode >= 500 && process.env.NODE_ENV === 'production') {
+        console.error('Request failed', req.method, req.baseUrl, err.name || 'Error');
+    }
     res.status(error.statusCode || 500).json({
         success: false,
-        message: error.message || 'Server Error',
+        message: process.env.NODE_ENV === 'production' && error.statusCode >= 500
+            ? 'Server error' : error.message || 'Server error',
         ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
     });
 };
